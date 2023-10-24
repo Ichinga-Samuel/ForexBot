@@ -1,23 +1,31 @@
-"""
-A Simple bot that uses the inbuilt FingerTrap strategy to trade on EURUSD, GBPUSD, EURGBP, EURAUD.
-"""
-from aiomql import Bot, ForexSymbol, FingerTrap
-from traders import SingleTrader
+"""A Simple bot that uses the inbuilt FingerTrap strategy"""
+from aiomql import Bot, RAM, TimeFrame
+from traders import SingleTrader, ConfirmTrader
 import logging
+
+from symbols import FXSymbol, CryptoSymbol
+from strategies import FingerTrap
+from utils import closer
+
 
 logging.basicConfig(level=logging.INFO)
 
+ram = RAM(amount=3, risk_to_reward=2.5)
+
 
 def build_bot():
+    param = {'trend_time_frame': TimeFrame.M15, 'entry_time_frame': TimeFrame.M3}
     bot = Bot()
-    pas = {'pips': 10, 'trend_candles_count': 500}
-    st = FingerTrap(symbol=ForexSymbol(name='EURUSD'), params=pas)
-    st4 = FingerTrap(symbol=ForexSymbol(name='AUDUSD'), params=pas)
-    st1 = FingerTrap(symbol=ForexSymbol(name='GBPUSD'), params=pas)
-    st2 = FingerTrap(symbol=ForexSymbol(name='USDJPY'), params=pas)
-    st3 = FingerTrap(symbol=ForexSymbol(name='EURJPY'), params=pas)
-    [setattr(s, 'trader', SingleTrader(symbol=s.symbol)) for s in (st2, st3, st1, st, st4)]
-    bot.add_strategies([st, st2, st3, st4, st1])
+    st1 = FingerTrap(symbol=FXSymbol(name='BTCUSD'))
+    st2 = FingerTrap(symbol=FXSymbol(name='ETHUSD'))
+    st3 = FingerTrap(symbol=FXSymbol(name='EURUSD'))
+    st4 = FingerTrap(symbol=FXSymbol(name='AUDUSD'))
+    st5 = FingerTrap(symbol=FXSymbol(name='GBPUSD'))
+    st6 = FingerTrap(symbol=FXSymbol(name='USDJPY'))
+    st7 = FingerTrap(symbol=FXSymbol(name='EURJPY'))
+    [setattr(s, 'trader', SingleTrader(symbol=s.symbol, ram=ram)) for s in (st1, st2, st3, st4, st5, st6, st7)]
+    bot.add_strategies([st1, st2, st3, st4, st5, st6, st7])
+    # bot.add_coroutine(closer)
     bot.execute()
 
 
