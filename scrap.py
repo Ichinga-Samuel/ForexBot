@@ -3,7 +3,7 @@ import asyncio
 from pprint import pprint as pp
 import logging
 from telegram import Update, Bot
-from symbols import CryptoSymbol
+from symbols import CryptoSymbol, FXSymbol
 from aiomql import Config, Account, Symbol, Order, OrderType, VolumeError, RAM, ForexSymbol, Positions
 
 from traders import ConfirmTrader, SingleTrader
@@ -13,11 +13,9 @@ logging.basicConfig(level=logging.WARNING)
 
 async def check():
     async with Account() as acc:
-        sym = CryptoSymbol(name='BTCUSD')
+        sym = FXSymbol(name='EURUSD')
         await sym.init()
-        for i in range(10):
-            trd = SingleTrader(symbol=sym, ram=RAM(amount=2.5))
-            await trd.place_trade(order_type=OrderType.SELL, params={'name': 'Testing'})
+        print(sl:=sym.trade_stops_level/10, sp:=sym.spread, ex:=(sp*2)/10, ps:=sl+ex, sym.point, sym.pip, ps*sym.pip)
 
 
 async def pos():
@@ -29,6 +27,5 @@ async def pos():
 
         await asyncio.gather(*[order for order in orders], return_exceptions=True)
 
-
-asyncio.run(pos())
-
+# async def
+asyncio.run(check())

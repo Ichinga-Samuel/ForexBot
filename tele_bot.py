@@ -29,7 +29,7 @@ class TelegramBot:
             order = msg.split('\n')
             order = {key: v.strip(' ') for r in order for k, v in [r.split(':')] if (key := k.strip(' ')) in trade_order}
             for key in order:
-                if key in ('pips', 'volume', 'risk_to_reward', 'order_type'):
+                if key in ('pips', 'volume', 'risk_to_reward', 'order_type', 'amount', 'points'):
                     trade_order[key] = float(order[key]) if key != 'order_type' else int(order[key])
             return trade_order
         except Exception as e:
@@ -65,4 +65,3 @@ class TelegramBot:
             raise RuntimeError('Order cancelled')
 
         return self.extract_order(reply, order)
-
