@@ -27,10 +27,10 @@ class ATR(Strategy):
     async def check_trend(self):
         try:
             candles: Candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
-            if not ((current := candles[-1].time) >= self.tracker.trend_time):
-                self.tracker.new = False
-                return
-            self.tracker.update(new=True, trend_time=current)
+            # if not ((current := candles[-1].time) >= self.tracker.trend_time):
+            #     self.tracker.new = False
+            #     return
+            self.tracker.update(new=True, trend_time=candles[-1].time)
             candles.ta.atr(length=self.atr_period, append=True)
             candles.rename(**{f'ATRr_{self.atr_period}': 'atr'})
             candles.ta.rsi(close="atr", append=True)
@@ -38,7 +38,7 @@ class ATR(Strategy):
             rsi = candles[-2]['rsi']
             if rsi >= self.rsi_upper:
                 candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
-                if not candles[-1].time >= self.tracker.trend_time:
+                if not candles[-1].time >= self.tracker.entry_time:
                     self.tracker.new = False
                     return
                 candles.ta.sma(length=self.fast_sma, append=True)
@@ -47,13 +47,13 @@ class ATR(Strategy):
                 above = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"])
                 below = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"], above=False)
                 if above[-2]["fast_smaXA_slow_sma"]:
-                    self.tracker.update(order=OrderType.BUY, snooze=self.etf.time)
+                    self.tracker.update(order_type=OrderType.BUY, snooze=self.etf.time)
                 elif below[-2]["fast_smaXB_slow_sma"]:
-                    self.tracker.update(order=OrderType.SELL, snooze=self.etf.time)
+                    self.tracker.update(order_type=OrderType.SELL, snooze=self.etf.time)
                 else:
-                    self.tracker.update(order=None, snooze=self.etf.time)
+                    self.tracker.update(order_type=None, snooze=self.etf.time)
             else:
-                self.tracker.update(order=None, snooze=self.ttf.time)
+                self.tracker.update(order_type=None, snooze=self.ttf.time)
         except Exception as err:
             logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.check_trend")
             return
@@ -68,10 +68,10 @@ class ATR(Strategy):
                     if not self.tracker.new:
                         await asyncio.sleep(2)
                         continue
-                    if self.tracker.order is None:
+                    if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.trade")

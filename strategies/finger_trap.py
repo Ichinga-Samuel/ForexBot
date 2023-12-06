@@ -78,9 +78,9 @@ class FingerTrap(Strategy):
             candles["mid_XB_ema"] = candles.ta_lib.cross(candles.mid, candles.ema, above=False)
             current = candles[-2]
             if self.tracker.bullish and current.mid_XA_ema:
-                self.tracker.update(snooze=self.tracker_time_frame.time, order_type=OrderType.BUY)
+                self.tracker.update(snooze=self.trend_time_frame.time, order=OrderType.BUY)
             elif self.tracker.bearish and current.mid_XB_ema:
-                self.tracker.update(snooze=self.entry_time_frame.time, order_type=OrderType.SELL)
+                self.tracker.update(snooze=self.trend_time_frame.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(snooze=self.entry_time_frame.time, order_type=None)
         except Exception as exe:
@@ -101,10 +101,10 @@ class FingerTrap(Strategy):
                     if not self.tracker.new:
                         await asyncio.sleep(2)
                         continue
-                    if self.tracker.order is None:
+                    if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order=self.tracker.order, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.trade")

@@ -58,11 +58,11 @@ class ADI(Strategy):
             above = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"])
             below = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"], above=False)
             if self.tracker.bullish and above[-2]["fast_smaXA_slow_sma"]:
-                self.tracker.update(snooze=self.ttf.time, order=OrderType.BUY)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
             elif self.tracker.bearish and below[-2]["fast_smaXB_slow_sma"]:
-                self.tracker.update(snooze=self.ttf.time, order=OrderType.SELL)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
-                self.tracker.update(snooze=self.etf.time, order=None)
+                self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:
             logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.confirm_trend")
             return
@@ -82,10 +82,10 @@ class ADI(Strategy):
                     if not self.tracker.new:
                         await asyncio.sleep(2)
                         continue
-                    if self.tracker.order is None:
+                    if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.trade")

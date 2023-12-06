@@ -19,7 +19,7 @@ class TelegramBot:
         self.chat_id = chat_id or config.telegram_chat_id
         self.order_format = order_format or "symbol: {symbol}\norder_type: {order_type}\npips: {pips}\n" \
                                             "volume: {volume}\nrisk_to_reward: {risk_to_reward}\n" \
-                                            "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} " \
+                                            "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout}" \
                                             "seconds from now. No reply will be considered as 'cancel'\n" \
                                             "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 

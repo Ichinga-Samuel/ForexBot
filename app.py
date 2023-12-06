@@ -1,14 +1,14 @@
 """A Simple bot that uses the inbuilt FingerTrap strategy"""
-from aiomql import Bot, RAM, TimeFrame, FingerTrap, ForexSymbol, SingleTrader
+from aiomql import Bot, RAM, TimeFrame, FingerTrap as FT, ForexSymbol, SingleTrader
 import logging
 
-from strategies import FingerTrap as FT, ADI, ATR
+from strategies import FingerTrap, ADI, ATR
 from traders import ConfirmationTrader
 
 logging.basicConfig(level=logging.INFO)
 
 ram = RAM(amount=5, risk_to_reward=2.5, points=15000)
-fxram = RAM(amount=5, risk_to_reward=2.5, points=80)
+fxram = RAM(amount=2, risk_to_reward=2.5, points=80)
 # config = Config()
 # print(config.telegram_bot_token)
 """
@@ -337,11 +337,14 @@ crypto_symols = [
 
 def build_bot():
     bot = Bot()
-    sts = [(FingerTrap(symbol=s, trader=ConfirmationTrader(symbol=s, ram=fxram)), ADI(symbol=s), ATR(symbol=s)) for s in fx_symbols]
-    sts = [s for sy in sts for s in sy]
-    cts = [(FingerTrap(symbol=s, trader=ConfirmationTrader(symbol=s, ram=ram)), ADI(symbol=s), ATR(symbol=s)) for s in crypto_symols]
-    cts = [s for sy in cts for s in sy]
-    [bot.add_strategy(s) for s in sts + cts]
+    fx_symbols = [ForexSymbol(name='EURUSD'), ForexSymbol(name='GBPUSD'), ForexSymbol(name='USDJPY')]
+    sts = [FingerTrap(symbol=s, trader=ConfirmationTrader(symbol=s, ram=fxram)) for s in fx_symbols]
+    bot.add_strategies(sts)
+    # sts = [(FingerTrap(symbol=s, trader=ConfirmationTrader(symbol=s, ram=fxram)), ADI(symbol=s), ATR(symbol=s)) for s in fx_symbols]
+    # sts = [s for sy in sts for s in sy]
+    # cts = [(FingerTrap(symbol=s, trader=ConfirmationTrader(symbol=s, ram=ram)), ADI(symbol=s), ATR(symbol=s)) for s in crypto_symols]
+    # cts = [s for sy in cts for s in sy]
+    # [bot.add_strategy(s) for s in sts + cts]
     # bot.add_coroutine(closer)
     bot.execute()
 
