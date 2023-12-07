@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aiomql import Symbol, Trader, Candles, Strategy, TimeFrame, OrderType, Sessions, Tracker, SingleTrader
+from aiomql import Symbol, Trader, Candles, Strategy, TimeFrame, OrderType, Sessions, Tracker, SimpleTrader
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class FingerTrap(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SingleTrader(symbol=self.symbol)
+        self.trader = trader or SimpleTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.trend_time_frame.time)
 
     async def check_trend(self):
@@ -105,6 +105,7 @@ class FingerTrap(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    self.tracker.order_type = None
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.trade")
