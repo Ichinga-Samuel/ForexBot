@@ -36,7 +36,7 @@ class ADI(Strategy):
             candles.ta.ad(volume="tick_volume", append=True)
             candles.ta.rsi(close="AD", length=self.rsi_period, append=True)
             candles.rename(**{f'RSI_{self.rsi_period}': 'rsi'})
-            rsi = candles[-2].rsi
+            rsi = sum(c.rsi for c in candles[-4:-1]) / 3
             if 0 < rsi <= self.rsi_lower:
                 self.tracker.update(trend="bullish")
             elif self.rsi_upper <= rsi <= 100:
