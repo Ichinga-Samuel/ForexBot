@@ -6,13 +6,12 @@ from aiomql import Symbol, Trader, Candles, Strategy, TimeFrame, OrderType, Sess
 logger = logging.getLogger(__name__)
 
 
-class FingerTrap(Strategy):
+class MACDonBB(Strategy):
     trend_time_frame: TimeFrame
     entry_time_frame: TimeFrame
     trend: int
     fast_period: int
     slow_period: int
-    entry_period: int
     parameters: dict
     prices: Candles
     interval: float
@@ -20,11 +19,11 @@ class FingerTrap(Strategy):
     trend_candles_count: int
     trader: Trader
     _parameters = {"trend": 3, "fast_period": 8, "slow_period": 34, "entry_time_frame": TimeFrame.M5,
-                   "trend_time_frame": TimeFrame.H1, "entry_period": 8,
-                   "trend_candles_count": 48, "entry_candles_count": 50}
+                   "trend_time_frame": TimeFrame.H1,
+                   "trend_candles_count": 48, "entry_candles_count": 100}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerTrap'):
+                 name: str = 'MACDonBB'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or SimpleTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.trend_time_frame.time)
@@ -40,21 +39,21 @@ class FingerTrap(Strategy):
                 self.tracker.update(new=False)
                 return
 
-            candles.ta.ema(length=self.slow_period, append=True, fillna=0)
-            candles.ta.ema(length=self.fast_period, append=True, fillna=0)
-            candles.rename(inplace=True, **{f"EMA_{self.fast_period}": "fast", f"EMA_{self.slow_period}": "slow"})
+            candles.ta.sma(length=self.slow_period, append=True, fillna=0)
+            candles.ta.sma(length=self.fast_period, append=True, fillna=0)
+            candles.rename(inplace=True, **{f"SMA_{self.fast_period}": "fast", f"SMA_{self.slow_period}": "slow"})
 
             # Compute
             candles["fast_A_slow"] = candles.ta_lib.above(candles.fast, candles.slow)
             candles["fast_B_slow"] = candles.ta_lib.below(candles.fast, candles.slow)
-            candles["mid_A_fast"] = candles.ta_lib.above(candles.mid, candles.fast)
-            candles["mid_B_fast"] = candles.ta_lib.below(candles.mid, candles.fast)
+            candles["close_A_fast"] = candles.ta_lib.above(candles.close, candles.fast)
+            candles["close_B_fast"] = candles.ta_lib.below(candles.close, candles.fast)
 
             trend = candles[-self.trend: -1]
-            if all(c.fast_A_slow and c.mid_A_fast for c in trend):
+            if all(c.fast_A_slow and c.close_A_fast for c in trend):
                 self.tracker.update(trend="bullish")
 
-            elif all(c.fast_B_slow and c.mid_B_fast for c in trend):
+            elif all(c.fast_B_slow and c.close_B_fast for c in trend):
                 self.tracker.update(trend="bearish")
 
             else:
@@ -72,14 +71,17 @@ class FingerTrap(Strategy):
             else:
                 self.tracker.update(new=False)
                 return
-            candles.ta.ema(length=self.entry_period, append=True, fillna=0)
-            candles.rename(**{f"EMA_{self.entry_period}": "ema"})
-            candles["mid_XA_ema"] = candles.ta_lib.cross(candles.mid, candles.ema)
-            candles["mid_XB_ema"] = candles.ta_lib.cross(candles.mid, candles.ema, above=False)
+            candles.ta.bbands(append=True, fillna=0)
+            candles.ta.macd(append=True, fillna=0)
+            candles.rename(inplace=True, **{f"MACD_12_26_9": "macd", f"BBL_5_2.0": "bblower", f"BBM_5_2.0": "bbmid",
+                                            f"BBU_5_2.0": "bbupper", f"MACDh_12_26_9": "macdh",
+                                            f"MACDs_12_26_9": "macds"})
+            candles["macd_XA_bbupper"] = candles.ta_lib.cross(candles.macd, candles.bbupper)
+            candles["macd_XB_bblower"] = candles.ta_lib.cross(candles.macd, candles.bblower, above=False)
             current = candles[-2]
-            if self.tracker.bullish and current.mid_XA_ema:
+            if self.tracker.bullish and current.macd_XA_bbupper:
                 self.tracker.update(snooze=self.trend_time_frame.time, order=OrderType.BUY)
-            elif self.tracker.bearish and current.mid_XB_ema:
+            elif self.tracker.bearish and current.macd_XB_bblower:
                 self.tracker.update(snooze=self.trend_time_frame.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(snooze=self.entry_time_frame.time, order_type=None)
@@ -92,7 +94,7 @@ class FingerTrap(Strategy):
             await self.confirm_trend()
 
     async def trade(self):
-        logger.info(f"Trading {self.symbol}")
+        logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             while True:
                 await sess.check()
