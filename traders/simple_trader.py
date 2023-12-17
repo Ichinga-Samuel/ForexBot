@@ -32,7 +32,7 @@ class SimpleTrader(Trader):
         loosing = [trade for trade in positions if trade.profit < 0]
         if (losses := len(loosing)) > self.num_trades:
             raise RuntimeError(f"Last {losses} trades in a losing position")
-        points = points or self.ram.points or self.symbol.trade_stops_level * 2
+        points = points or self.ram.points or self.symbol.trade_stops_level * 3
         amount = self.ram.amount or await self.ram.get_amount()
         self.order.volume = await self.symbol.compute_volume(amount=amount, points=points)
         self.order.type = order_type
