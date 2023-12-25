@@ -3,7 +3,7 @@ from logging import getLogger
 
 from aiomql import Trader, Positions, RAM, OrderType, ForexSymbol
 
-from tele_bot import TelegramBot
+from telebots import TelegramBot
 from symbols import FXSymbol
 
 logger = getLogger(__name__)

@@ -46,6 +46,10 @@ class TelegramBot:
             return await self.get_updates(tries=tries-1)
         return ups
 
+    async def notify(self, order: dict):
+        order_msg = self.order_format.format(timeout=self.confirmation_timeout, **order)
+        await self.bot.send_message(chat_id=self.chat_id, text=order_msg)
+
     async def confirm_order(self, *, order: dict):
         order_msg = self.order_format.format(timeout=self.confirmation_timeout, **order)
         msg = await self.bot.send_message(chat_id=self.chat_id, text=order_msg)

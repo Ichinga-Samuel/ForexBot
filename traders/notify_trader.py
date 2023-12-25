@@ -9,7 +9,7 @@ from symbols import FXSymbol
 logger = getLogger(__name__)
 
 
-class ConfirmationVTrader(Trader):
+class NotifyVTrader(Trader):
     """Waits for manual confirmation from telegram before placing a trade."""
     order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
                    "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
@@ -35,10 +35,7 @@ class ConfirmationVTrader(Trader):
         order = {'symbol': self.symbol.name, 'order_type': int(order_type), 'points': points, 'volume': volume,
                  'risk_to_reward': self.ram.risk_to_reward, 'strategy': self.parameters.get('name', 'None'),
                  'amount': amount}
-        order = await self.tele_bot.confirm_order(order=order)
-        if amount != order['amount']:
-            volume = await self.symbol.compute_volume(amount=order['amount'], points=order['points'])
-            order['volume'] = volume
+        await self.tele_bot.notify(order=order)
         self.ram.risk_to_reward = order['risk_to_reward']
         self.order.volume = order['volume']
         self.order.type = order['order_type']
