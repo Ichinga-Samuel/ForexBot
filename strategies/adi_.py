@@ -6,7 +6,7 @@ from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tr
 logger = getLogger(__name__)
 
 
-class ADIMACD(Strategy):
+class ADI2(Strategy):
     tracker: Tracker
     ecc: int
     tcc: int
@@ -20,7 +20,7 @@ class ADIMACD(Strategy):
     _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 20, 'fast_sma': 5,
                    'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
-    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIMACDStrategy",
+    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIStrategy",
                  trader=None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
@@ -54,12 +54,11 @@ class ADIMACD(Strategy):
                 self.tracker.new = False
                 return
             self.tracker.update(new=True, entry_time=current)
-            candles.ta.macd(append=True, fillna=0)
-            candles.rename(inplace=True, **{f"MACD_12_26_9": "macd", f"MACDh_12_26_9": "macdh",
-                                            f"MACDs_12_26_9": "macds"})
-
-            above = candles.ta_lib.cross(candles["macd"], candles["macds"])
-            below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
+            candles.ta.sma(length=self.fast_sma, append=True)
+            candles.ta.sma(length=self.slow_sma, append=True)
+            candles.rename(**{f'SMA_{self.fast_sma}': 'fast_sma', f'SMA_{self.slow_sma}': 'slow_sma'})
+            above = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"])
+            below = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
             elif self.tracker.bearish and below.iloc[-2]:
