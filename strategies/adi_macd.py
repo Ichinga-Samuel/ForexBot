@@ -1,9 +1,13 @@
 from logging import getLogger
 import asyncio
 
-from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker, SimpleTrader
+from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker as Tracker_, SimpleTrader, Trader
 
 logger = getLogger(__name__)
+
+
+class Tracker(Tracker_):
+    sl: float = 0
 
 
 class ADIMACD(Strategy):
@@ -21,7 +25,7 @@ class ADIMACD(Strategy):
                    'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIMACDStrategy",
-                 trader=None):
+                 trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
         self.trader = trader or SimpleTrader(symbol=self.symbol)
@@ -61,9 +65,11 @@ class ADIMACD(Strategy):
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
+                sl = min(candles[-4:-1], key=lambda x: x.low)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and below.iloc[-2]:
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
+                sl = max(candles[-4:-1], key=lambda x: x.high)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:
@@ -88,7 +94,8 @@ class ADIMACD(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
+                                                  parameters=self.parameters)
                     self.tracker.order_type = None
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
