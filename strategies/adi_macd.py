@@ -1,11 +1,13 @@
 from logging import getLogger
 import asyncio
+from dataclasses import dataclass
 
 from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker as Tracker_, SimpleTrader, Trader
 
 logger = getLogger(__name__)
 
 
+@dataclass
 class Tracker(Tracker_):
     sl: float = 0
 
@@ -22,7 +24,7 @@ class ADIMACD(Strategy):
     rsi_upper: int
     rsi_lower: int
     _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 20, 'fast_sma': 5,
-                   'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
+                   'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35, 'sl': 0, 'tp': 0}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIMACDStrategy",
                  trader: Trader = None):
@@ -61,15 +63,16 @@ class ADIMACD(Strategy):
             candles.ta.macd(append=True, fillna=0)
             candles.rename(inplace=True, **{f"MACD_12_26_9": "macd", f"MACDh_12_26_9": "macdh",
                                             f"MACDs_12_26_9": "macds"})
-
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
                 sl = min(candles[-4:-1], key=lambda x: x.low)
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
+                self.parameters.update({'sl': sl.low})
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl.low)
             elif self.tracker.bearish and below.iloc[-2]:
                 sl = max(candles[-4:-1], key=lambda x: x.high)
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
+                self.parameters.update({'sl': sl.high})
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl.high)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:

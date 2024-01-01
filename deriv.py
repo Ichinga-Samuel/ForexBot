@@ -3,7 +3,7 @@ from aiomql import Bot, RAM, FingerTrap, ForexSymbol
 import logging
 
 from strategies import MACDonBB, ADI, ATR, ADIMACD
-from traders import SimpleTrader, ConfirmationTrader, ConfirmationVTrader, NotifyVTrader
+from traders import SimpleTrader, ConfirmationTrader, ConfirmationVTrader, NotifyVTrader, MultiTrader
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ def build_bot():
             'Volatility 75 (1s) Index', 'Volatility 100 (1s) Index', 'Volatility 150 (1s) Index',
             'Volatility 250 (1s) Index', 'Volatility 200 (1s) Index', 'Volatility 300 (1s) Index']
     syms = [ForexSymbol(name=sym) for sym in syms]
-    dts = [strategy(symbol=s, trader=NotifyVTrader(symbol=s, ram=ram)) for s in syms for strategy in [ADIMACD]]
+    dts = [strategy(symbol=s, trader=MultiTrader(symbol=s, ram=ram)) for s in syms for strategy in [ADIMACD]]
     bot.add_strategies(dts)
     bot.execute()
 

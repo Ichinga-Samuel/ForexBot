@@ -1,66 +1,83 @@
-import asyncio
-from datetime import datetime
 from logging import getLogger
+import asyncio
 
-from aiomql import Trader, Positions, RAM, Symbol, OrderType, Result
-from aiomql.trader import dict_to_string
+from aiomql import Trader, Positions, RAM, OrderType, ForexSymbol
+
+from telebots import TelegramBot
+from symbols import FXSymbol
 
 logger = getLogger(__name__)
 
 
 class MultiTrader(Trader):
-    def __init__(self, symbol: Symbol, ram: RAM = None, multiplier=5):
+    """Place Multiple trades at once with different risk to reward ratios"""
+    order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
+                   "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
+                   "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} " \
+                   "seconds from now. No reply will be considered as 'cancel'\n" \
+                   "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
+
+    def __init__(self, symbol: ForexSymbol | FXSymbol, ram: RAM = None):
         super().__init__(symbol=symbol, ram=ram)
         self.positions = Positions(symbol=symbol.name)
-        self.ram = ram or RAM(risk_to_reward=2, amount=2.5)
-        self.multiplier = multiplier
+        self.ram = ram or RAM(risk=0.1, risk_to_reward=2)
+        self.tele_bot = TelegramBot(order_format=self.order_format)
+        self.tps = []
+        self.rrs = [0.8, 1, 1.5]
 
-    async def create_order(self, order_type: OrderType, pips: float):
-        res = await self.positions.positions_get()
-        res.sort(key=lambda pos: pos.time_msc)
-        if len(res) and res[-1].profit < 0:
-            raise RuntimeError(f"Last trade in a losing position: {res[0].ticket}")
-        volume = await self.ram.get_volume(symbol=self.symbol, pips=pips)
-        self.order.volume = volume
+    async def create_order(self, order_type: OrderType, sl: float):
+        positions = await self.positions.positions_get()
+        positions.sort(key=lambda pos: pos.time_msc)
+        loosing = [trade for trade in positions if trade.profit < 0]
+        if (losses := len(loosing)) > 4:
+            raise RuntimeError(f"Last {losses} trades in a losing position")
         self.order.type = order_type
-        await self.set_order_limits(pips=pips)
+        await self.set_trade_stop_levels(sl=sl)
+        amount = self.ram.amount or await self.ram.get_amount()
+        # volume = await self.symbol.compute_volume(points=self.ram.points, amount=amount, use_limits=True)
+        volume = self.symbol.volume_min
+        order = {'symbol': self.symbol.name, 'order_type': int(order_type), 'points': self.ram.points, 'volume': volume,
+                 'risk_to_reward': self.ram.risk_to_reward, 'strategy': self.parameters.get('name', 'None'),
+                 'amount': amount, 'sl': self.order.sl, 'tp': self.order.tp}
+        await self.tele_bot.notify(order=order)
+        self.order.volume = volume
+        self.order.comment = self.parameters.get('name', 'None')
 
-    async def place_trade(self, order_type: OrderType, params: dict = None, **kwargs):
+    async def set_trade_stop_levels(self, *, sl: float):
+        tick = await self.symbol.info_tick()
+        self.order.sl = round(sl, self.symbol.digits)
+        if self.order.type == OrderType.BUY:
+            points = tick.ask - sl
+            self.tps = [round(tick.ask + (points*rr), self.symbol.digits) for rr in self.rrs]
+            self.order.tp = self.tps[0]
+            self.order.price = tick.ask
+        else:
+            points = sl - tick.bid
+            self.tps = [round(tick.bid + (points * rr), self.symbol.digits) for rr in self.rrs]
+            self.order.tp = self.tps[0]
+            self.order.price = tick.bid
+        self.ram.points = points / self.symbol.point
+
+    async def _send_order(self, tp):
+        try:
+            self.order.tp = tp
+            self.parameters.update({'tp': tp})
+            await self.send_order()
+        except Exception as err:
+            logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}._send_order")
+
+    async def place_trade(self, order_type: OrderType, parameters: dict = None, sl: float = 0):
         """Places a trade based on the order_type.
-
         Args:
             order_type (OrderType): Type of order
-            params: parameters to be saved with the trade
-            kwargs: keyword arguments as required for the specific trader
+            parameters: parameters of the trading strategy used to place the trade
+            :param sl:
         """
         try:
-            print(kwargs)
-            await self.create_order(order_type=order_type, **kwargs)
-
-            # Check the order before placing it
-            check = await self.order.check()
-            if check.retcode != 0:
-                logger.warning(
-                    f"Symbol: {self.order.symbol}\nResult:\n{dict_to_string(check.get_dict(include={'comment', 'retcode'}), multi=True)}")
+            self.parameters |= parameters or {}
+            await self.create_order(order_type=order_type, sl=sl)
+            if not await self.check_order():
                 return
-
-            # Send the orders.
-            results = await asyncio.gather(*[self.order.send() for _ in range(self.multiplier)])
-            result = results[0]
-            if result.retcode != 10009:
-                logger.warning(
-                    f"Symbol: {self.order.symbol}\nResult:\n{dict_to_string(result.get_dict(include={'comment', 'retcode'}), multi=True)}")
-                return
-
-            logger.info(f"Symbol: {self.order.symbol}\nOrder: {dict_to_string(result.dict, multi=True)}\n")
-
-            # save trade result and passed in parameters
-            if result.retcode == 10009 and self.config.record_trades:
-                params = params or {}
-                params['expected_profit'] = check.profit
-                params['date'] = (date := datetime.utcnow())
-                params['time'] = date.timestamp()
-                res = Result(result=result, parameters=params)
-                await res.save_csv()
+            await asyncio.gather(*(self._send_order(tp) for tp in self.tps))
         except Exception as err:
             logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}.place_trade")

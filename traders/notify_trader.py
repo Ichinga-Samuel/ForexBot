@@ -32,7 +32,7 @@ class NotifyVTrader(Trader):
         self.order.type = order_type
         await self.set_trade_stop_levels(sl=sl)
         amount = self.ram.amount or await self.ram.get_amount()
-        volume = await self.symbol.compute_volume(points=self.ram.points, amount=amount)
+        volume = await self.symbol.compute_volume(points=self.ram.points, amount=amount, use_limits=True)
         order = {'symbol': self.symbol.name, 'order_type': int(order_type), 'points': self.ram.points, 'volume': volume,
                  'risk_to_reward': self.ram.risk_to_reward, 'strategy': self.parameters.get('name', 'None'),
                  'amount': amount}
@@ -42,16 +42,17 @@ class NotifyVTrader(Trader):
 
     async def set_trade_stop_levels(self, *, sl: float):
         tick = await self.symbol.info_tick()
+        self.order.sl = round(sl, self.symbol.digits)
         if self.order.type == OrderType.BUY:
             points = tick.ask - sl
             tp = points * self.ram.risk_to_reward
-            self.order.sl, self.order.tp = round(sl, self.symbol.digits), round(tick.ask + tp, self.symbol.digits)
+            self.order.tp = round(tick.ask + tp, self.symbol.digits)
             self.order.price = tick.ask
         else:
             points = sl - tick.bid
             tp = points * self.ram.risk_to_reward
-            self.order.sl, self.order.tp = round(sl, self.symbol.digits), round(tick.bid - tp, self.symbol.digits)
-            self.order.price = tick.bid * points
+            self.order.tp = round(tick.bid - tp, self.symbol.digits)
+            self.order.price = tick.bid
         self.ram.points = points / self.symbol.point
 
     async def place_trade(self, order_type: OrderType, parameters: dict = None, sl: float = 0):
@@ -68,4 +69,5 @@ class NotifyVTrader(Trader):
                 return
             await self.send_order()
         except Exception as err:
+            print(err, 'err')
             logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}.place_trade")
