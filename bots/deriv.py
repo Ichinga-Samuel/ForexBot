@@ -5,8 +5,7 @@ import logging
 from strategies import MACDonBB, ADI, ATR, ADIMACD2, FingerTrap2
 from traders import MultiTrader, RAM
 
-logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(filename='std.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
 def build_bot():
@@ -19,9 +18,9 @@ def build_bot():
     syms = [ForexSymbol(name=sym) for sym in syms]
     st1 = [ADIMACD2(symbol=sym, params=param1, trader=MultiTrader(symbol=sym)) for sym in syms]
     st2 = [ADIMACD2(symbol=sym, trader=MultiTrader(symbol=sym)) for sym in syms]
-    st3 = [FingerTrap2(symbol=sym, params=param1, trader=MultiTrader(symbol=sym)) for sym in syms]
     st4 = [FingerTrap2(symbol=sym, trader=MultiTrader(symbol=sym)) for sym in syms]
-    bot.add_strategies(st1 + st2 + st3 + st4)
+    bot.add_strategies(st1 + st2 + st4)
     bot.execute()
+
 
 build_bot()

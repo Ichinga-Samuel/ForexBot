@@ -5,7 +5,7 @@ import logging
 from strategies import ADI, ATR, ADIMACD
 from traders import SimpleTrader
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='std.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 ram = RAM(amount=3, risk_to_reward=1.5, points=0)
 fxram = RAM(amount=3, risk_to_reward=1.5, points=100)
