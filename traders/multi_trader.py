@@ -3,8 +3,8 @@ import asyncio
 
 from aiomql import Trader, Positions, RAM, OrderType, ForexSymbol
 
-from telebots import TelegramBot
 from symbols import FXSymbol
+from .ram import RAM
 
 logger = getLogger(__name__)
 
@@ -20,43 +20,42 @@ class MultiTrader(Trader):
     def __init__(self, symbol: ForexSymbol | FXSymbol, ram: RAM = None):
         super().__init__(symbol=symbol, ram=ram)
         self.positions = Positions(symbol=symbol.name)
-        self.ram = ram or RAM(risk=0.1, risk_to_reward=2)
-        self.tele_bot = TelegramBot(order_format=self.order_format)
+        self.rrs = [0.55, 1, 1.2]
         self.tps = []
-        self.rrs = [0.8, 1, 1.5]
+        self.ram = ram or RAM(risk=0.2, risk_to_reward=self.rrs[-1], points=0)
 
-    async def create_order(self, order_type: OrderType, sl: float):
+    async def create_order(self, order_type: OrderType):
         positions = await self.positions.positions_get()
         positions.sort(key=lambda pos: pos.time_msc)
         loosing = [trade for trade in positions if trade.profit < 0]
         if (losses := len(loosing)) > 4:
             raise RuntimeError(f"Last {losses} trades in a losing position")
         self.order.type = order_type
-        await self.set_trade_stop_levels(sl=sl)
         amount = self.ram.amount or await self.ram.get_amount()
-        # volume = await self.symbol.compute_volume(points=self.ram.points, amount=amount, use_limits=True)
-        volume = self.symbol.volume_min
-        order = {'symbol': self.symbol.name, 'order_type': int(order_type), 'points': self.ram.points, 'volume': volume,
-                 'risk_to_reward': self.ram.risk_to_reward, 'strategy': self.parameters.get('name', 'None'),
-                 'amount': amount, 'sl': self.order.sl, 'tp': self.order.tp}
-        await self.tele_bot.notify(order=order)
+        points = self.ram.points or self.symbol.trade_stops_level * 2
+        volume = await self.symbol.compute_volume(points=points, amount=amount)
         self.order.volume = volume
         self.order.comment = self.parameters.get('name', 'None')
+        await self.set_trade_stop_levels(points=points)
 
-    async def set_trade_stop_levels(self, *, sl: float):
+    async def set_trade_stop_levels(self, *, points):
+        """Set the stop loss and take profit levels of the order based on the points.
+        Args:
+            points: Target points
+        """
+        points = points * self.symbol.point
+        sl = tp = points
         tick = await self.symbol.info_tick()
-        self.order.sl = round(sl, self.symbol.digits)
         if self.order.type == OrderType.BUY:
-            points = tick.ask - sl
-            self.tps = [round(tick.ask + (points*rr), self.symbol.digits) for rr in self.rrs]
-            self.order.tp = self.tps[0]
+            self.order.sl = round(tick.ask - sl, self.symbol.digits)
             self.order.price = tick.ask
+            self.tps = [round(tick.ask + tp * rr, self.symbol.digits) for rr in self.rrs]
+            self.order.tp = self.tps[-1]
         else:
-            points = sl - tick.bid
-            self.tps = [round(tick.bid + (points * rr), self.symbol.digits) for rr in self.rrs]
-            self.order.tp = self.tps[0]
+            self.order.sl = round(tick.bid + sl, self.symbol.digits)
             self.order.price = tick.bid
-        self.ram.points = points / self.symbol.point
+            self.tps = [round(tick.bid - tp * rr, self.symbol.digits) for rr in self.rrs]
+            self.order.tp = self.tps[-1]
 
     async def _send_order(self, tp):
         try:
@@ -66,16 +65,15 @@ class MultiTrader(Trader):
         except Exception as err:
             logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}._send_order")
 
-    async def place_trade(self, order_type: OrderType, parameters: dict = None, sl: float = 0):
+    async def place_trade(self, order_type: OrderType, parameters: dict = None):
         """Places a trade based on the order_type.
         Args:
             order_type (OrderType): Type of order
             parameters: parameters of the trading strategy used to place the trade
-            :param sl:
         """
         try:
             self.parameters |= parameters or {}
-            await self.create_order(order_type=order_type, sl=sl)
+            await self.create_order(order_type=order_type)
             if not await self.check_order():
                 return
             await asyncio.gather(*(self._send_order(tp) for tp in self.tps))

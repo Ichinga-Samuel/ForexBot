@@ -12,7 +12,7 @@ class Tracker(Tracker_):
     sl: float = 0
 
 
-class ADIMACD(Strategy):
+class ADIMACD2(Strategy):
     tracker: Tracker
     ecc: int
     tcc: int
@@ -24,10 +24,10 @@ class ADIMACD(Strategy):
     rsi_upper: int
     rsi_lower: int
     _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 20, 'fast_sma': 5,
-                   'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35, 'sl': 0, 'tp': 0}
+                   'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
-    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIMACDStrategy",
-                 trader: Trader = None):
+    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
+                 name: str = 'ADIMACDStrategy2', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
         self.trader = trader or SimpleTrader(symbol=self.symbol)
@@ -66,13 +66,9 @@ class ADIMACD(Strategy):
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
-                sl = min(candles[-13:-1], key=lambda x: x.low)
-                self.parameters.update({'sl': sl.low})
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl.low)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
             elif self.tracker.bearish and below.iloc[-2]:
-                sl = max(candles[-13:-1], key=lambda x: x.high)
-                self.parameters.update({'sl': sl.high})
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl.high)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:
@@ -97,8 +93,7 @@ class ADIMACD(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
-                                                  parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
                     self.tracker.order_type = None
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
