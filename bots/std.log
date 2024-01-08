@@ -1,0 +1,503 @@
+aiomql.bot_builder - INFO - Login Successful
+strategies.adi_macd_2 - INFO - Trading Volatility 25 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 50 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 10 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 75 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 100 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 10 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 25 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 50 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 75 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 100 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 150 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 250 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 200 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 25 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 50 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 300 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 10 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 75 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 100 Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 10 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 25 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 75 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 50 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 100 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 150 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 200 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 250 (1s) Index with ADIMACDStrategy2
+strategies.adi_macd_2 - INFO - Trading Volatility 300 (1s) Index with ADIMACDStrategy2
+strategies.finger_trap2 - INFO - Trading Volatility 25 Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 50 Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 10 Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 75 Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 10 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 100 Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 25 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 50 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 75 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 100 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 150 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 250 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 200 (1s) Index with FingerTrap2
+strategies.finger_trap2 - INFO - Trading Volatility 300 (1s) Index with FingerTrap2
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 50 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 (1s) Index	 Symbol: Volatility 50 (1s) Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 250 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 250 (1s) Index	 Symbol: Volatility 250 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 10 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 10 (1s) Index	 Symbol: Volatility 10 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 75 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 75 Index	 Symbol: Volatility 75 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 10 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 75 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 10 Index	 Symbol: Volatility 10 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 75 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 75 (1s) Index	 Symbol: Volatility 75 (1s) Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 Index	 Symbol: Volatility 100 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 150 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 50 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 75 (1s) Index	 Symbol: Volatility 75 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 200 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 150 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 (1s) Index	 Symbol: Volatility 25 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 300 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 250 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 150 (1s) Index	 Symbol: Volatility 150 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 300 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 50 (1s) Index	 Symbol: Volatility 50 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 75 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 25 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 200 (1s) Index	 Symbol: Volatility 200 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 10 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 10 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 150 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 150 (1s) Index	 Symbol: Volatility 150 (1s) Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 200 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 10 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 100 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 75 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 100 Index	 Symbol: Volatility 100 Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 300 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 75 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 200 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 50 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 300 (1s) Index	 Symbol: Volatility 300 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 10 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 250 (1s) Index	 Symbol: Volatility 250 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+root - WARNING - Error in obtaining rates for Volatility 250 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 300 (1s) Index	 Symbol: Volatility 300 (1s) Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 50 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 75 (1s) Index	 Symbol: Volatility 75 (1s) Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 25 (1s) Index	 Symbol: Volatility 25 (1s) Index in FingerTrap2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 10 (1s) Index	 Symbol: Volatility 10 (1s) Index in FingerTrap2.check_trend
+root - WARNING - Error in obtaining rates for Volatility 100 (1s) Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in ADIMACD2.confirm_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 100 (1s) Index	 Symbol: Volatility 100 (1s) Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 150 (1s) Index	 Symbol: Volatility 150 (1s) Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 200 (1s) Index	 Symbol: Volatility 200 (1s) Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 10 Index	 Symbol: Volatility 10 Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 100 Index	 Symbol: Volatility 100 Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 75 Index	 Symbol: Volatility 75 Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 300 (1s) Index	 Symbol: Volatility 300 (1s) Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 75 Index	 Symbol: Volatility 75 Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 200 (1s) Index	 Symbol: Volatility 200 (1s) Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 50 (1s) Index	 Symbol: Volatility 50 (1s) Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 10 Index	 Symbol: Volatility 10 Index in FingerTrap2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 (1s) Index	 Symbol: Volatility 25 (1s) Index in ADIMACD2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 250 (1s) Index	 Symbol: Volatility 250 (1s) Index in FingerTrap2.check_trend
+strategies.finger_trap2 - ERROR - Error: Could not get rates for Volatility 50 Index	 Symbol: Volatility 50 Index in FingerTrap2.confirm_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend
+root - WARNING - Error in obtaining rates for Volatility 25 Index.
+        Error Code: -10001
+        Error Description: IPC send failed
+        
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 10 (1s) Index	 Symbol: Volatility 10 (1s) Index in ADIMACD2.check_trend
+strategies.adi_macd_2 - ERROR - Error: Could not get rates for Volatility 25 Index	 Symbol: Volatility 25 Index in ADIMACD2.confirm_trend

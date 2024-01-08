@@ -61,7 +61,7 @@ class MultiTrader(Trader):
         try:
             self.order.tp = tp
             self.parameters.update({'tp': tp})
-            await self.send_order()
+            # await self.send_order()
         except Exception as err:
             logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}._send_order")
 
@@ -76,6 +76,6 @@ class MultiTrader(Trader):
             await self.create_order(order_type=order_type)
             if not await self.check_order():
                 return
-            await asyncio.gather(*(self._send_order(tp) for tp in self.tps))
+            # await asyncio.gather(*(self._send_order(tp) for tp in self.tps))
         except Exception as err:
             logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}.place_trade")

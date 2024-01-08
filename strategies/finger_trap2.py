@@ -74,9 +74,9 @@ class FingerTrap2(Strategy):
                 self.tracker.new = False
                 return
             self.tracker.update(new=True, entry_time=current)
-            candles.ta.macd(append=True, fillna=0)
-            candles.rename(inplace=True, **{f"MACD_12_26_9": "macd", f"MACDh_12_26_9": "macdh",
-                                            f"MACDs_12_26_9": "macds"})
+            candles.ta.macd(signal=5, append=True, fillna=0)
+            candles.rename(inplace=True, **{f"MACD_12_26_5": "macd", f"MACDh_12_26_5": "macdh",
+                                            f"MACDs_12_26_5": "macds"})
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
@@ -97,6 +97,7 @@ class FingerTrap2(Strategy):
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
+            await self.sleep(self.etf.time)
             while True:
                 await sess.check()
                 try:

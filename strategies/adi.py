@@ -17,10 +17,10 @@ class ADI(Strategy):
     rsi_period: int
     rsi_upper: int
     rsi_lower: int
-    _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 20, 'fast_sma': 5,
+    _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 32, 'fast_sma': 8,
                    'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
-    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIStrategy",
+    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ReversedADI",
                  trader=None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
@@ -36,7 +36,7 @@ class ADI(Strategy):
             candles.ta.ad(volume="tick_volume", append=True)
             candles.ta.rsi(close="AD", length=self.rsi_period, append=True)
             candles.rename(**{f'RSI_{self.rsi_period}': 'rsi'})
-            rsi = sum(c.rsi for c in candles[-4:-1]) / 3
+            rsi = candles[-1].rsi
             if 0 < rsi <= self.rsi_lower:
                 self.tracker.update(trend="bullish")
             elif self.rsi_upper <= rsi <= 100:
@@ -60,9 +60,9 @@ class ADI(Strategy):
             above = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"])
             below = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and below.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
+            elif self.tracker.bearish and below.iloc[-2]:
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:
@@ -77,6 +77,7 @@ class ADI(Strategy):
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
+            await self.sleep(self.etf.time)
             while True:
                 await sess.check()
                 try:

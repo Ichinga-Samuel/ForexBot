@@ -27,7 +27,7 @@ class ADIMACD2(Strategy):
                    'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
-                 name: str = 'ADIMACDStrategy2', trader: Trader = None):
+                 name: str = 'ADIMACD2', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
         self.trader = trader or SimpleTrader(symbol=self.symbol)
@@ -83,6 +83,7 @@ class ADIMACD2(Strategy):
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
+            await self.sleep(self.etf.time)
             while True:
                 await sess.check()
                 try:

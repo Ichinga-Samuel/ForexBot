@@ -30,7 +30,7 @@ class ConfirmationTrader(Trader):
         if (losses := len(loosing)) > 3:
             raise RuntimeError(f"Last {losses} trades in a losing position")
         points = points or self.symbol.trade_stops_level * 2
-        amount = self.ram.amount or await self.ram.get_amount()
+        amount = await self.ram.get_amount()
         volume = await self.symbol.compute_volume(amount=amount, points=points)
         order = {'symbol': self.symbol.name, 'order_type': int(order_type), 'points': points, 'volume': volume,
                  'risk_to_reward': self.ram.risk_to_reward, 'strategy': self.parameters.get('name', 'None'),

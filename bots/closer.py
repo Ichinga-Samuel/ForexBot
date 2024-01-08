@@ -21,7 +21,9 @@ async def place_multiple_random_orders():
                 except Exception as err:
                     print(f"{err}. Symbol: {sym.name}")
             await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
-            # await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
+            await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
+            await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
+            await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
             await asyncio.sleep(10)
             await Positions().close_all()
 
@@ -37,4 +39,10 @@ async def stop_levels(sym, points, order_type):
         price = tick.bid
     return price, sl, tp
 
-asyncio.run(place_multiple_random_orders())
+
+async def close_all():
+    async with Account() as account:
+        await Positions().close_all()
+
+
+asyncio.run(close_all())

@@ -1,12 +1,18 @@
 from logging import getLogger
 import asyncio
+from dataclasses import dataclass
 
-from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker, SimpleTrader
+from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker as Tracker_, SimpleTrader, Trader
 
 logger = getLogger(__name__)
 
 
-class ADI2(Strategy):
+@dataclass
+class Tracker(Tracker_):
+    sl: float = 0
+
+
+class ADIMACD3(Strategy):
     tracker: Tracker
     ecc: int
     tcc: int
@@ -20,8 +26,8 @@ class ADI2(Strategy):
     _parameters = {"ecc": 288, "tcc": 24, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'slow_sma': 20, 'fast_sma': 5,
                    'rsi_period': 14, 'rsi_upper': 65, 'rsi_lower': 35}
 
-    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = "ADIStrategy",
-                 trader=None):
+    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
+                 name: str = 'ADIMACD3', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
         self.trader = trader or SimpleTrader(symbol=self.symbol)
@@ -36,7 +42,7 @@ class ADI2(Strategy):
             candles.ta.ad(volume="tick_volume", append=True)
             candles.ta.rsi(close="AD", length=self.rsi_period, append=True)
             candles.rename(**{f'RSI_{self.rsi_period}': 'rsi'})
-            rsi = sum(c.rsi for c in candles[-4:-1]) / 3
+            rsi = candles[-1].rsi
             if 0 < rsi <= self.rsi_lower:
                 self.tracker.update(trend="bullish")
             elif self.rsi_upper <= rsi <= 100:
@@ -54,11 +60,11 @@ class ADI2(Strategy):
                 self.tracker.new = False
                 return
             self.tracker.update(new=True, entry_time=current)
-            candles.ta.sma(length=self.fast_sma, append=True)
-            candles.ta.sma(length=self.slow_sma, append=True)
-            candles.rename(**{f'SMA_{self.fast_sma}': 'fast_sma', f'SMA_{self.slow_sma}': 'slow_sma'})
-            above = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"])
-            below = candles.ta_lib.cross(candles["fast_sma"], candles["slow_sma"], above=False)
+            candles.ta.macd(signal=5, append=True, fillna=0)
+            candles.rename(inplace=True, **{f"MACD_12_26_5": "macd", f"MACDh_12_26_5": "macdh",
+                                            f"MACDs_12_26_5": "macds"})
+            above = candles.ta_lib.cross(candles["macd"], candles["macds"])
+            below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
             if self.tracker.bullish and above.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
             elif self.tracker.bearish and below.iloc[-2]:
@@ -77,6 +83,7 @@ class ADI2(Strategy):
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
+            await self.sleep(self.etf.time)
             while True:
                 await sess.check()
                 try:

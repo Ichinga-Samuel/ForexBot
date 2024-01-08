@@ -1,55 +1,42 @@
 """Trader class module. Handles the creation of an order and the placing of trades"""
 from logging import getLogger
 
-from aiomql import RAM, OrderType, Positions, Trader, ForexSymbol
+from aiomql import OrderType, Trader, ForexSymbol
+from .ram import RAM
 
 logger = getLogger(__name__)
 
 
 class SimpleTrader(Trader):
     """A simple trader class. Limits the number of loosing trades per symbol"""
-    def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, num_trades: int = 1):
+    def __init__(self, *, symbol: ForexSymbol, ram=RAM(risk_to_reward=1.5, points=0)):
         """Initializes the order object and RAM instance
 
         Args:
             symbol (Symbol): Financial instrument
             ram (RAM): Risk Assessment and Management instance
-            num_trades (int): Number of open trades in loosing positions to allow per symbol
         """
         super().__init__(symbol=symbol, ram=ram)
-        self.positions = Positions(symbol=symbol.name)
-        self.num_trades = num_trades
 
-    async def create_order(self, *, order_type: OrderType, points: float = 0):
+    async def create_order(self, *, order_type: OrderType):
         """Complete the order object with the required values. Creates a simple order.
 
         Args:
             order_type (OrderType): Type of order
             points (float): Target points
         """
-        positions = await self.positions.positions_get()
-        positions.sort(key=lambda pos: pos.time_msc)
-        loosing = [trade for trade in positions if trade.profit < 0]
-        if (losses := len(loosing)) > self.num_trades:
-            raise RuntimeError(f"Last {losses} trades in a losing position")
-        points = points or self.ram.points or self.symbol.trade_stops_level * 3
-        amount = self.ram.amount or await self.ram.get_amount()
+        points = self.ram.points or self.symbol.trade_stops_level * 3
+        amount = await self.ram.get_amount()
         self.order.volume = await self.symbol.compute_volume(amount=amount, points=points)
         self.order.type = order_type
         self.order.comment = self.parameters.get('name', '')
         await self.set_trade_stop_levels(points=points)
 
-    async def place_trade(self, order_type: OrderType, parameters: dict = None, points: float = 0):
-        """Places a trade based on the order_type.
-
-        Args:
-            order_type (OrderType): Type of order
-            parameters: parameters of the trading strategy used to place the trade
-            points (float): Target points
-        """
+    async def place_trade(self, order_type: OrderType, parameters: dict = None):
+        """Places a trade based on the order_type."""
         try:
             self.parameters |= parameters or {}
-            await self.create_order(order_type=order_type, points=points)
+            await self.create_order(order_type=order_type)
             if not await self.check_order():
                 return
             await self.send_order()
