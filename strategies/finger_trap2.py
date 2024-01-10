@@ -110,6 +110,7 @@ class FingerTrap2(Strategy):
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
                     self.tracker.order_type = None
+
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.trade")

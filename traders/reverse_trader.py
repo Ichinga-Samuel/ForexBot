@@ -27,11 +27,12 @@ class ReverseTrader(Trader):
 
     async def create_order(self, order_type: OrderType):
         self.order.type = order_type
+        self.second_order.deviation = 5
         self.second_order.type = order_type.opposite
         amount = self.ram.amount or await self.ram.get_amount()
         points = self.ram.points or self.symbol.trade_stops_level * 3
         volume = await self.symbol.compute_volume(points=points, amount=amount)
-        points2 = self.ram.points or self.symbol.trade_stops_level * 1.2
+        points2 = (self.ram.points / 2) or self.symbol.trade_stops_level * 1.5
         volume2 = await self.symbol.compute_volume(points=points2, amount=amount/2)
         self.order.volume = volume
         self.order.comment = self.parameters.get('name', '')
@@ -94,8 +95,8 @@ class ReverseTrader(Trader):
         params["expected_profit"] = profit
         date = datetime.utcnow()
         date = date.replace(tzinfo=ZoneInfo("UTC"))
-        params["date"] = date
-        params["time"] = date.timestamp()
+        params["date"] = str(date.date())
+        params["time"] = str(date.time())
         res = Result(result=result, parameters=params, name=name)
         await res.save_csv()
 
