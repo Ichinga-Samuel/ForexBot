@@ -84,10 +84,10 @@ class RADI(Strategy):
             above = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"])
             below = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"], above=False)
             rsi = candles[-1].rsi
-            if rsi < 70 and above[-1]:
-                self.tracker.update(trend="bullish")
-            elif rsi > 30 and below[-1]:
-                self.tracker.update(trend="bearish")
+            if self.tracker.bullish and rsi < 70 and above.iloc[-1]:
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
+            elif self.tracker.bearish and rsi > 30 and below.iloc[-1]:
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging")
 
