@@ -3,7 +3,6 @@ import asyncio
 from dataclasses import dataclass
 
 from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker as Tracker_, SimpleTrader, Trader
-from pandas_ta import sma
 
 logger = getLogger(__name__)
 
@@ -24,7 +23,7 @@ class RADI(Strategy):
     third_sma: int
     rsi_period: int
     rsi_sma: int
-    trend: int = 3
+    trend: int = 2
     _parameters = {"ecc": 576, "tcc": 48, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_sma': 9, 'first_sma': 5,
                    'third_sma': 15, 'rsi_period': 9, 'rsi_sma': 20}
 
@@ -57,11 +56,10 @@ class RADI(Strategy):
             candles["sbt"] = candles.ta_lib.below(candles.second_sma, candles.third_sma)
 
             trend = candles[-self.trend-1: -1]
-            current = candles[-1]
-            if current.is_bullish() and all((c.caf and c.fas and c.sat) for c in trend):
+            if all((c.caf and c.fas and c.sat) for c in trend):
                 self.tracker.update(trend="bullish")
 
-            elif current.is_bearish() and all(c.cbf and c.fbs and c.sbt for c in trend):
+            elif all(c.cbf and c.fbs and c.sbt for c in trend):
                 self.tracker.update(trend="bearish")
             else:
                 self.tracker.update(trend="ranging", snooze=self.ttf.time)
@@ -84,9 +82,10 @@ class RADI(Strategy):
             above = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"])
             below = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"], above=False)
             rsi = candles[-1].rsi
-            if self.tracker.bullish and rsi < 70 and above.iloc[-1]:
+
+            if self.tracker.bullish and rsi < 70 and above.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and rsi > 30 and below.iloc[-1]:
+            elif self.tracker.bearish and rsi > 30 and below.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging")
