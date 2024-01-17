@@ -1,4 +1,4 @@
-from aiomql import Bot, TimeFrame
+from aiomql import Bot, TimeFrame, Account, Config
 import logging
 
 from strategies import ADIMACD2, ADIMACD3, FingerTrap2
@@ -10,6 +10,8 @@ logging.basicConfig(level=logging.INFO)
 
 def build_bot():
     params = {'etf': TimeFrame.M15}
+    c = Config(filename='admiral.json', reload=True)
+    print(c.filename, c.login)
     bot = Bot()
     fx_symbols = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
                   AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='NZDUSD-T'), AdmiralSymbol(name='USDCAD-T')]

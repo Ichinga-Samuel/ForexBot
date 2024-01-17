@@ -1,5 +1,6 @@
 .idea/
 venv/
 __pycache__/
+Terminals/
 aiomql.json
 scrap.py
