@@ -6,7 +6,7 @@ import asyncio
 from aiomql import Trader, Positions, RAM, OrderType, ForexSymbol, Order, OrderSendResult, Result
 from aiomql.utils import dict_to_string
 
-from symbols import FXSymbol
+from ..symbols import FXSymbol
 from .ram import RAM
 
 logger = getLogger(__name__)

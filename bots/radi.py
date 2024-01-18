@@ -1,9 +1,10 @@
 """A Simple bot that uses the inbuilt FingerTrap strategy"""
-from aiomql import Bot, ForexSymbol, TimeFrame
+from aiomql import Bot, ForexSymbol, Config
 import logging
 
-from strategies import RADI
-from traders import SimpleTrader
+from src import RADI, SimpleTrader
+
+Config(config_dir='configs', filename='deriv_demo_1.json', reload=True)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,6 +25,5 @@ def build_bot():
     st4 = [RADI(symbol=sym, params=param3, trader=SimpleTrader(symbol=sym)) for sym in syms]
     bot.add_strategies(st1 + st2 + st4 + st3)
     bot.execute()
-
 
 build_bot()

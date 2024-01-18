@@ -1,9 +1,9 @@
 from aiomql import Bot, TimeFrame, Account, Config
 import logging
 
-from strategies import ADIMACD2, ADIMACD3, FingerTrap2
-from traders import ReverseTrader, RAM
-from symbols import AdmiralSymbol
+from ..strategies import ADIMACD2, ADIMACD3, FingerTrap2
+from ..traders import ReverseTrader, RAM
+from ..symbols import AdmiralSymbol
 
 logging.basicConfig(level=logging.INFO)
 
