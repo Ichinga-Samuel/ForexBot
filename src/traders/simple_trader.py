@@ -9,13 +9,14 @@ logger = getLogger(__name__)
 
 class SimpleTrader(Trader):
     """A simple trader class. Limits the number of loosing trades per symbol"""
-    def __init__(self, *, symbol: ForexSymbol, ram=RAM(risk_to_reward=1.5, points=0), loss_limit: int = 3):
+    def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, loss_limit: int = 3):
         """Initializes the order object and RAM instance
 
         Args:
             symbol (Symbol): Financial instrument
             ram (RAM): Risk Assessment and Management instance
         """
+        ram = ram or RAM(risk_to_reward=1.5, points=0)
         super().__init__(symbol=symbol, ram=ram)
         self.loss_limit = loss_limit
 
