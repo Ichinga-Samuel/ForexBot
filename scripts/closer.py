@@ -41,8 +41,5 @@ async def stop_levels(sym, points, order_type):
 
 
 async def close_all():
-    async with Account() as account:
+    async with Account() as _:
         await Positions().close_all()
-
-
-asyncio.run(close_all())

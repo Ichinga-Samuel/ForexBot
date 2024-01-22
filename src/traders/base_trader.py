@@ -1,0 +1,136 @@
+from logging import getLogger
+from functools import cache
+
+from aiomql import OrderType, Trader, ForexSymbol, Tick, OrderSendResult, dict_to_string
+from ..utils.ram import RAM
+from ..telebots import TelegramBot
+logger = getLogger(__name__)
+
+
+class BaseTrader(Trader):
+    risk_to_rewards: list[float]  # risk to reward ratios for multiple trades
+    order_updates: list[dict]  # take profit levels for multiple trades
+
+    order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
+                   "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
+                   "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} " \
+                   "seconds from now. No reply will be considered as 'cancel'\n" \
+                   "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
+
+    def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
+                 use_telegram=False, track_trades=False, tracker_key: str = ''):
+        ram = ram or RAM(risk_to_reward=1.5)
+        self.order_updates = []
+        self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
+        ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
+        self.multiple = multiple
+        self.use_telegram = use_telegram
+        self.track_trades = track_trades
+        self.tracker_key = tracker_key or self.__class__.__name__
+        super().__init__(symbol=symbol, ram=ram)
+
+    @property
+    @cache
+    def telebot(self):
+        token = self.config.telegram_bot_token
+        chat_id = self.config.telegram_chat_id
+        confirmation_timeout = self.config.confirmation_timeout
+        return TelegramBot(token=token, chat_id=chat_id, confirmation_timeout=confirmation_timeout)
+
+    def save_trade(self, result: OrderSendResult | list[OrderSendResult], key: str = ''):
+        try:
+            if not self.track_trades:
+                return
+            key = key or self.tracker_key
+            if not self.multiple:
+                self.config.state.setdefault(key, {})[result.order] = result.get_dict(
+                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name}
+                return
+
+            for res in result:
+                self.config.state.setdefault(key, {})[res.order] = res.get_dict(
+                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name}
+        except Exception as err:
+            logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_trade")
+
+    async def check_ram(self):
+        bal = await self.ram.check_balance_level()
+        if bal:
+            raise RuntimeError("Balance level too low")
+
+        pos = await self.ram.check_losing_positions()
+        if pos:
+            raise RuntimeError(f"More than {self.ram.loss_limit} losing positions")
+
+    async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
+        self.order.type = order_type
+        volume, points = await self.symbol.compute_volume_points(amount=amount, points=points, **volume_kwargs)
+        self.order.volume = volume
+        self.order.comment = self.parameters.get('name', self.__class__.__name__)
+        tick = await self.symbol.info_tick()
+        if self.multiple:
+            self.set_multiple_stop_levels(points=points, tick=tick)
+        else:
+            self.set_trade_stop_levels(points=points, tick=tick)
+
+    async def create_order_sl(self, order_type: OrderType, sl: float, amount: float, **volume_kwargs):
+        tick = await self.symbol.info_tick()
+        price = tick.ask if order_type == OrderType.BUY else tick.bid
+        volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, **volume_kwargs)
+        points = abs(sl - price) / self.symbol.point
+        self.order.set_attributes(volume=volume, type=order_type,
+                                  comment=self.parameters.get('name', self.__class__.__name__))
+        if self.multiple:
+            self.set_multiple_stop_levels(points=points, tick=tick)
+        else:
+            self.set_trade_stop_levels(points=points, tick=tick)
+
+    def set_multiple_stop_levels(self, *, points, tick: Tick):
+        self.set_trade_stop_levels(points=points, tick=tick)
+        points = points * self.symbol.point
+        if self.order.type == OrderType.BUY:
+            self.order_updates = [{'tp': round(self.order.price + points * rr, self.symbol.digits), 'rr': rr}
+                                  for rr in self.risk_to_rewards]
+        else:
+            self.order_updates = [{'tp': round(self.order.price - points * rr, self.symbol.digits), 'rr': rr}
+                                  for rr in self.risk_to_rewards]
+
+    async def notify(self, msg: str = ''):
+        try:
+            if self.use_telegram:
+                self.config.task_queue.add_task(self.telebot.notify, msg=msg)
+        except Exception as err:
+            logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}.notify")
+
+    async def send_order(self) -> OrderSendResult | list[OrderSendResult]:
+        res = await super().send_order() if not self.multiple else await self.send_multiple_orders()
+        if not self.multiple and res.retcode == 10009:
+            self.save_trade(res)
+            await self.notify(msg=f"Placed Trade for {self.symbol}")
+        elif self.multiple:
+            res = [r for r in res if r.retcode == 10009]
+            self.save_trade(res)
+            await self.notify(msg=f"Placed {len(res)} Trades for {self.symbol}")
+        return res
+
+    async def send_multiple_orders(self) -> list[OrderSendResult]:
+        try:
+            results = []
+            self.parameters['rr'] = self.order_updates[-1]['rr']
+            res = await super().send_order()
+            results.append(res)
+            for update in self.order_updates[:-1]:
+                try:
+                    self.parameters['rr'] = update['rr']
+                    self.order.set_attributes(**update)
+                    res = await super().send_order()
+                    results.append(res)
+                except Exception as _:
+                    pass
+            return results
+        except Exception as err:
+            logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}._send_order")
+
+    async def place_trade(self, *args, **kwargs):
+        """Places a trade based on the order_type."""
+        raise NotImplementedError

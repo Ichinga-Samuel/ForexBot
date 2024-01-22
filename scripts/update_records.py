@@ -4,7 +4,7 @@ from aiomql import Records, Account
 
 async def update_records():
     """Update all records"""
-    async with Account() as acc:
+    async with Account() as _:
         rec = Records()
         await rec.update_records()
 

@@ -1,22 +1,19 @@
 import asyncio
 from logging import getLogger
-from pprint import pprint as pp
 import random
 
 from telegram import Bot
-from aiomql import Config
 
-config = Config()
 logger = getLogger(__name__)
 
 all_updates = list()
 
 
 class TelegramBot:
-    def __init__(self, token=None, confirmation_timeout=60, chat_id=0, order_format=''):
-        self.bot = Bot(token or config.telegram_bot_token)
-        self.confirmation_timeout = getattr(config, 'confirmation_timeout', confirmation_timeout)
-        self.chat_id = chat_id or config.telegram_chat_id
+    def __init__(self, *, token=None, confirmation_timeout=60, chat_id=0, order_format=''):
+        self.bot = Bot(token)
+        self.confirmation_timeout = confirmation_timeout
+        self.chat_id = chat_id
         self.order_format = order_format or "symbol: {symbol}\norder_type: {order_type}\npips: {pips}\n" \
                                             "volume: {volume}\nrisk_to_reward: {risk_to_reward}\n" \
                                             "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout}" \
@@ -46,9 +43,8 @@ class TelegramBot:
             return await self.get_updates(tries=tries-1)
         return ups
 
-    async def notify(self, order: dict):
-        order_msg = self.order_format.format(timeout=self.confirmation_timeout, **order)
-        await self.bot.send_message(chat_id=self.chat_id, text=order_msg)
+    async def notify(self, msg):
+        await self.bot.send_message(chat_id=self.chat_id, text=msg)
 
     async def confirm_order(self, *, order: dict):
         order_msg = self.order_format.format(timeout=self.confirmation_timeout, **order)
