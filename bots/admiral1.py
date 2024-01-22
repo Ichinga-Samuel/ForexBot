@@ -3,8 +3,8 @@ import logging
 
 from src import MFI, RADI, st_closer, AdmiralSymbol, PTrader
 
-Config(config_dir='configs', filename='admiral_1.json', reload=True, root_dir='../')
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='../logs/admiral.log', datefmt='%Y-%m-%d %H:%M:%S')
+Config(config_dir='configs', filename='admiral_1.json', reload=True, root_dir='.')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral.log', datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def build_bot():

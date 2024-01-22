@@ -3,9 +3,9 @@ import logging
 
 from src import FingerFractal, FractalRADI, ADIMACD, AdmiralSymbol
 
-Config(config_dir='configs', filename='admiral.json', reload=True, root_dir='../')
+Config(config_dir='configs', filename='admiral.json', reload=True, root_dir='.')
 
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='../logs/admiral.log', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral.log', datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def build_bot():

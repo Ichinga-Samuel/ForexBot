@@ -3,9 +3,8 @@ from aiomql import Bot, ForexSymbol, Config
 import logging
 from src import FingerFractal, FractalRADI, ADIMACD
 
-Config(config_dir='configs', filename='deriv_demo.json', reload=True, root_dir='../')
-
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='../logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
+Config(config_dir='configs', filename='deriv_demo.json', reload=True, root_dir='.')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def build_bot():

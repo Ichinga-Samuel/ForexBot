@@ -4,9 +4,9 @@ import logging
 
 from src import RADI, MFI, st_closer
 
-Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, root_dir='../')
+Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, root_dir='.')
 
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='../logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def build_bot():
