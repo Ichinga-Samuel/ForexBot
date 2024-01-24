@@ -24,7 +24,7 @@ class MFI(Strategy):
                  trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=True, track_trades=True, tracker_key='mfi',
+        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, track_trades=False, tracker_key='mfi',
                                          use_telegram=True)
 
     async def check_trend(self):
@@ -36,20 +36,20 @@ class MFI(Strategy):
 
             self.tracker.update(new=True, trend_time=current)
             warnings.filterwarnings("ignore")
-            candles.ta.mfi(volume='tick_volume', append=True)
-            candles.rename(**{'MFI_14': 'mfi'})
+            candles.ta.mfi(volume='tick_volume', append=True, length=9)
+            candles.rename(**{'MFI_9': 'mfi'})
             candles.ta.sma(close='mfi', length=self.sma, append=True)
             candles.rename(**{f'SMA_{self.sma}': 'sma'})
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
             mfi = candles[-1].mfi
             trend = candles[-12:1]
-            if mfi <= self.lower_mfi and any([above.iloc[-1], above.iloc[-2]]):
+            if mfi <= self.lower_mfi and above.iloc[-2]:
                 sl = find_bullish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.low if sl is not None else trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif mfi >= self.upper_mfi and any([below.iloc[-1], below.iloc[-2]]):
+            elif mfi >= self.upper_mfi and below.iloc[-2]:
                 sl = find_bearish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.high if sl is not None else trend.high.max()

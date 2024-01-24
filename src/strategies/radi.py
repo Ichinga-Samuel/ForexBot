@@ -25,7 +25,7 @@ class RADI(Strategy):
                  name: str = 'RADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or PTrader(symbol=self.symbol, multiple=True, use_telegram=True)
+        self.trader = trader or PTrader(symbol=self.symbol, multiple=False, use_telegram=True)
 
     async def check_trend(self):
         try:
@@ -66,16 +66,16 @@ class RADI(Strategy):
 
             self.tracker.update(new=True, entry_time=current)
             warnings.filterwarnings("ignore")
-            candles.ta.mfi(volume='tick_volume', append=True)
-            candles.rename(**{'MFI_14': 'mfi'})
+            candles.ta.mfi(volume='tick_volume', append=True, length=9)
+            candles.rename(**{'MFI_9': 'mfi'})
             candles.ta.sma(close='mfi', length=self.mfi_sma, append=True)
             candles.rename(**{f'SMA_{self.mfi_sma}': 'sma'})
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
 
-            if self.tracker.bullish and any([above.iloc[-2], above.iloc[-1]]):
+            if self.tracker.bullish and above.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and any([below.iloc[-2], below.iloc[-1]]):
+            elif self.tracker.bearish and below.iloc[-2]:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(order_type=None, snooze=self.etf.time)

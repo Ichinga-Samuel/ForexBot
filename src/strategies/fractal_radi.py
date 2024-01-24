@@ -29,7 +29,7 @@ class FractalRADI(Strategy):
                  name: str = 'FractalRADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=True, use_telegram=True)
+        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True)
 
     async def check_trend(self):
         try:
@@ -80,12 +80,12 @@ class FractalRADI(Strategy):
             above = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"])
             below = candles.ta_lib.cross(candles["rsi"], candles["rsi_sma"], above=False)
             rsi = candles[-1].rsi
-            if self.tracker.bullish and rsi < 70 and any([above.iloc[-2], above.iloc[-1]]):
+            if self.tracker.bullish and rsi < 70 and above.iloc[-2]:
                 sl = find_bullish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.low if sl is not None else candles[-12: -1].low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif self.tracker.bearish and rsi > 30 and any([below.iloc[-2], below.iloc[-1]]):
+            elif self.tracker.bearish and rsi > 30 and below.iloc[-2]:
                 sl = find_bearish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.high if sl is not None else candles[-12: -1].high.max()

@@ -10,10 +10,9 @@ logger = getLogger(__name__)
 class PTrader(BaseTrader):
     """Points Based Trader"""
     async def create_order(self, order_type: OrderType):
-
         amount = await self.ram.get_amount()
         points = self.symbol.trade_stops_level * 2
-        await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=True)
+        await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=False)
 
     async def place_trade(self, order_type: OrderType, parameters: dict = None):
         try:

@@ -26,9 +26,9 @@ class FingerFractal(Strategy):
                   "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 50, "ecc": 600, 'used_fractal': True}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerTrap'):
+                 name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=True, use_telegram=True)
+        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -72,12 +72,12 @@ class FingerFractal(Strategy):
             cae = candles.ta_lib.cross(candles.close, candles.ema)
             cbe = candles.ta_lib.cross(candles.close, candles.ema, above=False)
 
-            if self.tracker.bullish and any([cae.iloc[-1], cae.iloc[-2]]):
+            if self.tracker.bullish and cae.iloc[-2]:
                 sl = find_bullish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.low if sl is not None else candles[-24: -1].low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif self.tracker.bearish and any([cbe.iloc[-1], cbe.iloc[-2]]):
+            elif self.tracker.bearish and cbe.iloc[-2]:
                 sl = find_bearish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
                 sl = sl.high if sl is not None else candles[-24: -1].high.max()

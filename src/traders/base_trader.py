@@ -19,7 +19,7 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram=False, track_trades=False, tracker_key: str = ''):
-        ram = ram or RAM(risk_to_reward=1.5)
+        ram = ram or RAM(risk_to_reward=2)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
