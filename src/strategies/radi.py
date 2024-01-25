@@ -25,7 +25,7 @@ class RADI(Strategy):
                  name: str = 'RADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or PTrader(symbol=self.symbol, multiple=False, use_telegram=True)
+        self.trader = trader or PTrader(symbol=self.symbol, multiple=False, use_telegram=False)
 
     async def check_trend(self):
         try:

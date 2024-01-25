@@ -28,7 +28,7 @@ class FingerFractal(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True)
+        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=False)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -71,16 +71,16 @@ class FingerFractal(Strategy):
             candles.rename(**{f"EMA_{self.entry_ema}": "ema"})
             cae = candles.ta_lib.cross(candles.close, candles.ema)
             cbe = candles.ta_lib.cross(candles.close, candles.ema, above=False)
-
+            candles = candles[-24: -1]
             if self.tracker.bullish and cae.iloc[-2]:
                 sl = find_bullish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.low if sl is not None else candles[-24: -1].low.min()
+                sl = sl.low if sl is not None else candles.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and cbe.iloc[-2]:
                 sl = find_bearish_fractal(candles)
                 self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.high if sl is not None else candles[-24: -1].high.max()
+                sl = sl.high if sl is not None else candles.high.max()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)

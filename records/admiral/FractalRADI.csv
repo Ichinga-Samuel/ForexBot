@@ -1,0 +1,7 @@
+actual_profit,ask,bid,closed,date,deal,ecc,etf,expected_profit,first_sma,name,order,price,rsi_period,rsi_sma,second_sma,symbol,tcc,third_sma,time,ttf,used_fractal,volume,win
+11.57,0.0,0.0,True,2024-01-24,0,192,M15,11.42,5,FractalRADI,1168111517,0.0,9,20,9,BTCUSD-T,48,15,10:00:03.480996,H1,True,0.03,True
+-5.62,0.0,0.0,True,2024-01-24,0,192,M15,11.2,5,FractalRADI,1168130614,0.0,9,20,9,USDJPY-T,48,15,14:00:01.593289,H1,True,0.01,False
+-5.08,0.0,0.0,True,2024-01-24,0,192,M15,10.16,5,FractalRADI,1168155255,0.0,9,20,9,GBPUSD-T,48,15,17:00:03.460433,H1,True,0.04,False
+-5.52,0.0,0.0,True,2024-01-24,0,192,M15,11.04,5,FractalRADI,1168159759,0.0,9,20,9,GBPUSD-T,48,15,18:00:01.763345,H1,True,0.06,False
+-5.88,0.0,0.0,True,2024-01-24,0,192,M15,11.64,5,FractalRADI,1168164977,0.0,9,20,9,GBPUSD-T,48,15,19:00:01.887600,H1,True,0.06,False
+-3.88,0.0,0.0,True,2024-01-24,0,192,M15,10.88,5,FractalRADI,1168169755,0.0,9,20,9,GBPUSD-T,48,15,20:00:02.884258,H1,True,0.04,False

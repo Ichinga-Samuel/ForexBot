@@ -110,7 +110,8 @@ class BaseTrader(Trader):
         elif self.multiple:
             res = [r for r in res if r.retcode == 10009]
             self.save_trade(res)
-            await self.notify(msg=f"Placed {len(res)} Trades for {self.symbol}")
+            name = self.parameters.get('name', self.__class__.__name__)
+            await self.notify(msg=f"Placed {len(res)} Trades for {self.symbol} with {name}")
         return res
 
     async def send_multiple_orders(self) -> list[OrderSendResult]:

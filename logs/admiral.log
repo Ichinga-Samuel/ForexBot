@@ -1,2 +1,4 @@
 2024-01-24 02:14:59 login attempt 3 for 42462935
 2024-01-24 02:14:59 login attempt 3 for 42482407
+2024-01-25 01:00:01 'RAM' object has no attribute 'get'. Symbol: GBPUSD-T
+ PTrader.place_trade

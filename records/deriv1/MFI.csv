@@ -1,0 +1,2 @@
+actual_profit,ask,bid,closed,date,deal,expected_profit,lower_mfi,name,order,price,sma,symbol,tcc,time,ttf,upper_mfi,used_fractal,volume,win
+0,211343.78,211321.04,False,2024-01-24,3651229070,23.84,30,MFI,3730221184,211321.04,15,Volatility 50 (1s) Index,100,15:30:00.636696,M15,70,True,0.027,False

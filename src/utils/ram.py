@@ -1,4 +1,4 @@
-from aiomql import RAM as _RAM, Positions
+from aiomql import RAM as _RAM
 
 
 class RAM(_RAM):

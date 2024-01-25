@@ -3,6 +3,7 @@ import asyncio
 
 from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Trader
 from ..utils.tracker import Tracker
+from ..utils.ram import RAM
 from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
 from ..traders.sl_trader import SLTrader
 
@@ -24,7 +25,7 @@ class ADIMACD(Strategy):
                  name: str = 'ADIMACD', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True)
+        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True, ram=RAM(risk_to_reward=1))
 
     async def check_trend(self):
         try:
@@ -60,16 +61,23 @@ class ADIMACD(Strategy):
                                             f"MACDs_12_26_9": "macds"})
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
-            trend = candles[-9: -1]
+            trend = candles[-4: -1]
             if self.tracker.bullish and above.iloc[-2]:
-                sl = find_bullish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.low if sl is not None else trend.low.min()
+                sl = trend.low.min()
+                self.parameters['used_fractal'] = False
+
+                # sl = find_bullish_fractal(candles)
+                # self.parameters['used_fractal'] = True if sl is not None else False
+                # sl = sl.low if sl is not None else trend.low.min()
+
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and below.iloc[-2]:
-                sl = find_bearish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.high if sl is not None else trend.high.max()
+                sl = trend.high.max()
+                self.parameters['used_fractal'] = False
+
+                # sl = find_bearish_fractal(candles)
+                # self.parameters['used_fractal'] = True if sl is not None else False
+                # sl = sl.high if sl is not None else trend.high.max()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)

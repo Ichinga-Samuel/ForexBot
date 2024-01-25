@@ -43,16 +43,20 @@ class MFI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
             mfi = candles[-1].mfi
-            trend = candles[-12:1]
+            trend = candles[-4:1]
             if mfi <= self.lower_mfi and above.iloc[-2]:
-                sl = find_bullish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.low if sl is not None else trend.low.min()
+                sl = trend.low.min()
+                self.parameters['used_fractal'] = False
+                # sl = find_bullish_fractal(candles)
+                # self.parameters['used_fractal'] = True if sl is not None else False
+                # sl = sl.low if sl is not None else trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif mfi >= self.upper_mfi and below.iloc[-2]:
-                sl = find_bearish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.high if sl is not None else trend.high.max()
+                sl = trend.high.max()
+                self.parameters['used_fractal'] = False
+                # sl = find_bearish_fractal(candles)
+                # self.parameters['used_fractal'] = True if sl is not None else False
+                # sl = sl.high if sl is not None else trend.high.max()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", order_type=None, snooze=self.ttf.time)
