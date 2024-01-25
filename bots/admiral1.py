@@ -13,9 +13,8 @@ def build_bot():
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
             AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='NZDUSD-T'), AdmiralSymbol(name='USDCAD-T'),
             AdmiralSymbol(name='BTCUSD-T'), AdmiralSymbol(name='ETHUSD-T'), AdmiralSymbol(name="SOLUSD-T")]
-    sts = [Strategy(symbol=sym) for sym in syms for Strategy in [RADI]]
-    st1 = [FingerTrap(symbol=sym, trader=PTrader(symbol=sym, ram=ram)) for sym in syms]
-    bot.add_strategies(sts+st1)
+    sts = [Strategy(symbol=sym, trader=PTrader(symbol=sym, ram=ram)) for sym in syms for Strategy in [RADI, FingerTrap]]
+    bot.add_strategies(sts)
     bot.execute()
 
 
