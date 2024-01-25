@@ -1,22 +1,0 @@
-2024-01-24 02:14:59 login attempt 3 for 5400820
-2024-01-24 02:14:59 login attempt 3 for 31288540
-2024-01-25 01:00:02 Invalid order for Volatility 100 Index
-            action: 1
-magic: 0
-order: 0
-symbol: Volatility 100 Index
-volume: 2.11
-price: 1713.79
-stoplimit: 0.0
-sl: 1708.12
-tp: 1725.13
-deviation: 0
-type: 0
-type_filling: 0
-type_time: 1
-expiration: 0
-comment: Invalid stops
-position: 0
-position_by: 0
-retcode: 10016
-2024-01-25 01:08:19 Unable to sign in to MetaTrder 5 Terminal

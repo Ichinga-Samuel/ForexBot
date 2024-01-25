@@ -5,4 +5,5 @@ terminals/
 configs/
 scraps/
 records/
+logs/
 aiomql.json
