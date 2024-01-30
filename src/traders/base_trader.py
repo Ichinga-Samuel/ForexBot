@@ -19,7 +19,8 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram=False, track_trades=False, tracker_key: str = ''):
-        ram = ram or RAM(risk_to_reward=2)
+        self.data = {}
+        ram = ram or RAM(risk_to_reward=1.5)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -44,7 +45,7 @@ class BaseTrader(Trader):
             key = key or self.tracker_key
             if not self.multiple:
                 self.config.state.setdefault(key, {})[result.order] = result.get_dict(
-                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name}
+                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name} | self.data
                 return
 
             for res in result:

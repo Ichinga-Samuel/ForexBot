@@ -11,21 +11,20 @@ from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
 logger = getLogger(__name__)
 
 
-class MFI(Strategy):
+class FractalMFI(Strategy):
     tracker: Tracker
     sma: int
     lower_mfi: int
     upper_mfi: int
     ttf: TimeFrame
     tcc: int
-    parameters = {'sma': 15, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M15, 'tcc': 100, 'used_fractal': True}
+    parameters = {'sma': 15, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M15, 'tcc': 100}
 
-    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = 'MFI',
+    def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = 'FractalMFI',
                  trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, track_trades=False, tracker_key='mfi',
-                                         use_telegram=True)
+        self.trader = trader or SLTrader(symbol=self.symbol)
 
     async def check_trend(self):
         try:
@@ -43,20 +42,12 @@ class MFI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
             mfi = candles[-1].mfi
-            trend = candles[-4:1]
-            if mfi <= self.lower_mfi and above.iloc[-2]:
-                sl = trend.low.min()
-                self.parameters['used_fractal'] = False
-                # sl = find_bullish_fractal(candles)
-                # self.parameters['used_fractal'] = True if sl is not None else False
-                # sl = sl.low if sl is not None else trend.low.min()
+            trend = candles[-13: -1]
+            if mfi <= self.lower_mfi and above.iloc[-1]:
+                sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif mfi >= self.upper_mfi and below.iloc[-2]:
-                sl = trend.high.max()
-                self.parameters['used_fractal'] = False
-                # sl = find_bearish_fractal(candles)
-                # self.parameters['used_fractal'] = True if sl is not None else False
-                # sl = sl.high if sl is not None else trend.high.max()
+            elif mfi >= self.upper_mfi and below.iloc[-1]:
+                sl = getattr(find_bearish_fractal(trend), 'high', None) or trend.high.max()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", order_type=None, snooze=self.ttf.time)

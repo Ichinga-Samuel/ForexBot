@@ -2,9 +2,12 @@ from logging import getLogger
 import asyncio
 import warnings
 
-from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Tracker, Trader
+from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Trader
 
-from ..traders.p_trader import PTrader
+from ..traders.c_trader import CTrader
+from ..utils.tracker import Tracker
+from ..utils.ram import RAM
+from ..utils.patterns import average_candle_length
 
 logger = getLogger(__name__)
 
@@ -25,7 +28,7 @@ class RADI(Strategy):
                  name: str = 'RADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or PTrader(symbol=self.symbol, multiple=False, use_telegram=False)
+        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1))
 
     async def check_trend(self):
         try:
@@ -45,7 +48,7 @@ class RADI(Strategy):
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first_sma)
             candles["fbs"] = candles.ta_lib.below(candles.first_sma, candles.second_sma)
 
-            trend = candles[-3: -1]
+            trend = candles[-2:]
             if all((c.caf and c.fas) for c in trend):
                 self.tracker.update(trend="bullish")
 
@@ -72,11 +75,13 @@ class RADI(Strategy):
             candles.rename(**{f'SMA_{self.mfi_sma}': 'sma'})
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
-
-            if self.tracker.bullish and above.iloc[-2]:
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and below.iloc[-2]:
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
+            trend = candles[-4:]
+            if self.tracker.bullish and above.iloc[-1]:
+                sl = average_candle_length(trend)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
+            elif self.tracker.bearish and below.iloc[-1]:
+                sl = average_candle_length(trend)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(order_type=None, snooze=self.etf.time)
 
@@ -103,7 +108,8 @@ class RADI(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, acl=self.tracker.sl,
+                                                  parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} For {self.symbol} in {self.__class__.__name__}.trade\n")

@@ -12,23 +12,21 @@ logger = getLogger(__name__)
 
 class FingerFractal(Strategy):
     ttf: TimeFrame
-    etf: TimeFrame
-    trend: int
-    fast_ema: int
-    slow_ema: int
-    entry_ema: int
+    first_ema: int
+    second_ema: int
+    third_ema: int
     parameters: dict
-    ecc: int
     tcc: int
     trader: Trader
     tracker: Tracker
-    parameters = {"trend": 3, "fast_ema": 8, "slow_ema": 20, "etf": TimeFrame.M5,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 50, "ecc": 600, 'used_fractal': True}
+    first_sl: float
+    second_sl: float
+    parameters = {"first_ema": 8, "second_ema": 20, "third_ema": 32, "ttf": TimeFrame.H1, "tcc": 168}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=False)
+        self.trader = trader or SLTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -38,60 +36,33 @@ class FingerFractal(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current)
-            candles.ta.ema(length=self.slow_ema, append=True)
-            candles.ta.ema(length=self.fast_ema, append=True)
-            candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow"})
+            candles.ta.ema(length=self.first_ema, append=True)
+            candles.ta.ema(length=self.second_ema, append=True)
+            candles.ta.ema(length=self.third_ema, append=True)
+            candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
+                                            f"EMA_{self.third_ema}": "third"})
 
-            fas = candles.ta_lib.above(candles.fast, candles.slow)  # fast above slow
-            fbs = candles.ta_lib.below(candles.fast, candles.slow)  # fast below slow
-            caf = candles.ta_lib.above(candles.close, candles.fast)  # close above fast
-            cbf = candles.ta_lib.below(candles.close, candles.fast)  # close below fast
+            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
+            candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
+            candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
 
-            current = candles[-2]
-            if fas.iloc[-1] and caf.iloc[-1] and current.is_bullish():
-                self.tracker.update(trend="bullish")
+            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
+            candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
+            candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
+            trend = candles[-13: -1]
+            current = candles[-1]
+            if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
+                sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
+                self.tracker.update(sl=sl, snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif fbs.iloc[-1] and cbf.iloc[-1] and current.is_bearish():
-                self.tracker.update(trend="bearish")
+            elif candles[-2].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
+                sl = getattr(find_bearish_fractal(trend), 'high', None) or trend.high.max()
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
             self.tracker.update(snooze=self.ttf.time, order_type=None)
-
-    async def confirm_trend(self):
-        try:
-            candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
-            if not ((current := candles[-1].time) >= self.tracker.entry_time):
-                self.tracker.update(new=False, order_type=None)
-                return
-
-            self.tracker.update(new=True, entry_time=current)
-            candles.ta.ema(length=self.entry_ema, append=True)
-            candles.rename(**{f"EMA_{self.entry_ema}": "ema"})
-            cae = candles.ta_lib.cross(candles.close, candles.ema)
-            cbe = candles.ta_lib.cross(candles.close, candles.ema, above=False)
-            candles = candles[-24: -1]
-            if self.tracker.bullish and cae.iloc[-2]:
-                sl = find_bullish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.low if sl is not None else candles.low.min()
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif self.tracker.bearish and cbe.iloc[-2]:
-                sl = find_bearish_fractal(candles)
-                self.parameters['used_fractal'] = True if sl is not None else False
-                sl = sl.high if sl is not None else candles.high.max()
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
-            else:
-                self.tracker.update(snooze=self.etf.time, order_type=None)
-        except Exception as exe:
-            logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.confirm_trend\n")
-            self.tracker.update(snooze=self.etf.time, order_type=None)
-
-    async def watch_market(self):
-        await self.check_trend()
-        if not self.tracker.ranging:
-            await self.confirm_trend()
 
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
@@ -100,7 +71,7 @@ class FingerFractal(Strategy):
             while True:
                 await sess.check()
                 try:
-                    await self.watch_market()
+                    await self.check_trend()
                     if not self.tracker.new:
                         await asyncio.sleep(2)
                         continue

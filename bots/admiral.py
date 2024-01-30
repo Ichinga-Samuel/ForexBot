@@ -2,7 +2,7 @@ import logging
 
 from aiomql import Bot, Config
 
-from src import FractalRADI, MFI, ADIMACD, AdmiralSymbol, FingerFractal
+from src import ADIMACD, MFI, RADI, AdmiralSymbol, points_closer
 
 
 def build_bot():
@@ -13,10 +13,7 @@ def build_bot():
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
             AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='NZDUSD-T'), AdmiralSymbol(name='USDCAD-T'),
             AdmiralSymbol(name='BTCUSD-T'), AdmiralSymbol(name='ETHUSD-T'), AdmiralSymbol(name="SOLUSD-T")]
-    sts = [Strategy(symbol=sym) for sym in syms for Strategy in [FractalRADI, MFI, ADIMACD, FingerFractal]]
+    sts = [Strategy(symbol=sym) for sym in syms for Strategy in [ADIMACD, MFI, RADI]]
     bot.add_strategies(sts)
+    bot.add_coroutine(points_closer)
     bot.execute()
-
-
-if __name__ == '__main__':
-    build_bot()

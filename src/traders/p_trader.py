@@ -16,10 +16,10 @@ class PTrader(BaseTrader):
 
     def get_points(self, *, amount):
         points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
-        min_points = self.symbol.trade_stops_level + self.symbol.spread
+        min_points = self.symbol.trade_stops_level + (self.symbol.spread * 1.5)
         return points if points >= min_points else min_points
 
-    async def place_trade(self, order_type: OrderType, parameters: dict = None):
+    async def place_trade(self, *, order_type: OrderType, parameters: dict = None):
         try:
             self.parameters |= parameters or {}
             await self.create_order(order_type=order_type)

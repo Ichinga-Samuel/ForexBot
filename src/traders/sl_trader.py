@@ -10,7 +10,7 @@ logger = getLogger(__name__)
 class SLTrader(BaseTrader):
     async def create_order(self, order_type: OrderType, sl):
         amount = await self.ram.get_amount()
-        await self.create_order_sl(order_type=order_type, sl=sl, amount=amount, use_limits=False)
+        await self.create_order_sl(order_type=order_type, sl=sl, amount=amount, use_limits=False, round_down=False)
 
     async def place_trade(self, *, order_type: OrderType, sl: float, parameters: dict = None):
         try:

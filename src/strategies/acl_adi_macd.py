@@ -3,10 +3,9 @@ import asyncio
 
 from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Trader
 from ..utils.tracker import Tracker
+from ..utils.patterns import average_candle_length
 from ..utils.ram import RAM
-from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
-from ..traders.sl_trader import SLTrader
-
+from ..traders.c_trader import CTrader
 logger = getLogger(__name__)
 
 
@@ -18,14 +17,13 @@ class ADIMACD(Strategy):
     etf: TimeFrame
     rsi_upper: int
     rsi_lower: int
-    parameters = {"ecc": 192, "tcc": 24, "ttf": TimeFrame.H4, "etf": TimeFrame.M30, 'rsi_upper': 65, 'rsi_lower': 35,
-                  'used_fractal': True}
+    parameters = {"ecc": 84, "tcc": 42, "ttf": TimeFrame.H4, "etf": TimeFrame.M30, 'rsi_upper': 65, 'rsi_lower': 35}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
                  name: str = 'ADIMACD', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol, multiple=False, use_telegram=True, ram=RAM(risk_to_reward=1))
+        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1))
 
     async def check_trend(self):
         try:
@@ -34,7 +32,6 @@ class ADIMACD(Strategy):
                 self.tracker.new = False
                 return
             self.tracker.update(new=True, trend_time=current)
-
             candles.ta.ad(volume="tick_volume", append=True)
             candles.ta.rsi(close="AD", append=True)
             candles.rename(**{f'RSI_{14}': 'rsi'})
@@ -46,7 +43,7 @@ class ADIMACD(Strategy):
             else:
                 self.tracker.update(trend="ranging")
         except Exception as err:
-            logger.error(f"Error: {err}\t Symbol: {self.symbol} in {self.__class__.__name__}.check_trend\n")
+            logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
             self.tracker.update(snooze=self.ttf.time, order_type=None)
 
     async def confirm_trend(self):
@@ -61,23 +58,12 @@ class ADIMACD(Strategy):
                                             f"MACDs_12_26_9": "macds"})
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
-            trend = candles[-4: -1]
-            if self.tracker.bullish and above.iloc[-2]:
-                sl = trend.low.min()
-                self.parameters['used_fractal'] = False
-
-                # sl = find_bullish_fractal(candles)
-                # self.parameters['used_fractal'] = True if sl is not None else False
-                # sl = sl.low if sl is not None else trend.low.min()
-
+            trend = candles[-4:]
+            if self.tracker.bullish and above.iloc[-1]:
+                sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif self.tracker.bearish and below.iloc[-2]:
-                sl = trend.high.max()
-                self.parameters['used_fractal'] = False
-
-                # sl = find_bearish_fractal(candles)
-                # self.parameters['used_fractal'] = True if sl is not None else False
-                # sl = sl.high if sl is not None else trend.high.max()
+            elif self.tracker.bearish and below.iloc[-1]:
+                sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
@@ -104,8 +90,8 @@ class ADIMACD(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters,
-                                                  sl=self.tracker.sl)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, acl=self.tracker.sl,
+                                                  parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")

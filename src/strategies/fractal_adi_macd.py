@@ -1,76 +1,64 @@
 from logging import getLogger
 import asyncio
 
-from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
-
+from aiomql import Symbol, Candles, Strategy, TimeFrame, Sessions, OrderType, Trader
 from ..utils.tracker import Tracker
-from ..utils.ram import RAM
 from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
 from ..traders.sl_trader import SLTrader
 
 logger = getLogger(__name__)
 
 
-class FractalRADI(Strategy):
+class FractalADIMACD(Strategy):
     tracker: Tracker
     ecc: int
     tcc: int
     ttf: TimeFrame
     etf: TimeFrame
-    first_sma: int
-    second_sma: int
-    mfi_sma: int
-    parameters = {"ecc": 672, "tcc": 168, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_sma': 15, 'first_sma': 5,
-                  'mfi_sma': 15}
+    rsi_upper: int
+    rsi_lower: int
+    parameters = {"ecc": 84, "tcc": 42, "ttf": TimeFrame.H4, "etf": TimeFrame.M30, 'rsi_upper': 65, 'rsi_lower': 35}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
-                 name: str = 'FractalRADI', trader: Trader = None):
+                 name: str = 'FractalADIMACD', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
         self.trader = trader or SLTrader(symbol=self.symbol)
 
     async def check_trend(self):
         try:
-            candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+            candles: Candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
             if not ((current := candles[-1].time) >= self.tracker.trend_time):
-                self.tracker.update(new=False, order_type=None)
+                self.tracker.new = False
                 return
             self.tracker.update(new=True, trend_time=current)
-            candles.ta.sma(length=self.first_sma, append=True)
-            candles.ta.sma(length=self.second_sma, append=True)
-            candles.rename(**{f'SMA_{self.first_sma}': 'first_sma', f'SMA_{self.second_sma}': 'second_sma'})
-
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first_sma)
-            candles["fas"] = candles.ta_lib.above(candles.first_sma, candles.second_sma)
-
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first_sma)
-            candles["fbs"] = candles.ta_lib.below(candles.first_sma, candles.second_sma)
-            trend = candles[-2:]
-            if all((c.caf and c.fas) for c in trend):
+            candles.ta.ad(volume="tick_volume", append=True)
+            candles.ta.rsi(close="AD", append=True)
+            candles.rename(**{f'RSI_{14}': 'rsi'})
+            rsi = candles[-1].rsi
+            if 0 < rsi <= self.rsi_lower:
                 self.tracker.update(trend="bullish")
-
-            elif all(c.cbf and c.fbs for c in trend):
+            elif self.rsi_upper <= rsi <= 100:
                 self.tracker.update(trend="bearish")
             else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
+                self.tracker.update(trend="ranging")
         except Exception as err:
-            logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
+            logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
             self.tracker.update(snooze=self.ttf.time, order_type=None)
 
     async def confirm_trend(self):
         try:
             candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
             if not ((current := candles[-1].time) >= self.tracker.entry_time):
-                self.tracker.new = False
+                self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, entry_time=current)
-            candles.ta.mfi(volume='tick_volume', append=True, length=9)
-            candles.rename(**{'MFI_9': 'mfi'})
-            candles.ta.sma(close='mfi', length=self.mfi_sma, append=True)
-            candles.rename(**{f'SMA_{self.mfi_sma}': 'sma'})
-            above = candles.ta_lib.cross(candles.mfi, candles.sma)
-            below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
-            trend = candles[-13: -1]
+            candles.ta.macd(append=True, fillna=0)
+            candles.rename(inplace=True, **{f"MACD_12_26_9": "macd", f"MACDh_12_26_9": "macdh",
+                                            f"MACDs_12_26_9": "macds"})
+            above = candles.ta_lib.cross(candles["macd"], candles["macds"])
+            below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
+            trend = candles[-25: -1]
             if self.tracker.bullish and above.iloc[-1]:
                 sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
@@ -78,8 +66,7 @@ class FractalRADI(Strategy):
                 sl = getattr(find_bearish_fractal(trend), 'high', None) or trend.high.max()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
-                self.tracker.update(trend="ranging", order_type=None)
-
+                self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.confirm_trend\n")
             self.tracker.update(snooze=self.etf.time, order_type=None)
@@ -107,5 +94,5 @@ class FractalRADI(Strategy):
                                                   sl=self.tracker.sl)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
-                    logger.error(f"{err} For {self.symbol} in {self.__class__.__name__}.trade\n")
-                    await self.sleep(self.ttf.time)
+                    logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
+                    await self.sleep(self.tracker.snooze)
