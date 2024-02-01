@@ -17,7 +17,7 @@ class FractalADIMACD(Strategy):
     etf: TimeFrame
     rsi_upper: int
     rsi_lower: int
-    parameters = {"ecc": 84, "tcc": 42, "ttf": TimeFrame.H4, "etf": TimeFrame.M30, 'rsi_upper': 65, 'rsi_lower': 35}
+    parameters = {"ecc": 84, "tcc": 42, "ttf": TimeFrame.H4, "etf": TimeFrame.M15, 'rsi_upper': 65, 'rsi_lower': 35}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
                  name: str = 'FractalADIMACD', trader: Trader = None):

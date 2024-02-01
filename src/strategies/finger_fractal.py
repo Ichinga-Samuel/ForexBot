@@ -49,7 +49,7 @@ class FingerFractal(Strategy):
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            trend = candles[-13: -1]
+            trend = candles[-5: -1]
             current = candles[-1]
             if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
                 sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
@@ -67,7 +67,7 @@ class FingerFractal(Strategy):
     async def trade(self):
         logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.etf.time)
+            await self.sleep(self.ttf.time)
             while True:
                 await sess.check()
                 try:

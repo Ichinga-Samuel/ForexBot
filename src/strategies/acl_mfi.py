@@ -19,13 +19,13 @@ class MFI(Strategy):
     upper_mfi: int
     ttf: TimeFrame
     tcc: int
-    parameters = {'sma': 15, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M15, 'tcc': 100}
+    parameters = {'sma': 9, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M15, 'tcc': 100}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = 'MFI',
                  trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1))
+        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1.333))
 
     async def check_trend(self):
         try:
@@ -43,7 +43,7 @@ class MFI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
             mfi = candles[-1].mfi
-            trend = candles[-4:]
+            trend = candles[-8:]
             if mfi <= self.lower_mfi and above.iloc[-1]:
                 sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)

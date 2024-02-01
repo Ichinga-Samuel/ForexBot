@@ -22,13 +22,13 @@ class RADI(Strategy):
     second_sma: int
     mfi_sma: int
     parameters = {"ecc": 576, "tcc": 48, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_sma': 15, 'first_sma': 5,
-                  'mfi_sma': 15}
+                  'mfi_sma': 9}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
                  name: str = 'RADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1))
+        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1.333))
 
     async def check_trend(self):
         try:
@@ -75,7 +75,7 @@ class RADI(Strategy):
             candles.rename(**{f'SMA_{self.mfi_sma}': 'sma'})
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
-            trend = candles[-4:]
+            trend = candles[-8:]
             if self.tracker.bullish and above.iloc[-1]:
                 sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)

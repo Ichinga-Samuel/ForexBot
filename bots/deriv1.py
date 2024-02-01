@@ -12,8 +12,8 @@ def build_bot():
                         filename='logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
     syms = ['Volatility 25 Index', 'Volatility 50 Index', 'Volatility 10 Index', 'Volatility 75 Index',
-            'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index', 'Volatility 50 (1s) Index',
-            'Volatility 75 (1s) Index']
+            'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',
+            'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
     syms = [ForexSymbol(name=sym) for sym in syms]
     sts = [Strategy(symbol=sym) for sym in syms for Strategy in [FractalRADI, FingerFractal, FractalADIMACD, FractalMFI]]
     bot.add_strategies(sts)

@@ -23,7 +23,7 @@ class ADIMACD(Strategy):
                  name: str = 'ADIMACD', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1))
+        self.trader = trader or CTrader(symbol=self.symbol, use_telegram=True, ram=RAM(risk_to_reward=1.333))
 
     async def check_trend(self):
         try:
@@ -58,11 +58,11 @@ class ADIMACD(Strategy):
                                             f"MACDs_12_26_9": "macds"})
             above = candles.ta_lib.cross(candles["macd"], candles["macds"])
             below = candles.ta_lib.cross(candles["macd"], candles["macds"], above=False)
-            trend = candles[-4:]
-            if self.tracker.bullish and above.iloc[-1]:
+            trend = candles[-8:]
+            if self.tracker.bullish and above.iloc[-2]:
                 sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
-            elif self.tracker.bearish and below.iloc[-1]:
+            elif self.tracker.bearish and below.iloc[-2]:
                 sl = average_candle_length(trend)
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:

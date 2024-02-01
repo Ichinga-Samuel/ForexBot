@@ -20,7 +20,7 @@ class FractalRADI(Strategy):
     first_sma: int
     second_sma: int
     mfi_sma: int
-    parameters = {"ecc": 672, "tcc": 168, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_sma': 15, 'first_sma': 5,
+    parameters = {"ecc": 672, "tcc": 168, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'second_sma': 15, 'first_sma': 5,
                   'mfi_sma': 15}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
@@ -36,13 +36,11 @@ class FractalRADI(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current)
-            candles.ta.sma(length=self.first_sma, append=True)
-            candles.ta.sma(length=self.second_sma, append=True)
-            candles.rename(**{f'SMA_{self.first_sma}': 'first_sma', f'SMA_{self.second_sma}': 'second_sma'})
-
+            candles.ta.ema(length=self.first_sma, append=True)
+            candles.ta.ema(length=self.second_sma, append=True)
+            candles.rename(**{f'EMA_{self.first_sma}': 'first_sma', f'EMA_{self.second_sma}': 'second_sma'})
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first_sma)
             candles["fas"] = candles.ta_lib.above(candles.first_sma, candles.second_sma)
-
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first_sma)
             candles["fbs"] = candles.ta_lib.below(candles.first_sma, candles.second_sma)
             trend = candles[-2:]
@@ -64,10 +62,10 @@ class FractalRADI(Strategy):
                 self.tracker.new = False
                 return
             self.tracker.update(new=True, entry_time=current)
-            candles.ta.mfi(volume='tick_volume', append=True, length=9)
-            candles.rename(**{'MFI_9': 'mfi'})
-            candles.ta.sma(close='mfi', length=self.mfi_sma, append=True)
-            candles.rename(**{f'SMA_{self.mfi_sma}': 'sma'})
+            candles.ta.mfi(volume='tick_volume', append=True)
+            candles.rename(**{'MFI_14': 'mfi'})
+            candles.ta.ema(close='mfi', length=self.mfi_sma, append=True)
+            candles.rename(**{f'EMA_{self.mfi_sma}': 'sma'})
             above = candles.ta_lib.cross(candles.mfi, candles.sma)
             below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
             trend = candles[-13: -1]
