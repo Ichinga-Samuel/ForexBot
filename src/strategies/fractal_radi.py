@@ -4,9 +4,8 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..utils.ram import RAM
 from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
-from ..traders.sl_trader import SLTrader
+from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 
@@ -17,17 +16,18 @@ class FractalRADI(Strategy):
     tcc: int
     ttf: TimeFrame
     etf: TimeFrame
-    first_sma: int
-    second_sma: int
-    mfi_sma: int
-    parameters = {"ecc": 672, "tcc": 168, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'second_sma': 15, 'first_sma': 5,
-                  'mfi_sma': 15}
+    first_ema: int
+    second_ema: int
+    third_ema: int
+    mfi_ema: int
+    parameters = {"ecc": 2016, "tcc": 168, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'second_ema': 8, 'first_ema': 5,
+                  'third_ema': 13, 'mfi_ema': 13}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
                  name: str = 'FractalRADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol)
+        self.trader = trader or SPTrader(symbol=self.symbol, multiple=True, risk_to_rewards=[2, 2, 2])
 
     async def check_trend(self):
         try:
@@ -36,18 +36,22 @@ class FractalRADI(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current)
-            candles.ta.ema(length=self.first_sma, append=True)
-            candles.ta.ema(length=self.second_sma, append=True)
-            candles.rename(**{f'EMA_{self.first_sma}': 'first_sma', f'EMA_{self.second_sma}': 'second_sma'})
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first_sma)
-            candles["fas"] = candles.ta_lib.above(candles.first_sma, candles.second_sma)
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first_sma)
-            candles["fbs"] = candles.ta_lib.below(candles.first_sma, candles.second_sma)
+            candles.ta.ema(length=self.first_ema, append=True)
+            candles.ta.ema(length=self.second_ema, append=True)
+            candles.ta.ema(length=self.third_ema, append=True)
+            candles.rename(**{f'EMA_{self.first_ema}': 'first_ema', f'EMA_{self.second_ema}': 'second_ema',
+                              f'EMA_{self.third_ema}': 'third_ema'})
+            candles['caf'] = candles.ta_lib.above(candles.close, candles.first_ema)
+            candles["fas"] = candles.ta_lib.above(candles.first_ema, candles.second_ema)
+            candles['sat'] = candles.ta_lib.above(candles.second_ema, candles.third_ema)
+            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first_ema)
+            candles["fbs"] = candles.ta_lib.below(candles.first_ema, candles.second_ema)
+            candles['sbt'] = candles.ta_lib.below(candles.second_ema, candles.third_ema)
             trend = candles[-2:]
-            if all((c.caf and c.fas) for c in trend):
+            if all(c.caf and c.fas and c.sat for c in trend) and trend[-2].is_bullish():
                 self.tracker.update(trend="bullish")
 
-            elif all(c.cbf and c.fbs for c in trend):
+            elif all(c.cbf and c.fbs and c.sbt for c in trend) and trend[-2].is_bearish():
                 self.tracker.update(trend="bearish")
             else:
                 self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
@@ -64,11 +68,11 @@ class FractalRADI(Strategy):
             self.tracker.update(new=True, entry_time=current)
             candles.ta.mfi(volume='tick_volume', append=True)
             candles.rename(**{'MFI_14': 'mfi'})
-            candles.ta.ema(close='mfi', length=self.mfi_sma, append=True)
-            candles.rename(**{f'EMA_{self.mfi_sma}': 'sma'})
-            above = candles.ta_lib.cross(candles.mfi, candles.sma)
-            below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
-            trend = candles[-13: -1]
+            candles.ta.ema(close='mfi', length=self.mfi_ema, append=True)
+            candles.rename(**{f'EMA_{self.mfi_ema}': 'ema'})
+            above = candles.ta_lib.cross(candles.mfi, candles.ema)
+            below = candles.ta_lib.cross(candles.mfi, candles.ema, above=False)
+            trend = candles[-12:]
             if self.tracker.bullish and above.iloc[-1]:
                 sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
@@ -88,7 +92,7 @@ class FractalRADI(Strategy):
             await self.confirm_trend()
 
     async def trade(self):
-        logger.info(f"Trading {self.symbol} with {self.name}")
+        print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.etf.time)
             while True:

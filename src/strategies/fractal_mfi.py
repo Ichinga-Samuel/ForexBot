@@ -5,7 +5,7 @@ import warnings
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..traders.sl_trader import SLTrader
+from ..traders.sp_trader import SPTrader
 from ..utils.patterns import find_bearish_fractal, find_bullish_fractal
 
 logger = getLogger(__name__)
@@ -13,18 +13,18 @@ logger = getLogger(__name__)
 
 class FractalMFI(Strategy):
     tracker: Tracker
-    sma: int
+    ema: int
     lower_mfi: int
     upper_mfi: int
     ttf: TimeFrame
     tcc: int
-    parameters = {'sma': 15, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M15, 'tcc': 100}
+    parameters = {'ema': 13, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M5, 'tcc': 2016}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = 'FractalMFI',
                  trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SLTrader(symbol=self.symbol)
+        self.trader = trader or SPTrader(symbol=self.symbol)
 
     async def check_trend(self):
         try:
@@ -35,14 +35,14 @@ class FractalMFI(Strategy):
 
             self.tracker.update(new=True, trend_time=current)
             warnings.filterwarnings("ignore")
-            candles.ta.mfi(volume='tick_volume', append=True, length=9)
-            candles.rename(**{'MFI_9': 'mfi'})
-            candles.ta.sma(close='mfi', length=self.sma, append=True)
-            candles.rename(**{f'SMA_{self.sma}': 'sma'})
-            above = candles.ta_lib.cross(candles.mfi, candles.sma)
-            below = candles.ta_lib.cross(candles.mfi, candles.sma, above=False)
+            candles.ta.mfi(volume='tick_volume', append=True)
+            candles.rename(**{'MFI_14': 'mfi'})
+            candles.ta.ema(close='mfi', length=self.ema, append=True)
+            candles.rename(**{f'EMA_{self.ema}': 'ema'})
+            above = candles.ta_lib.cross(candles.mfi, candles.ema)
+            below = candles.ta_lib.cross(candles.mfi, candles.ema, above=False)
             mfi = candles[-1].mfi
-            trend = candles[-13: -1]
+            trend = candles[-12:]
             if mfi <= self.lower_mfi and above.iloc[-1]:
                 sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
@@ -56,7 +56,7 @@ class FractalMFI(Strategy):
             self.tracker.update(snooze=self.ttf.time, order_type=None)
 
     async def trade(self):
-        logger.info(f"Trading {self.symbol} with {self.name}")
+        print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.ttf.time)
             while True:
