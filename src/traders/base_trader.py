@@ -18,7 +18,7 @@ class BaseTrader(Trader):
                    "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
-                 use_telegram=False, track_trades=False, tracker_key: str = ''):
+                 use_telegram: bool = False, track_trades: bool = False, tracker_key: str = ''):
         self.data = {}
         ram = ram or RAM(risk_to_reward=1.5)
         self.order_updates = []
@@ -50,7 +50,7 @@ class BaseTrader(Trader):
 
             for res in result:
                 self.config.state.setdefault(key, {})[res.order] = res.get_dict(
-                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name}
+                    exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name} | self.data
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_trade")
 

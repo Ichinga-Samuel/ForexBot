@@ -18,7 +18,7 @@ class FractalMFI(Strategy):
     upper_mfi: int
     ttf: TimeFrame
     tcc: int
-    parameters = {'ema': 13, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.M5, 'tcc': 2016}
+    parameters = {'ema': 13, 'lower_mfi': 30, 'upper_mfi': 70, 'ttf': TimeFrame.H1, 'tcc': 168}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None, name: str = 'FractalMFI',
                  trader: Trader = None):
@@ -42,7 +42,7 @@ class FractalMFI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.ema)
             below = candles.ta_lib.cross(candles.mfi, candles.ema, above=False)
             mfi = candles[-1].mfi
-            trend = candles[-12:]
+            trend = candles[-2:]
             if mfi <= self.lower_mfi and above.iloc[-1]:
                 sl = getattr(find_bullish_fractal(trend), 'low', None) or trend.low.min()
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)

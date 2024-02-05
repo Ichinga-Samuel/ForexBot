@@ -12,7 +12,7 @@ class SCTrader(BaseTrader):
         amount = await self.ram.get_amount()
         await self.symbol.info()
         tick = await self.symbol.info_tick()
-        points = getattr(self.ram, 'points', 50)
+        points = getattr(self.ram, 'points', 40)
         if sl:
             s_points = (tick.ask - sl) / self.symbol.point if order_type == OrderType.BUY else (tick.bid + sl) / self.symbol.point
         else:

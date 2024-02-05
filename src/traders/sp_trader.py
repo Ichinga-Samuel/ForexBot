@@ -14,13 +14,19 @@ class SPTrader(BaseTrader):
         tick = await self.symbol.info_tick()
         min_points = self.symbol.trade_stops_level + (self.symbol.spread * 1.5)
         if sl:
-            points = (tick.ask - sl) / self.symbol.point if order_type == OrderType.BUY else (tick.bid + sl) / self.symbol.point
+            points = (tick.ask - sl) / self.symbol.point if order_type == OrderType.BUY else (abs(tick.bid - sl) /
+                                                                                              self.symbol.point)
         else:
             points = min_points
         points = max(points, min_points)
         await self.create_order_points(order_type=order_type, points=points, amount=amount, round_down=False)
+        new_sl = (self.order.tp + self.order.price) / 2
+        self.data['new_sl'] = new_sl
+        self.data['modified'] = False
 
     async def place_trade(self, *, order_type: OrderType, parameters: dict = None, sl: float = 0.0):
+        # self.track_trades = True
+        # self.tracker_key = 'sp_trader'
         try:
             self.parameters |= parameters or {}
             await self.create_order(order_type=order_type, sl=sl)

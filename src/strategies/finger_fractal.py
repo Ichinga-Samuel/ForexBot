@@ -20,12 +20,13 @@ class FingerFractal(Strategy):
     tracker: Tracker
     first_sl: float
     second_sl: float
-    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H1, "tcc": 168}
+    trend: int
+    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H1, "tcc": 168, 'trend': 2}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, multiple=True, risk_to_rewards=[2, 2, 2])
+        self.trader = trader or SPTrader(symbol=self.symbol, multiple=True, risk_to_rewards=[2, 2])
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -48,7 +49,7 @@ class FingerFractal(Strategy):
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            trend = candles[-2:]
+            trend = candles[-self.trend:]
             current = candles[-1]
             if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
                 sl = trend.low.min()
