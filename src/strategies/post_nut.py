@@ -28,7 +28,7 @@ class PostNut(Strategy):
     tracker: Tracker
     trend: int
     interval: int = 180
-    parameters = {"ttf": TimeFrame.H1, "etf": TimeFrame.M15, "tcc": 720, "ecc": 2880, "first_sma": 5, "second_sma": 9,
+    parameters = {"ttf": TimeFrame.M15, "etf": TimeFrame.M5, "tcc": 720, "ecc": 2880, "first_sma": 5, "second_sma": 9,
                   "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180}
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
@@ -129,7 +129,7 @@ class PostNut(Strategy):
             candles.ta.stoch(append=True)
             candles.rename(inplace=True, **{"STOCHk_14_3_3": "stochk", "STOCHd_14_3_3": "stochd"})
             if self.tracker.bullish:
-                candles['cas'] = candles.ta_lib.cross_value(candles.stochk, 30)
+                candles['cas'] = candles.ta_lib.cross_value(candles.stochk, 35)
                 current = candles[-1]
                 if current.cas:
                     sl = find_bullish_fractal(candles).low
@@ -163,8 +163,9 @@ class PostNut(Strategy):
                         while time.time() < self.tracker.wait:
                             await self.second_entry()
                             if not self.tracker.new:
-                                await asyncio.sleep(1)
+                                await asyncio.sleep(2)
                                 continue
+                            await self.sleep(self.etf.time)
                     await self.sleep(self.ttf.time)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
