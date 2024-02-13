@@ -1,6 +1,6 @@
 from .sleep import sleep
 from .tracker import Tracker
-from .st_closer import st_closer
-from .points_closer import points_closer
 from .ram import RAM
-from .patterns import find_bullish_fractal, find_bearish_fractal, average_candle_length
+from .patterns import (find_bullish_fractal, find_bearish_fractal, average_candle_length, is_half_bearish_fractal,
+                       is_half_bullish_fractal)
+from .find_fractals import find_bearish_fractals, find_bullish_fractals

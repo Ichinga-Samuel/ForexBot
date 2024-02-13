@@ -1,4 +1,4 @@
-from bots import deriv1, admiral, admiral1, deriv
+from src.bots import deriv1, admiral, admiral1, deriv
 from aiomql import Bot
 
 

@@ -13,5 +13,15 @@ def find_bullish_fractal(candles: Candles) -> Candle | None:
             return candles[i]
 
 
+def is_half_bullish_fractal(candles: Candles) -> bool:
+    first, second, third = candles[-3], candles[-2], candles[-1]
+    return third.low < min(first.low, second.low)
+
+
+def is_half_bearish_fractal(candles: Candles) -> bool:
+    first, second, third = candles[-3], candles[-2], candles[-1]
+    return third.high > max(first.high, second.high)
+
+
 def average_candle_length(candles: Candles) -> float:
     return sum(candle.high - candle.low for candle in candles) / len(candles)

@@ -1,7 +1,7 @@
 from logging import getLogger
 from functools import cache
 
-from aiomql import OrderType, Trader, ForexSymbol, Tick, OrderSendResult, dict_to_string
+from aiomql import OrderType, Trader, ForexSymbol, Tick, OrderSendResult, VolumeError
 from ..utils.ram import RAM
 from ..telebots import TelegramBot
 logger = getLogger(__name__)
@@ -18,7 +18,7 @@ class BaseTrader(Trader):
                    "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
-                 use_telegram: bool = False, track_trades: bool = False, tracker_key: str = ''):
+                 use_telegram: bool = False, track_trades: bool = False, tracker_key: str = 'trades'):
         self.data = {}
         ram = ram or RAM(risk_to_reward=1.5)
         self.order_updates = []
@@ -65,7 +65,12 @@ class BaseTrader(Trader):
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type
-        volume, points = await self.symbol.compute_volume_points(amount=amount, points=points, **volume_kwargs)
+        try:
+            volume, points = await self.symbol.compute_volume_points(amount=amount, points=points, **volume_kwargs)
+        except VolumeError as err:
+            volume = self.symbol.volume_min
+            logger.warning(f"volume error for {self.order.symbol} in {self.__class__.__name__} using minimum volume {volume}"
+                           f"amount={amount} points={points}")
         self.order.volume = volume
         self.order.comment = self.parameters.get('name', self.__class__.__name__)
         tick = await self.symbol.info_tick()
@@ -101,7 +106,7 @@ class BaseTrader(Trader):
             if self.use_telegram:
                 self.config.task_queue.add_task(self.telebot.notify, msg=msg)
         except Exception as err:
-            logger.error(f"{err}. Symbol: {self.order.symbol}\n {self.__class__.__name__}.notify")
+            logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}.notify")
 
     async def send_order(self) -> OrderSendResult | list[OrderSendResult]:
         res = await super().send_order() if not self.multiple else await self.send_multiple_orders()
@@ -123,7 +128,7 @@ class BaseTrader(Trader):
             results.append(res)
             for update in self.order_updates[:-1]:
                 try:
-                    self.parameters['rr'] = update['rr']
+                    self.parameters['rr'] = update.pop('rr')
                     self.order.set_attributes(**update)
                     res = await super().send_order()
                     results.append(res)

@@ -3,74 +3,76 @@ import asyncio
 
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 from aiomql.utils import find_bearish_fractal, find_bullish_fractal
-
-from ..utils.tracker import Tracker
-from ..utils.ram import RAM
 from ..closers.ema_rsi_closer import ema_rsi_closer
+from ..utils.tracker import Tracker
 from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 
 
-class FingerFractal(Strategy):
-    ttf: TimeFrame
+class SRE(Strategy):
+    etf: TimeFrame
     first_ema: int
     second_ema: int
-    third_ema: int
+    rsi_level: int
+    stoch_overbought: int
+    stoch_oversold: int
+    rsi_overbought: int
+    rsi_oversold: int
     parameters: dict
     tcc: int
     trader: Trader
     tracker: Tracker
-    first_sl: float
-    second_sl: float
     trend: int
-    parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H12, "tcc": 720, 'trend': 2,
+    parameters = {"first_ema": 5, "second_ema": 10, "etf": TimeFrame.M15, "tcc": 168, 'trend': 24, 'rsi_level': 50,
+                  'stoch_overbought': 75, 'rsi_overbought': 75, 'rsi_oversold': 25, 'stoch_oversold': 25,
                   'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerFractal'):
+                 name: str = 'SRE'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=RAM(risk_to_reward=5))
-        self.tracker: Tracker = Tracker(snooze=self.ttf.time)
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True)
+        self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
     async def check_trend(self):
         try:
-            candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+            candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.tcc)
             if not ((current := candles[-1].time) >= self.tracker.trend_time):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current)
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
-            candles.ta.ema(length=self.third_ema, append=True)
+            candles.ta.rsi(append=True)
+            candles.ta.stoch(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            f"EMA_{self.third_ema}": "third"})
+                                            f"RSI_14": "rsi", "STOCHk_14_3_3": "stochk", "STOCHd_14_3_3": "stochd"})
 
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
-            candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
-            candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
+            candles['caf'] = candles.ta_lib.cross(candles.close, candles.first)
+            candles['fas'] = candles.ta_lib.cross(candles.first, candles.second)
 
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
-            candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
-            candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
+            candles['cbf'] = candles.ta_lib.cross(candles.close, candles.first, above=False)
+            candles['fbs'] = candles.ta_lib.cross(candles.first, candles.second, above=False)
             current = candles[-1]
-            if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
+            if (all([current.caf, current.fas]) and (self.rsi_level < current.rsi < self.rsi_overbought) and
+                    max(current.stochk, current.stochd) < self.stoch_overbought):
                 sl = find_bullish_fractal(candles).low
-                self.tracker.update(sl=sl, snooze=self.ttf, order_type=OrderType.BUY)
+                self.tracker.update(sl=sl, snooze=self.etf.time, order_type=OrderType.BUY)
 
-            elif candles[-2].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
+            elif (all([current.cbf, current.fbs]) and (self.rsi_level > current.rsi > self.rsi_oversold) and
+                  min(current.stochk, current.stochd) > self.stoch_oversold):
                 sl = find_bearish_fractal(candles).high
-                self.tracker.update(snooze=self.ttf, order_type=OrderType.SELL, sl=sl)
+                self.tracker.update(snooze=self.etf.time, order_type=OrderType.SELL, sl=sl)
             else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
+                self.tracker.update(trend="ranging", snooze=self.etf.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
-            self.tracker.update(snooze=self.ttf.time, order_type=None)
+            self.tracker.update(snooze=self.etf.time, order_type=None)
 
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(3600)
+            await self.sleep(self.etf.time)
             while True:
                 await sess.check()
                 try:
@@ -86,4 +88,4 @@ class FingerFractal(Strategy):
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
-                    await self.sleep(self.trend_time_frame.time)
+                    await self.sleep(self.etf.time)
