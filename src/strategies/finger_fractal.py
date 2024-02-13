@@ -24,7 +24,7 @@ class FingerFractal(Strategy):
     first_sl: float
     second_sl: float
     trend: int
-    parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H12, "tcc": 720, 'trend': 2,
+    parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
                   'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,

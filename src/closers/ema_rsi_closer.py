@@ -14,7 +14,7 @@ async def ema_rsi_closer(*, position: TradePosition, parameters: dict):
         tcc = parameters['tcc']
         cot = int(position.time)
         # rsi_level = parameters['rsi_level']
-        order_type = parameters['order_type']
+        order_type = position.type
         candles = await sym.copy_rates_from_pos(count=tcc, timeframe=tf)
         candles.ta.ema(length=parameters['first_ema'], append=True)
         candles.ta.ema(length=parameters['second_ema'], append=True)

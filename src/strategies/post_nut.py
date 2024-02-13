@@ -27,8 +27,9 @@ class PostNut(Strategy):
     trader: Trader
     tracker: Tracker
     trend: int
+    interval: int = 180
     parameters = {"ttf": TimeFrame.H1, "etf": TimeFrame.M15, "tcc": 720, "ecc": 2880, "first_sma": 5, "second_sma": 9,
-                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15}
+                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180}
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
@@ -62,27 +63,57 @@ class PostNut(Strategy):
             if current.caf and current.fas:
                 first, second = bearish_fractals[0], bearish_fractals[1]
                 if first.middle.mfi > second.middle.mfi:
-                    if is_half_bullish_fractal(candles) and current.cat:
-                        sl = bullish_fractals[0].middle.low
-                        volume = self.symbol.volume_min * 4
-                        await self.trader.place_trade(order_type=OrderType.BUY, sl=sl,
-                                                      volume=volume, parameters=self.parameters)
+                    if is_half_bullish_fractal(candles):
                         wait = (t := time.time()) % self.ttf.time
                         wait = (self.ttf.time - wait) + t
                         self.tracker.update(trend="bullish", wait=wait)
+                        while time.time() < self.tracker.wait:
+                            cans = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+                            cans.ta.sma(length=self.third_sma, append=True)
+                            cans.rename(inplace=True, **{f"SMA_{self.third_sma}": "third"})
+                            cans['cat'] = cans.ta_lib.cross(cans.close, cans.third)
+                            current = cans[-1]
+                            if current.cat:
+                                sl = bullish_fractals[0].middle.low
+                                volume = self.symbol.volume_min * 4
+                                await self.trader.place_trade(order_type=OrderType.BUY, sl=sl,
+                                                              volume=volume, parameters=self.parameters)
+                                wait = (t := time.time()) % self.ttf.time
+                                wait = (self.ttf.time - wait) + t
+                                self.tracker.update(trend="bullish", wait=wait)
+                                break
+                            else:
+                                await asyncio.sleep(self.interval)
+                                continue
+                        self.tracker.update(snooze=self.ttf.time, trend='ranging')
             elif current.cbf and current.fbs:
                 first, second = bullish_fractals[0], bullish_fractals[1]
                 if first.middle.mfi < second.middle.mfi:
-                    if is_half_bearish_fractal(candles) and current.cbt:
-                        sl = bearish_fractals[0].middle.high
-                        volume = self.symbol.volume_min * 4
-                        await self.trader.place_trade(order_type=OrderType.SELL, sl=sl, volume=volume,
-                                                      parameters=self.parameters)
+                    if is_half_bearish_fractal(candles):
                         wait = (t := time.time()) % self.ttf.time
                         wait = (self.ttf.time - wait) + t
                         self.tracker.update(trend="bearish", wait=wait)
+                        while time.time() < self.tracker.wait:
+                            cans = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+                            cans.ta.sma(length=self.third_sma, append=True)
+                            cans.rename(inplace=True, **{f"SMA_{self.third_sma}": "third"})
+                            cans['cbt'] = cans.ta_lib.cross(cans.close, cans.third, above=False)
+                            current = cans[-1]
+                            if current.cbt:
+                                sl = bearish_fractals[0].middle.high
+                                volume = self.symbol.volume_min * 4
+                                await self.trader.place_trade(order_type=OrderType.SELL, sl=sl, volume=volume,
+                                                              parameters=self.parameters)
+                                wait = (t := time.time()) % self.ttf.time
+                                wait = (self.ttf.time - wait) + t
+                                self.tracker.update(trend="bearish", wait=wait)
+                                break
+                            else:
+                                await asyncio.sleep(self.interval)
+                                continue
+                        self.tracker.update(snooze=self.ttf.time, trend='ranging')
             else:
-                self.tracker.update(order_type=None, snooze=self.ttf.time)
+                self.tracker.update(snooze=self.ttf.time, trend='ranging')
 
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.first_entry")
@@ -99,12 +130,14 @@ class PostNut(Strategy):
             candles.rename(inplace=True, **{"STOCHk_14_3_3": "stochk", "STOCHd_14_3_3": "stochd"})
             if self.tracker.bullish:
                 candles['cas'] = candles.ta_lib.cross_value(candles.stochk, 30)
+                current = candles[-1]
                 if current.cas:
                     sl = find_bullish_fractal(candles).low
                     await self.trader.place_trade(order_type=OrderType.BUY, sl=sl, volume=self.symbol.volume_min,
                                                   parameters=self.parameters)
                     self.tracker.update(snooze=self.etf.time)
             elif self.tracker.bearish:
+                current = candles[-1]
                 candles['cbs'] = candles.ta_lib.cross_value(candles.stochk, 70, above=False)
                 if current.cbs:
                     sl = find_bearish_fractal(candles).high
