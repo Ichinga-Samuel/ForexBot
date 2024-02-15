@@ -1,11 +1,10 @@
 """A Simple bot that uses the inbuilt FingerTrap strategy"""
 import logging
 
-from aiomql import Bot, ForexSymbol, Config, TimeFrame, FingerTrap
+from aiomql import Bot, ForexSymbol, Config
 
 from ..strategies import PostNut
-from ..traders import SPTrader
-from ..closers import closer, ema_closer
+from ..closers import closer
 
 
 def build_bot():
@@ -16,11 +15,7 @@ def build_bot():
     syms = ['Volatility 25 Index', 'Volatility 50 Index', 'Volatility 10 Index', 'Volatility 75 Index',
             'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',
             'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
-    fx_syms = [ForexSymbol(name=sym) for sym in syms]
-    parameters = {'closer': ema_closer}
-    ft_sts = [FingerTrap(symbol=sym, trader=SPTrader(track_trades=True, symbol=sym), params=parameters) for sym in fx_syms]
     pn_sts = [PostNut(symbol=ForexSymbol(name=sym)) for sym in syms]
-
-    bot.add_strategies(pn_sts+ft_sts)
-    bot.add_coroutine(closer, tf=TimeFrame.M5)
+    bot.add_strategies(pn_sts)
+    bot.add_coroutine(closer)
     bot.execute()

@@ -1,11 +1,10 @@
 import logging
 from datetime import time
-from aiomql import Bot, Config, Sessions, Session, TimeFrame, FingerTrap
+from aiomql import Bot, Config, Sessions, Session, TimeFrame
 
 from ..symbols import AdmiralSymbol
-from ..traders import SPTrader
-from ..closers import ema_closer, closer
-from ..strategies import PostNut
+from ..closers import closer
+from ..strategies import PostNut, FingerTrap
 
 
 def build_bot():
@@ -15,13 +14,11 @@ def build_bot():
     bot = Bot()
     london = Session(start=time(10, 0), end=time(16, 0), name='london')
     intl = Session(start=time(10, 0), end=time(20, 0), name='london')
-    params = {'closer': ema_closer}
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
             AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='USDCHF-T')]
 
-    sts = [FingerTrap(symbol=sym, sessions=Sessions(london), params=params, trader=SPTrader(symbol=sym))
-           for sym in syms]
+    sts = [FingerTrap(symbol=sym, sessions=Sessions(london)) for sym in syms]
     sts1 = [PostNut(symbol=sym, sessions=Sessions(intl)) for sym in syms]
     bot.add_strategies(sts+sts1)
-    bot.add_coroutine(closer, tf=TimeFrame.M5)
+    bot.add_coroutine(closer)
     bot.execute()
