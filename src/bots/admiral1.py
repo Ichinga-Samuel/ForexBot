@@ -5,7 +5,7 @@ from aiomql import Bot, Config, Sessions, Session
 
 from ..strategies import FingerFractal, RADI, FractalRADI, SRE
 from ..symbols import AdmiralSymbol
-from ..closers import closer
+from ..closers import closer, trailing_stop
 
 
 def build_bot():
@@ -19,4 +19,5 @@ def build_bot():
     sts = [St(symbol=sym, sessions=Sessions(intl)) for sym in syms for St in [FingerFractal, RADI, FractalRADI, SRE]]
     bot.add_strategies(sts)
     bot.add_coroutine(closer)
+    bot.add_coroutine(trailing_stop)
     bot.execute()

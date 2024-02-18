@@ -1,9 +1,9 @@
 import logging
 from datetime import time
-from aiomql import Bot, Config, Sessions, Session, TimeFrame
+from aiomql import Bot, Config, Sessions, Session
 
 from ..symbols import AdmiralSymbol
-from ..closers import closer
+from ..closers import closer, trailing_stop
 from ..strategies import PostNut, FingerTrap
 
 
@@ -21,4 +21,5 @@ def build_bot():
     sts1 = [PostNut(symbol=sym, sessions=Sessions(intl)) for sym in syms]
     bot.add_strategies(sts+sts1)
     bot.add_coroutine(closer)
+    bot.add_coroutine(trailing_stop)
     bot.execute()

@@ -4,7 +4,7 @@ import logging
 from aiomql import Bot, ForexSymbol, Config
 
 from ..strategies import FingerFractal, RADI, FractalRADI, SRE, FingerTrap
-from ..closers import closer
+from ..closers import closer, trailing_stop
 
 
 def build_bot():
@@ -19,5 +19,6 @@ def build_bot():
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
     ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, RADI, FractalRADI, SRE, FingerTrap]]
     bot.add_strategies(ff_sts)
-    bot.execute()
+    bot.add_coroutine(trailing_stop)
     bot.add_coroutine(closer)
+    bot.execute()

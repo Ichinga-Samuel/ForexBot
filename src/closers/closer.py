@@ -21,7 +21,7 @@ class OpenTrade:
             logger.error(f'An error occurred in function OpenTrade.close {exe}')
 
 
-async def closer(*, tf: TimeFrame = TimeFrame.M15, key: str = 'trades'):
+async def closer(*, tf: TimeFrame = TimeFrame.M5, key: str = 'trades'):
     print('Closer started')
     await sleep(tf.time)
     conf = Config()

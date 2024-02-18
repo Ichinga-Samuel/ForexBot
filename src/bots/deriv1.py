@@ -4,7 +4,7 @@ import logging
 from aiomql import Bot, ForexSymbol, Config
 
 from ..strategies import PostNut
-from ..closers import closer
+from ..closers import closer, trailing_stop
 
 
 def build_bot():
@@ -18,4 +18,5 @@ def build_bot():
     pn_sts = [PostNut(symbol=ForexSymbol(name=sym)) for sym in syms]
     bot.add_strategies(pn_sts)
     bot.add_coroutine(closer)
+    bot.add_coroutine(trailing_stop)
     bot.execute()
