@@ -30,7 +30,7 @@ class FingerFractal(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=RAM(risk_to_reward=5))
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=RAM(risk_to_reward=3))
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):

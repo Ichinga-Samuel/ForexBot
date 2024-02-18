@@ -11,22 +11,24 @@ logger = getLogger(__name__)
 
 async def modify_stop(*, position: TradePosition):
     try:
-        positions = await Positions().positions_get(ticket=position.ticket)
-        position = positions[0]
         profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                       position.price_open, position.tp)
-        for i in [0.8, 0.6, 0.5, 0.25]:
+        position = await Positions().positions_get(ticket=position.ticket)
+        position = position[0]
+        profit_percent = 0
+        for i in [0.8, 0.6, 0.5, 0.25, 0.1, 0.05, 0.025]:
             if position.profit > profit * i:
+                profit_percent = i
                 break
         else:
             return
         sym = Symbol(name=position.symbol)
-        await modify_order(pos=position, symbol=sym)
+        await modify_order(pos=position, symbol=sym, pp=profit_percent)
     except Exception as err:
         logger.error(f"{err} in modify_trade")
 
 
-async def modify_order(*, pos, symbol, extra=0.0, tries=0):
+async def modify_order(*, pos, symbol, extra=0.0, tries=0, pp=0.0):
     try:
         await symbol.init()
         tick = await symbol.info_tick()
@@ -44,8 +46,12 @@ async def modify_order(*, pos, symbol, extra=0.0, tries=0):
                 await modify_order(pos=pos, symbol=symbol, extra=extra + 0.05, tries=tries + 1)
             else:
                 logger.warning(f"Could not modify order {res.comment}")
+        elif res.retcode == 10009:
+            logger.warning(f"Successfully modified {res.comment} at {pp} for {pos.symbol}")
+        else:
+            logger.error(f"Could not modify order {res.comment}")
     except Exception as err:
-        print(f"{err} in place_order")
+        print(f"{err} in modify_order")
 
 
 async def trailing_stop(*, tf: TimeFrame = TimeFrame.M5):
