@@ -2,7 +2,7 @@ import asyncio
 
 from logging import getLogger
 
-from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, TimeFrame
+from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, TimeFrame, Config
 
 from ..utils.sleep import sleep
 
@@ -11,19 +11,29 @@ logger = getLogger(__name__)
 
 async def modify_stop(*, position: TradePosition):
     try:
-        profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
-                                                      position.price_open, position.tp)
+        config = Config()
+        order = config.state.get('profits', {}).get(position.ticket, {})
+        profit = order.get('profit', None)
+        profit_levels = order.get('profit_levels', [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1])
+        current_level = order.get('current_level', len(profit_levels))
+        if not profit:
+            profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
+                                                          position.price_open, position.tp)
+        if profit is None:
+            logger.warning(f"Could not get profit for {position.symbol}")
+            return
+
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
-        profit_percent = 0
-        for i in [0.8, 0.6, 0.5, 0.25, 0.1, 0.05, 0.025]:
-            if position.profit > profit * i:
-                profit_percent = i
+        for i, j in enumerate(profit_levels[:current_level]):
+            if position.profit > profit * j:
+                sym = Symbol(name=position.symbol)
+                res = await modify_order(pos=position, symbol=sym, pp=j)
+                if res:
+                    config.state['profits'][position.ticket]['profit'] = profit
+                    config.state['profits'][position.ticket]['profit_levels'] = profit_levels
+                    config.state['profits'][position.ticket]['current_level'] = i
                 break
-        else:
-            return
-        sym = Symbol(name=position.symbol)
-        await modify_order(pos=position, symbol=sym, pp=profit_percent)
     except Exception as err:
         logger.error(f"{err} in modify_trade")
 
@@ -39,19 +49,22 @@ async def modify_order(*, pos, symbol, extra=0.0, tries=0, pp=0.0):
             sl = ask - points
         else:
             sl = ask + points
-        order = Order(position=pos.ticket, sl=sl, action=TradeAction.SLTP)
+        order = Order(position=pos.ticket, sl=sl, action=TradeAction.SLTP, tp=pos.tp)
         res = await order.send()
         if res.retcode == 10016:
             if tries < 6:
-                await modify_order(pos=pos, symbol=symbol, extra=extra + 0.05, tries=tries + 1)
+                return await modify_order(pos=pos, symbol=symbol, extra=extra + 0.05, tries=tries + 1)
             else:
                 logger.warning(f"Could not modify order {res.comment}")
+                return False
         elif res.retcode == 10009:
             logger.warning(f"Successfully modified {res.comment} at {pp} for {pos.symbol}")
+            return True
         else:
             logger.error(f"Could not modify order {res.comment}")
+            return False
     except Exception as err:
-        print(f"{err} in modify_order")
+        logger.error(f"{err} in modify_order")
 
 
 async def trailing_stop(*, tf: TimeFrame = TimeFrame.M5):

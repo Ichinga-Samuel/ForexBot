@@ -11,22 +11,28 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         sym = Symbol(name=position.symbol)
         await sym.init()
         tf = parameters.get('etf', parameters.get('ttf', TimeFrame.M15))
-        tcc = parameters['tcc']
+        tcc = parameters.get('ecc', parameters.get('tcc', 1000))
         order_type = position.type
         candles = await sym.copy_rates_from_pos(count=tcc, timeframe=tf)
-        fast_ema, slow_ema = parameters['fast_ema'], parameters['slow_ema']
+        fast_ema, slow_ema = parameters.get('fast_ema', 8), parameters.get('slow_ema', 20)
         candles.ta.ema(length=fast_ema, append=True)
         candles.ta.ema(length=slow_ema, append=True)
         candles.rename(**{f"EMA_{fast_ema}": "fast_ema", f"EMA_{slow_ema}": "slow_ema"})
         if order_type == OrderType.BUY:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=False)
-            if any(fxs[-2:]):
-                await positions.close_by(position)
-                logger.info(f"Closed trade {position.ticket}")
+            if any(fxs.iloc[-2:]):
+                res = await positions.close_by(position)
+                if res.retcode == 10009:
+                    logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                else:
+                    logger.error(f"Unable to close trade in ema_closer {res.comment}")
         elif order_type == OrderType.SELL:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=True)
-            if any(fxs[-2:]):
-                await positions.close_by(position)
-                logger.info(f"Closed trade {position.ticket}")
+            if any(fxs.iloc[-2:]):
+                res = await positions.close_by(position)
+                if res.retcode == 10009:
+                    logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                else:
+                    logger.error(f"Unable to close trade in ema_closer {res.comment}")
     except Exception as exe:
         logger.error(f'An error occurred in function ema_closer {exe}')

@@ -10,6 +10,7 @@ from ..utils.find_fractals import find_bearish_fractals, find_bullish_fractals
 from ..utils.patterns import is_half_bearish_fractal, is_half_bullish_fractal
 from ..traders.pn_trader import PNTrader
 from ..utils.tracker import Tracker
+from ..closers import ema_rsi_closer
 
 logger = getLogger(__name__)
 
@@ -29,7 +30,7 @@ class PostNut(Strategy):
     trend: int
     interval: int = 180
     parameters = {"ttf": TimeFrame.M15, "etf": TimeFrame.M5, "tcc": 720, "ecc": 2880, "first_sma": 5, "second_sma": 9,
-                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180}
+                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180, 'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)

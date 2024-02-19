@@ -30,7 +30,8 @@ async def closer(*, tf: TimeFrame = TimeFrame.M5, key: str = 'trades'):
         try:
             data = conf.state.get(key, {})
             positions = await pos.positions_get()
-            open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data]
+            open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data and
+                           p.profit < 1]
             await asyncio.gather(*[trade.close() for trade in open_trades], return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:
