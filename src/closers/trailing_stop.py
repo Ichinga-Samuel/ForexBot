@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 async def modify_stop(*, position: TradePosition):
     try:
         config = Config()
-        order = config.state.get('profits', {}).get(position.ticket, {})
+        order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         profit = order.get('profit', None)
         profit_levels = order.get('profit_levels', [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1])
         current_level = order.get('current_level', len(profit_levels))
@@ -67,7 +67,8 @@ async def modify_order(*, pos, symbol, extra=0.0, tries=0, pp=0.0):
         logger.error(f"{err} in modify_order")
 
 
-async def trailing_stop(*, tf: TimeFrame = TimeFrame.M5):
+# change the interval to two minutes
+async def trailing_stop(*, tf: TimeFrame = TimeFrame.M2):
     print('Trailing stop started')
     pos = Positions()
     while True:
