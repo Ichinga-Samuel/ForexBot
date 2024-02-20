@@ -22,8 +22,10 @@ async def reverse_trade(*, position: TradePosition):
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         loss_per = (abs(position.price_open - price) / abs(position.price_open - position.sl))
+        print(loss_per)
         if loss_per <= 0.10:
             return
+        print(f'Loss per: {position.symbol}')
         if position.type == OrderType.BUY:
             order_type = OrderType.SELL
             sl = tick.ask + (points * sym.point)
@@ -55,10 +57,10 @@ async def close_reversed(*, position: TradePosition):
 
         if position.type == OrderType.BUY and tick.ask < rev['reverse_price']:
             await pos.close_by(position)
-            del rev[position.ticket]
+            del rev[position.ticket] if position.ticket in rev else ...
         elif position.type == OrderType.SELL and tick.bid > rev['reverse_price']:
             await pos.close_by(position)
-            del rev[position.ticket]
+            del rev[position.ticket] if position.ticket in rev else ...
         else:
             return
     except Exception as exe:
@@ -72,19 +74,20 @@ async def close_reversal(*, position: TradePosition):
         pos = Positions()
         if position.profit <= 0:
             await pos.close_by(position)
-            reversals.remove(position.ticket)
+            reversals.remove(position.ticket) if position.ticket in reversals else ...
     except Exception as exe:
         logger.error(f'An error occurred in function close_reversal {exe} of hedging')
 
 
 async def hedge(*, tf: TimeFrame = TimeFrame.M3):
     print('Hedging started')
-    await sleep(tf.time)
+    # await sleep(tf.time)
     conf = Config()
     pos = Positions()
     while True:
         try:
             positions = await pos.positions_get()
+            print(len(positions))
             revd = conf.state.get('hedge', {}).get('reversed', {})
             reversals = conf.state.get('hedge', {}).get('reversals', [])
             await asyncio.gather(*[reverse_trade(position=p) for p in positions if
@@ -96,4 +99,4 @@ async def hedge(*, tf: TimeFrame = TimeFrame.M3):
             await sleep(tf.time)
         except Exception as exe:
             logger.error(f'An error occurred in function hedge {exe}')
-            await sleep(TimeFrame.M5.time)
+            await sleep(tf.time)
