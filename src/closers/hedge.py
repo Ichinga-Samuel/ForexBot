@@ -12,22 +12,25 @@ async def reverse_trade(*, position: TradePosition):
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
         config = Config()
+        rev_point = getattr(config, 'rev_point', 0.15)
         hedge = config.state.setdefault('hedge', {})
         revd = hedge.setdefault('reversed', {})
         reversals = hedge.setdefault('reversals', [])
         sym = Symbol(name=position.symbol)
         await sym.init()
         points = abs(position.sl - position.price_open) / sym.point
-        tp_points = abs(position.tp - position.price_open) / sym.point
-        diff = abs(position.sl - position.price_open)
-        rev_price = position.price_open - (0.1 * diff) if position.type == OrderType.BUY else position.price_open + (0.1 * diff)
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
-        loss_per = (abs(position.price_open - price) / abs(position.price_open - position.sl))
-        print(loss_per)
-        if position.profit < 0 and loss_per <= 0.10:
+        price_points = abs(position.price_open - price) / sym.point
+        points_per = price_points / points
+        if position.profit < 0 and points_per <= rev_point:
             return
-        print(f'Loss per: {position.symbol}')
+
+        tp_points = abs(position.tp - position.price_open) / sym.point
+        diff = abs(position.sl - position.price_open)
+        rev_price = position.price_open - (rev_point * diff) if position.type == OrderType.BUY\
+            else position.price_open + (rev_point * diff)
+
         if position.type == OrderType.BUY:
             order_type = OrderType.SELL
             sl = tick.ask + (points * sym.point)
@@ -36,7 +39,8 @@ async def reverse_trade(*, position: TradePosition):
             order_type = OrderType.BUY
             sl = tick.bid - (points * sym.point)
             tp = tick.bid + (tp_points * sym.point)
-        order = Order(type=order_type, symbol=sym, sl=sl, tp=tp, volume=position.volume, comment="Reversal")
+        comm = getattr(position, 'comment', str(position.ticket)[:6])
+        order = Order(type=order_type, symbol=sym, sl=sl, tp=tp, volume=position.volume, comment=f"Rev{comm}")
         res = await order.send()
         if res.retcode == 10009:
             reversals.append(res.order)
@@ -85,15 +89,14 @@ async def close_reversal(*, position: TradePosition):
         logger.error(f'An error occurred in function close_reversal {exe} of hedging')
 
 
-async def hedge(*, tf: TimeFrame = TimeFrame.M3):
+async def hedge(*, tf: TimeFrame = TimeFrame.M2):
     print('Hedging started')
-    # await sleep(tf.time)
+    await sleep(tf.time)
     conf = Config()
     pos = Positions()
     while True:
         try:
             positions = await pos.positions_get()
-            print(len(positions))
             revd = conf.state.get('hedge', {}).get('reversed', {})
             reversals = conf.state.get('hedge', {}).get('reversals', [])
             await asyncio.gather(*[reverse_trade(position=p) for p in positions if

@@ -2,6 +2,8 @@ from logging import getLogger
 
 from aiomql import Positions, Symbol, OrderType, TradePosition, TimeFrame
 
+from .trailing_stop import modify_order
+
 logger = getLogger(__name__)
 
 
@@ -21,18 +23,28 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         if order_type == OrderType.BUY:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=False)
             if any(fxs.iloc[-2:]):
-                res = await positions.close_by(position)
-                if res.retcode == 10009:
-                    logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                position = await positions.positions_get(ticket=position.ticket)
+                position = position[0]
+                if position.profit > 0:
+                    await modify_order(pos=position, symbol=sym)
                 else:
-                    logger.error(f"Unable to close trade in ema_closer {res.comment}")
+                    res = await positions.close_by(position)
+                    if res.retcode == 10009:
+                        logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                    else:
+                        logger.error(f"Unable to close trade in ema_closer {res.comment}")
         elif order_type == OrderType.SELL:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=True)
             if any(fxs.iloc[-2:]):
-                res = await positions.close_by(position)
-                if res.retcode == 10009:
-                    logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                position = await positions.positions_get(ticket=position.ticket)
+                position = position[0]
+                if position.profit > 0:
+                    await modify_order(pos=position, symbol=sym)
                 else:
-                    logger.error(f"Unable to close trade in ema_closer {res.comment}")
+                    res = await positions.close_by(position)
+                    if res.retcode == 10009:
+                        logger.warning(f"Closed trade {position.ticket} with ema_closer")
+                    else:
+                        logger.error(f"Unable to close trade in ema_closer {res.comment}")
     except Exception as exe:
         logger.error(f'An error occurred in function ema_closer {exe}')

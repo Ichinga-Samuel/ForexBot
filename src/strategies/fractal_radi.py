@@ -30,7 +30,7 @@ class FractalRADI(Strategy):
                  name: str = 'FractalRADI', trader: Trader = None):
         super().__init__(symbol=symbol, sessions=sessions, params=params, name=name)
         self.tracker = Tracker(snooze=self.ttf.time)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=RAM(risk_to_reward=3))
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=RAM(risk_to_reward=1))
 
     async def check_trend(self):
         try:
