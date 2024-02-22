@@ -8,7 +8,8 @@ from logging import getLogger
 
 from ..utils.find_fractals import find_bearish_fractals, find_bullish_fractals
 from ..utils.patterns import is_half_bearish_fractal, is_half_bullish_fractal
-from ..traders.pn_trader import PNTrader
+# from ..traders.pn_trader import PNTrader
+from ..traders.sp_trader import SPTrader
 from ..utils.tracker import Tracker
 from ..closers import ema_rsi_closer
 
@@ -34,7 +35,7 @@ class PostNut(Strategy):
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
-        self.trader = trader or PNTrader(symbol=self.symbol, use_telegram=True)
+        self.trader = trader or SPTrader(symbol=self.symbol, use_telegram=True)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def first_entry(self):
@@ -78,7 +79,7 @@ class PostNut(Strategy):
                                 sl = bullish_fractals[0].middle.low
                                 volume = self.symbol.volume_min * 4
                                 await self.trader.place_trade(order_type=OrderType.BUY, sl=sl,
-                                                              volume=volume, parameters=self.parameters)
+                                                              parameters=self.parameters)
                                 wait = (t := time.time()) % self.ttf.time
                                 wait = (self.ttf.time - wait) + t
                                 self.tracker.update(trend="bullish", wait=wait)
@@ -103,7 +104,7 @@ class PostNut(Strategy):
                             if current.cbt:
                                 sl = bearish_fractals[0].middle.high
                                 volume = self.symbol.volume_min * 4
-                                await self.trader.place_trade(order_type=OrderType.SELL, sl=sl, volume=volume,
+                                await self.trader.place_trade(order_type=OrderType.SELL, sl=sl,
                                                               parameters=self.parameters)
                                 wait = (t := time.time()) % self.ttf.time
                                 wait = (self.ttf.time - wait) + t
@@ -134,16 +135,14 @@ class PostNut(Strategy):
                 current = candles[-1]
                 if current.cas:
                     sl = find_bullish_fractal(candles).low
-                    await self.trader.place_trade(order_type=OrderType.BUY, sl=sl, volume=self.symbol.volume_min,
-                                                  parameters=self.parameters)
+                    await self.trader.place_trade(order_type=OrderType.BUY, sl=sl, parameters=self.parameters)
                     self.tracker.update(snooze=self.etf.time)
             elif self.tracker.bearish:
                 current = candles[-1]
                 candles['cbs'] = candles.ta_lib.cross_value(candles.stochk, 70, above=False)
                 if current.cbs:
                     sl = find_bearish_fractal(candles).high
-                    await self.trader.place_trade(order_type=OrderType.SELL, sl=sl, volume=self.symbol.volume_min,
-                                                  parameters=self.parameters)
+                    await self.trader.place_trade(order_type=OrderType.SELL, sl=sl, parameters=self.parameters)
                     self.tracker.update(snooze=self.etf.time)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.second_entry")

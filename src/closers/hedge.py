@@ -9,6 +9,8 @@ logger = getLogger(__name__)
 
 async def reverse_trade(*, position: TradePosition):
     try:
+        position = await Positions().positions_get(ticket=position.ticket)
+        position = position[0]
         config = Config()
         hedge = config.state.setdefault('hedge', {})
         revd = hedge.setdefault('reversed', {})
@@ -23,7 +25,7 @@ async def reverse_trade(*, position: TradePosition):
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         loss_per = (abs(position.price_open - price) / abs(position.price_open - position.sl))
         print(loss_per)
-        if loss_per <= 0.10:
+        if position.profit < 0 and loss_per <= 0.10:
             return
         print(f'Loss per: {position.symbol}')
         if position.type == OrderType.BUY:
@@ -39,7 +41,7 @@ async def reverse_trade(*, position: TradePosition):
         if res.retcode == 10009:
             reversals.append(res.order)
             revd[position.ticket] = {'reverse_ticket': res.order, 'reverse_price': rev_price}
-            logger.warning(f"Reversed {position.ticket} for {position.symbol} with {res.comment}")
+            logger.warning(f"Reversed {position.ticket} for {position.symbol} with {res.comment} At {position.profit}")
             return
         else:
             logger.error(f"Could not reverse {position.ticket} for {position.symbol} with {res.comment}")
@@ -49,6 +51,8 @@ async def reverse_trade(*, position: TradePosition):
 
 async def close_reversed(*, position: TradePosition):
     try:
+        position = await Positions().positions_get(ticket=position.ticket)
+        position = position[0]
         config = Config()
         pos = Positions()
         rev = config.state.get('hedge', {}).get('reversed', {}).get(position.ticket, {})
@@ -69,6 +73,8 @@ async def close_reversed(*, position: TradePosition):
 
 async def close_reversal(*, position: TradePosition):
     try:
+        position = await Positions().positions_get(ticket=position.ticket)
+        position = position[0]
         config = Config()
         reversals = config.state.get('hedge', {}).get('reversals', [])
         pos = Positions()
@@ -91,7 +97,8 @@ async def hedge(*, tf: TimeFrame = TimeFrame.M3):
             revd = conf.state.get('hedge', {}).get('reversed', {})
             reversals = conf.state.get('hedge', {}).get('reversals', [])
             await asyncio.gather(*[reverse_trade(position=p) for p in positions if
-                                   (p.ticket not in reversals and p.ticket not in revd)], return_exceptions=True)
+                                   (p.ticket not in reversals and p.ticket not in revd and p.profit <= 0)],
+                                 return_exceptions=True)
             await asyncio.gather(*[close_reversed(position=p) for p in positions if p.ticket in revd],
                                  return_exceptions=True)
             await asyncio.gather(*[close_reversal(position=p) for p in positions if p.ticket in reversals],
