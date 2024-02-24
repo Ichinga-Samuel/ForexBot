@@ -31,7 +31,7 @@ class FingerTrap(Strategy):
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, multiple=True, risk_to_rewards=[1, 1])
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, multiple=True, risk_to_rewards=[2, 2])
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)  # 2
 
     async def check_trend(self):

@@ -12,7 +12,7 @@ async def reverse_trade(*, position: TradePosition):
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
         config = Config()
-        rev_point = getattr(config, 'rev_point', 0.15)
+        rev_point = getattr(config, 'rev_point', 0.5)
         hedge = config.state.setdefault('hedge', {})
         revd = hedge.setdefault('reversed', {})
         reversals = hedge.setdefault('reversals', [])
@@ -82,14 +82,16 @@ async def close_reversal(*, position: TradePosition):
         config = Config()
         reversals = config.state.get('hedge', {}).get('reversals', [])
         pos = Positions()
-        if position.profit <= 0:
+        profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
+                                                      position.price_open, position.tp)
+        if position.profit <= -0.5 * profit:
             await pos.close_by(position)
             reversals.remove(position.ticket) if position.ticket in reversals else ...
     except Exception as exe:
         logger.error(f'An error occurred in function close_reversal {exe} of hedging')
 
 
-async def hedge(*, tf: TimeFrame = TimeFrame.M2):
+async def hedge(*, tf: TimeFrame = TimeFrame.M5):
     print('Hedging started')
     await sleep(tf.time)
     conf = Config()

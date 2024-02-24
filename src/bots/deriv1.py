@@ -19,7 +19,7 @@ def build_bot():
     pn_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in
               [FractalRADI, RADI, FingerTrap, PostNut, FingerFractal]]
     bot.add_strategies(pn_sts)
-    # bot.add_coroutine(closer)
+    bot.add_coroutine(closer)
     bot.add_coroutine(hedge)
-    # bot.add_coroutine(trailing_stop)
+    bot.add_coroutine(trailing_stop)
     bot.execute()

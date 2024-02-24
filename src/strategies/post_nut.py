@@ -35,7 +35,7 @@ class PostNut(Strategy):
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, use_telegram=True)
+        self.trader = trader or SPTrader(symbol=self.symbol, use_telegram=False)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def first_entry(self):

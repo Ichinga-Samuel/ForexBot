@@ -23,5 +23,5 @@ def build_bot():
     bot.add_strategies(ff_sts)
     bot.add_coroutine(trailing_stop)
     bot.add_coroutine(closer)
-    bot.add_coroutine(hedge)
+    # bot.add_coroutine(hedge)
     bot.execute()
