@@ -9,7 +9,7 @@ from ..closers import closer, trailing_stop, hedge
 
 def build_bot():
     conf = Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
-                  rev_point=0.25)
+                  rev_point=0.5)
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
@@ -23,5 +23,5 @@ def build_bot():
     bot.add_strategies(ff_sts)
     bot.add_coroutine(trailing_stop)
     bot.add_coroutine(closer)
-    # bot.add_coroutine(hedge)
+    bot.add_coroutine(hedge)
     bot.execute()

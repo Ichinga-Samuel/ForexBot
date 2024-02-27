@@ -15,7 +15,8 @@ class PTrader(BaseTrader):
         await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=False)
 
     def get_points(self, *, amount):
-        points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
+        # points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
+        points = 50
         min_points = self.symbol.trade_stops_level + (self.symbol.spread * 1.5)
         return points if points >= min_points else min_points
 
