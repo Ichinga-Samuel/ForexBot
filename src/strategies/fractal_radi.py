@@ -23,8 +23,8 @@ class FractalRADI(Strategy):
     second_ema: int
     third_ema: int
     mfi_ema: int
-    parameters = {"ecc": 2880, "tcc": 720, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_ema': 21, 'first_ema': 13,
-                  'third_ema': 34, 'mfi_ema': 34, 'closer': ema_rsi_closer}
+    parameters = {"ecc": 4320, "tcc": 720, "ttf": TimeFrame.H1, "etf": TimeFrame.M5, 'second_ema': 21, 'first_ema': 13,
+                  'third_ema': 34, 'mfi_ema': 13, 'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,
                  name: str = 'FractalRADI', trader: Trader = None):
@@ -77,10 +77,12 @@ class FractalRADI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.ema)
             below = candles.ta_lib.cross(candles.mfi, candles.ema, above=False)
             if self.tracker.bullish and above.iloc[-1]:
-                sl = find_bullish_fractal(candles).low
+                e_candles = candles[-48:]
+                sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and below.iloc[-1]:
-                sl = find_bearish_fractal(candles).high
+                e_candles = candles[-48:]
+                sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", order_type=None)

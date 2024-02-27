@@ -17,8 +17,6 @@ class SPTrader(BaseTrader):
                                                                                           self.symbol.point)
         if points < min_points:
             points = min_points
-            strategy = self.parameters.get('name', self.__class__.__name__)
-            logger.warning(f"Points for {self.order.symbol} in {strategy} is less than minimum. Using minimum points")
         await self.create_order_points(order_type=order_type, points=points, amount=amount, round_down=False)
         self.data |= self.parameters
 

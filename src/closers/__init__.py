@@ -5,5 +5,6 @@ from .points_closer import close_at_sl
 from .st_closer import close_by_stoch
 from .trailing_stop import trailing_stop
 from .hedge import hedge
+from .alt_hedge import hedge as alt_hedge
 
 # TODO: use trailing stop in the closers if the trade is in profit

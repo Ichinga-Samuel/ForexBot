@@ -3,8 +3,8 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerFractal, RADI, FractalRADI, SRE, FingerTrap, PostNut
-from ..closers import closer, trailing_stop, hedge
+from ..strategies import FingerFractal, RADI, FractalRADI, FingerTrap, PostNut
+from ..closers import closer, trailing_stop, alt_hedge
 
 
 def build_bot():
@@ -23,5 +23,5 @@ def build_bot():
     bot.add_strategies(ff_sts)
     bot.add_coroutine(trailing_stop)
     bot.add_coroutine(closer)
-    bot.add_coroutine(hedge)
+    bot.add_coroutine(alt_hedge)
     bot.execute()

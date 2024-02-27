@@ -14,6 +14,7 @@ logger = getLogger(__name__)
 
 class FingerFractal(Strategy):
     ttf: TimeFrame
+    etf: TimeFrame
     first_ema: int
     second_ema: int
     third_ema: int
@@ -24,8 +25,9 @@ class FingerFractal(Strategy):
     first_sl: float
     second_sl: float
     trend: int
+    ecc: int
     parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H1, "tcc": 720, 'trend': 2,
-                  'closer': ema_rsi_closer, "etf": TimeFrame.M15}
+                  'closer': ema_rsi_closer, "etf": TimeFrame.M5, 'ecc': 48}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -55,11 +57,13 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
             if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
-                sl = find_bullish_fractal(candles).low
+                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
+                sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
                 self.tracker.update(sl=sl, snooze=self.ttf, order_type=OrderType.BUY)
 
             elif candles[-2].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
-                sl = find_bearish_fractal(candles).high
+                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
+                sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
                 self.tracker.update(snooze=self.ttf, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)

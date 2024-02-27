@@ -5,7 +5,7 @@ from aiomql import Bot, Config, Sessions, Session
 
 from ..strategies import FingerFractal, RADI, FractalRADI, FingerTrap, PostNut
 from ..symbols import AdmiralSymbol
-from ..closers import closer, trailing_stop, hedge
+from ..closers import closer, trailing_stop, alt_hedge
 from ..traders import PTrader
 
 
@@ -14,7 +14,8 @@ def build_bot():
                   rev_point=0.5)
 
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}
-    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral1.log', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral1.log',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
     intl = Session(start=time(10, 0), end=time(18, 0), name='intl')
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
@@ -24,6 +25,6 @@ def build_bot():
            [FingerFractal, RADI, FractalRADI, FingerTrap, PostNut]]
     bot.add_strategies(sts)
     bot.add_coroutine(closer)
-    # bot.add_coroutine(hedge)
+    bot.add_coroutine(alt_hedge)
     bot.add_coroutine(trailing_stop)
     bot.execute()
