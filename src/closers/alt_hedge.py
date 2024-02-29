@@ -14,6 +14,8 @@ async def reverse_trade(*, position: TradePosition):
         position = position[0]
         config = Config()
         rev_point = getattr(config, 'rev_point', 0.5)
+        hedges = config.state.setdefault('hedge', {})
+        reversals = hedges.setdefault('reversals', [])
         sym = Symbol(name=position.symbol)
         await sym.init()
         points = abs(position.sl - position.price_open) / sym.point
@@ -32,10 +34,10 @@ async def reverse_trade(*, position: TradePosition):
                 sl = tick.bid - (points * sym.point)
                 tp = tick.bid + (tp_points * sym.point)
             comm = getattr(position, 'comment', str(position.ticket)[:6])
-            comm = f"Rev{comm}" if 'Rev' not in comm else comm
             order = Order(type=order_type, symbol=sym, sl=sl, tp=tp, volume=position.volume, comment=f"Rev{comm}")
             res = await order.send()
             if res.retcode == 10009:
+                reversals.append(res.order)
                 await Pos.close_by(position)
             else:
                 logger.error(f"Could not reverse {position.ticket} for {position.symbol} with {res.comment}")
@@ -45,14 +47,32 @@ async def reverse_trade(*, position: TradePosition):
         logger.error(f'An error occurred in function reverse_trade {exe}')
 
 
-async def hedge(*, tf: int = 60):
+async def close_reversal(*, position: TradePosition):
+    try:
+        position = await Positions().positions_get(ticket=position.ticket)
+        position = position[0]
+        config = Config()
+        reversals = config.state.get('hedge', {}).get('reversals', [])
+        pos = Positions()
+        if position.profit <= 0:
+            await pos.close_by(position)
+            reversals.remove(position.ticket) if position.ticket in reversals else ...
+    except Exception as exe:
+        logger.error(f'An error occurred in function close_reversal {exe} of hedging')
+
+
+async def hedge(*, tf: int = 120):
     print('Hedging started')
     await sleep(tf)
     pos = Positions()
     while True:
         try:
+            revs = Config().state.get('hedge', {}).get('reversals', [])
             positions = await pos.positions_get()
-            await asyncio.gather(*[reverse_trade(position=p) for p in positions if p.profit <= 0], return_exceptions=True)
+            await asyncio.gather(*[reverse_trade(position=p) for p in positions if p.profit <= 0 and p.ticket
+                                   not in revs], return_exceptions=True)
+            await asyncio.gather(*[close_reversal(position=p) for p in positions if p.ticket in revs],
+                                 return_exceptions=True)
             await sleep(tf)
         except Exception as exe:
             logger.error(f'An error occurred in function hedge {exe}')

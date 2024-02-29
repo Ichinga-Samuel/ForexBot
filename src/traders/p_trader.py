@@ -17,7 +17,7 @@ class PTrader(BaseTrader):
 
     def get_points(self, *, amount):
         # points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
-        points = 100
+        points = 330
         min_points = self.symbol.trade_stops_level + (self.symbol.spread * 1.5)
         return points if points >= min_points else min_points
 

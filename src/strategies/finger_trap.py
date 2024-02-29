@@ -18,20 +18,19 @@ class FingerTrap(Strategy):
     entry_ema: int
     ecc: int
     tcc: int
-    interval: TimeFrame = TimeFrame.H3
+    interval: TimeFrame = TimeFrame.H2
     trader: Trader
     tracker: Tracker
 
-    parameters = {"fast_ema": 8, "slow_ema": 20, "etf": TimeFrame.M5, 'closer': ema_closer,
+    parameters = {"fast_ema": 8, "slow_ema": 20, "etf": TimeFrame.M15, 'closer': ema_closer,
                   "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 4320,
                   'profit_levels': [0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
-                                    0.35, 0.3, 0.25, 0.2, 0.15, 0.125, 0.1, 0.05]}  # 1
-    # , 0.2, 0.15, 0.125, 0.1, 0.075, 0.05, 0.025
+                                    0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.025]}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, multiple=True, risk_to_rewards=[5, 5])
+        self.trader = trader or SPTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)  # 2
 
     async def check_trend(self):
