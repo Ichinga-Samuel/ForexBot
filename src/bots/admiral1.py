@@ -18,7 +18,7 @@ def build_bot():
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral1.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
-    intl = Session(start=time(10, 0), end=time(18, 0), name='intl')
+    intl = Session(start=time(0, 0), end=time(23, 59), name='intl')
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
             AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='USDCHF-T')]
 
