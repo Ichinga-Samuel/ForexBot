@@ -12,8 +12,8 @@ async def ema_rsi_closer(*, position: TradePosition, parameters: dict):
         positions = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
-        tf = parameters.get('etf', parameters.get('ttf', TimeFrame.M15))
-        tcc = parameters.get('ecc', parameters.get('tcc', 1000))
+        tf = parameters.get('etf', parameters.get('etf', TimeFrame.M15))
+        tcc = parameters.get('ecc', parameters.get('ecc', 1000))
         first_ema = parameters.get('first_ema', 13)
         second_ema = parameters.get('second_ema', 21)
         # rsi_level = parameters['rsi_level']

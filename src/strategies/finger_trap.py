@@ -73,11 +73,11 @@ class FingerTrap(Strategy):
             current = candles[-1]
             prev = candles[-2]
             if self.tracker.bullish and any([current.cae, prev.cae]):
-                e_candles = candles[-48:]
+                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
                 sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
                 self.tracker.update(snooze=self.interval.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and any([current.cbe, prev.cbe]):
-                e_candles = candles[-48:]
+                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
                 sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
                 self.tracker.update(snooze=self.interval.time, order_type=OrderType.SELL, sl=sl)  # 11
             else:

@@ -14,11 +14,13 @@ class SPTrader(BaseTrader):
         tick = await self.symbol.info_tick()
         points = (tick.ask - sl) / self.symbol.point if order_type == OrderType.BUY else (abs(tick.bid - sl) /
                                                                                           self.symbol.point)
-        await self.create_order_points(order_type=order_type, points=points, amount=amount, round_down=False)
+        await self.create_order_points(order_type=order_type, points=points, amount=amount)
         self.data |= self.parameters
 
     async def place_trade(self, *, order_type: OrderType, sl,  parameters: dict = None):
         try:
+            if self.use_ram:
+                await self.check_ram()
             self.parameters |= parameters or {}
             await self.create_order(order_type=order_type, sl=sl)
             if not await self.check_order():

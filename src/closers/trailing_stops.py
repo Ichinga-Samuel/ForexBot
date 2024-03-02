@@ -22,24 +22,23 @@ async def modify_stop(*, position: TradePosition):
         if expected_profit is None:
             logger.warning(f"Could not get profit for {position.symbol}")
             return
-        if position.profit < (expected_profit * trail):
-            return
-        sym = Symbol(name=position.symbol)
-        await sym.init()
-        tick = await sym.info_tick()
-        price = tick.ask if position.type == OrderType.BUY else tick.bid
-        taken_points = abs(position.price_open - price) / sym.point
-        trail_points = (1 - trail) * taken_points
-        min_points = sym.trade_stops_level + sym.spread
-        points = max(trail_points, min_points)
-        dp = round(points * sym.point, sym.digits)
-        sl, tp = (price - dp, price + dp) if position.type == OrderType.BUY else (price + dp, price - dp)
-        order = Order(position=position.ticket, sl=sl, tp=tp, action=TradeAction.SLTP)
-        res = await order.send()
-        if res.retcode == 10009:
-            logger.warning(f"Successfully modified {res.comment} at {dp} for {position.symbol}")
-        else:
-            logger.error(f"Could not modify order {res.comment}")
+        if position.profit > (expected_profit * trail):
+            sym = Symbol(name=position.symbol)
+            await sym.init()
+            tick = await sym.info_tick()
+            price = tick.ask if position.type == OrderType.BUY else tick.bid
+            taken_points = abs(position.price_open - price) / sym.point
+            trail_points = (1 - trail) * taken_points
+            min_points = sym.trade_stops_level + sym.spread
+            points = max(trail_points, min_points)
+            dp = round(points * sym.point, sym.digits)
+            sl, tp = (price - dp, price + dp) if position.type == OrderType.BUY else (price + dp, price - dp)
+            order = Order(position=position.ticket, sl=sl, tp=tp, action=TradeAction.SLTP)
+            res = await order.send()
+            if res.retcode == 10009:
+                logger.warning(f"Successfully modified {res.comment} at {dp} for {position.symbol}")
+            else:
+                logger.error(f"Could not modify order {res.comment}")
     except Exception as err:
         logger.error(f"{err} in modify_trade")
 

@@ -23,7 +23,7 @@ class FractalRADI(Strategy):
     second_ema: int
     third_ema: int
     mfi_ema: int
-    parameters = {"ecc": 4320, "tcc": 720, "ttf": TimeFrame.H4, "etf": TimeFrame.M15, 'second_ema': 21, 'first_ema': 13,
+    parameters = {"ecc": 2880, "tcc": 720, "ttf": TimeFrame.H4, "etf": TimeFrame.H1, 'second_ema': 21, 'first_ema': 13,
                   'third_ema': 34, 'mfi_ema': 13, 'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,

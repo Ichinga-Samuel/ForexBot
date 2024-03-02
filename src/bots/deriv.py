@@ -8,10 +8,11 @@ from ..closers import closer, trailing_stop, alt_hedge, trailing_stops
 
 
 def build_bot():
-    conf = Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/', rev_point=0.5)
+    conf = Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
+                  use_ram=True)
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}
-    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
-                        filename='logs/deriv.log', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
     syms = ['Volatility 25 Index', 'Volatility 50 Index', 'Volatility 10 Index', 'Volatility 75 Index',
             'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',

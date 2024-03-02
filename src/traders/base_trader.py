@@ -18,7 +18,8 @@ class BaseTrader(Trader):
                    "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
-                 use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades'):
+                 use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
+                 use_ram: bool = None):
         self.data = {}
         ram = ram or RAM(risk_to_reward=1)
         self.order_updates = []
@@ -29,6 +30,8 @@ class BaseTrader(Trader):
         self.track_trades = track_trades
         self.tracker_key = tracker_key or self.__class__.__name__
         super().__init__(symbol=symbol, ram=ram)
+        ur = getattr(self.config, 'use_ram', False)
+        self.use_ram = use_ram if use_ram is not None else ur
 
     @property
     @cache
@@ -66,7 +69,7 @@ class BaseTrader(Trader):
         if bal:
             raise RuntimeError("Balance level too low")
 
-        pos = await self.ram.check_losing_positions()
+        pos = await self.ram.check_losing_positions(symbol=self.symbol.name)
         if pos:
             raise RuntimeError(f"More than {self.ram.loss_limit} losing positions")
 
