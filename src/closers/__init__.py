@@ -6,5 +6,6 @@ from .st_closer import close_by_stoch
 from .trailing_stop import trailing_stop
 from .hedge import hedge
 from .alt_hedge import hedge as alt_hedge
-
+from .trailing_stops import trailing_stops
+from .catch_up import linkups
 # TODO: use trailing stop in the closers if the trade is in profit

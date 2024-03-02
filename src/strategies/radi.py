@@ -22,7 +22,7 @@ class RADI(Strategy):
     second_ema: int
     mfi_ema: int
     trend: int
-    parameters = {"ecc": 4320, "tcc": 720, "ttf": TimeFrame.H1, "etf": TimeFrame.M15, 'second_ema': 15, 'first_ema': 5,
+    parameters = {"ecc": 4320, "tcc": 720, "ttf": TimeFrame.H4, "etf": TimeFrame.M15, 'second_ema': 15, 'first_ema': 5,
                   'mfi_ema': 15, 'trend': 4, 'closer': ema_rsi_closer}
 
     def __init__(self, *, symbol: Symbol, sessions: Sessions = None, params: dict = None,

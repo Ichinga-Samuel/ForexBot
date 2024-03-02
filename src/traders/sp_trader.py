@@ -12,11 +12,8 @@ class SPTrader(BaseTrader):
         amount = await self.ram.get_amount()
         await self.symbol.info()
         tick = await self.symbol.info_tick()
-        min_points = self.symbol.trade_stops_level + (self.symbol.spread * 1.5)
         points = (tick.ask - sl) / self.symbol.point if order_type == OrderType.BUY else (abs(tick.bid - sl) /
                                                                                           self.symbol.point)
-        if points < min_points:
-            points = min_points
         await self.create_order_points(order_type=order_type, points=points, amount=amount, round_down=False)
         self.data |= self.parameters
 

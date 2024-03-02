@@ -6,7 +6,7 @@ from aiomql import ForexSymbol, Order, Account, Positions
 async def place_multiple_random_orders():
     """Place multiple random orders"""
     async with Account() as account:
-        syms = [ForexSymbol(name=sym.name)for sym in account.symbols]
+        syms = [ForexSymbol(name=sym.name)for sym in account.symbols if sym.name.startswith('Volatility')]
         [await sym.init() for sym in syms]
         orders = []
         await Positions().close_all()

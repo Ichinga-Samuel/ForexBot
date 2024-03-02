@@ -4,9 +4,7 @@ import logging
 from aiomql import Bot, ForexSymbol, Config
 
 from ..strategies import PostNut, FingerTrap, FractalRADI, RADI, FingerFractal
-from ..closers import closer, trailing_stop, hedge
-from ..utils import RAM
-from ..traders import SPTrader
+from ..closers import closer, trailing_stop, hedge, linkups, trailing_stops
 
 
 def build_bot():
@@ -19,10 +17,8 @@ def build_bot():
             'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',
             'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
     syms = [ForexSymbol(name=sym) for sym in syms]
-    pn_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, ram=RAM(risk_to_reward=1))) for sym in syms for ST in
-              [FractalRADI, RADI, FingerTrap, PostNut, FingerFractal]]
+    pn_sts = [ST(symbol=sym) for sym in syms for ST in [PostNut, FingerFractal]]
     bot.add_strategies(pn_sts)
-    # bot.add_coroutine(closer)
-    bot.add_coroutine(hedge)
-    bot.add_coroutine(trailing_stop)
+    bot.add_coroutine(trailing_stops)
+    bot.add_coroutine(linkups)
     bot.execute()
