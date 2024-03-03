@@ -43,7 +43,7 @@ async def loss_close(*, item: tuple[int, int]):
         second = second[0] if second else None
         if first:
             profit = await pos.mt5.order_calc_profit(first.type, first.symbol, first.volume, first.price_open, first.tp)
-            if abs(first.profit) > (profit * 0.6):
+            if abs(first.profit) > (profit * 0.9):
                 await pos.close_by(first)
             if second:
                 await pos.close_by(second)
@@ -61,7 +61,7 @@ async def net_close(*, item: tuple[int, int]):
         second = await Positions().positions_get(ticket=item[1])
         second = second[0] if second else None
         profit_2 = second.profit if second else 0
-        if profit_2 > 0 or (profit_1 + profit_2) > 0:
+        if profit_1 + profit_2 > 0:
             tasks = [Positions().close_by(position) for position in [first, second] if position is not None]
             await asyncio.gather(*tasks, return_exceptions=True)
             link_ups = Config().state.get('link_ups', {})
