@@ -21,7 +21,7 @@ class BaseTrader(Trader):
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=1)
+        ram = ram or RAM(risk_to_reward=1, risk=0.01)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -59,8 +59,10 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            self.config.state.setdefault('profits', {})[result.order] = {'expected_profit': profit,
-                                                                         'profit_levels': self.parameters.get('profit_levels')}
+            points = abs(self.order.sl - self.order.price) / self.symbol.point
+            logger.error(f"result: {result.price}, price: {self.order.price} diff: {abs(result.price - self.order.price)}")
+            data = {'expected_profit': profit, 'last_profit': 0, 'trail': 0.15, 'points': points, 'sl_trail': 0.075}
+            self.config.state.setdefault('profits', {})[result.order] = data
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
@@ -108,7 +110,7 @@ class BaseTrader(Trader):
 
     async def notify(self, msg: str = ''):
         try:
-            if self.use_telegram:
+            if self.use_telegram or getattr(self.config, 'use_telegram', False):
                 self.config.task_queue.add_task(self.telebot.notify, msg=msg)
         except Exception as err:
             logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}.notify")

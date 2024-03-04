@@ -8,9 +8,8 @@ from ..closers import closer, trailing_stop, alt_hedge, trailing_stops
 
 
 def build_bot():
-    conf = Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
-                  use_ram=True)
-    conf.state['hedge'] = {'reversals': [], 'reversed': {}}
+    Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
+           use_ram=True, tsl=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
@@ -22,5 +21,4 @@ def build_bot():
     ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, RADI, FractalRADI, FingerTrap, PostNut]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(trailing_stops)
-    bot.add_coroutine(closer)
     bot.execute()

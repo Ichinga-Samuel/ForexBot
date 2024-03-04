@@ -5,6 +5,9 @@ from logging import getLogger
 from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, TimeFrame, Config
 
 from ..utils.sleep import sleep
+from .trailing_loss import trail_sl
+from .closer import OpenTrade
+from .fixed_closer import fixed_closer
 
 logger = getLogger(__name__)
 
@@ -14,6 +17,7 @@ async def modify_stop(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         expected_profit = order.get('expected_profit', None)
+        last_profit = order.get('last_profit', 0)
         trail = order.get('trail', 0.15)
         if not expected_profit:
             expected_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
@@ -22,36 +26,57 @@ async def modify_stop(*, position: TradePosition):
         if expected_profit is None:
             logger.warning(f"Could not get profit for {position.symbol}")
             return
-        if position.profit > (expected_profit * trail):
+        if position.profit > (expected_profit * trail) and position.profit > last_profit:
             sym = Symbol(name=position.symbol)
             await sym.init()
+            points = order.get('points', 0)
+            if not points:
+                points = abs(position.price_open - position.sl) / sym.point
+                config.state['profits'][position.ticket]['points'] = points
             tick = await sym.info_tick()
             price = tick.ask if position.type == OrderType.BUY else tick.bid
-            taken_points = abs(position.price_open - price) / sym.point
-            trail_points = (1 - trail) * taken_points
+            trail_points = trail * points
             min_points = sym.trade_stops_level + sym.spread
+            logger.error(f"Trail points: {trail_points}, Min points: {min_points}")
             points = max(trail_points, min_points)
             dp = round(points * sym.point, sym.digits)
+            # tdp = round(trail_points * sym.point, sym.digits)
             sl, tp = (price - dp, price + dp) if position.type == OrderType.BUY else (price + dp, price - dp)
             order = Order(position=position.ticket, sl=sl, tp=tp, action=TradeAction.SLTP)
             res = await order.send()
             if res.retcode == 10009:
                 logger.warning(f"Successfully modified {res.comment} at {dp} for {position.symbol}")
+                config.state['profits'][position.ticket]['last_profit'] = position.profit
+                logger.error(f"Last profit: {position.profit}")
             else:
                 logger.error(f"Could not modify order {res.comment}")
     except Exception as err:
-        logger.error(f"{err} in modify_trade")
+        logger.error(f"{err} in modify_stop")
 
 
 # change the interval to two minutes
-async def trailing_stops(*, tf: TimeFrame = TimeFrame.M1):
-    print('Trailing stop started')
+async def trailing_stops(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
+    print('Trailing stops started')
     pos = Positions()
     while True:
         try:
             positions = await pos.positions_get()
-            await asyncio.gather(*[modify_stop(position=position) for position in positions], return_exceptions=True)
+            config = Config()
+            tts = [modify_stop(position=position) for position in positions if position.profit > 0]
+            data = config.state.get(key, {})
+            open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data]
+            closers = [trade.close() for trade in open_trades]
+            tts.extend(closers)
+            tsl = getattr(config, 'tsl', False)
+            if tsl:
+                tsl = [trail_sl(position=position) for position in positions if position.profit < 0]
+                tts.extend(tsl)
+            uc = getattr(config, 'use_closer', False)
+            if uc:
+                fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
+                tts.extend(fc)
+            await asyncio.gather(*tts, return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:
-            logger.error(f'An error occurred in function trailing_stop {exe}')
+            logger.error(f'An error occurred in function trailing_stops {exe}')
             await sleep(tf.time)

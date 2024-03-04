@@ -8,7 +8,8 @@ from ..closers import closer, trailing_stop, hedge, linkups, trailing_stops
 
 
 def build_bot():
-    conf = Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/')
+    conf = Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
+                  use_telegram=True, ram=-3, use_closer=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_1.log', datefmt='%Y-%m-%d %H:%M:%S')
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}

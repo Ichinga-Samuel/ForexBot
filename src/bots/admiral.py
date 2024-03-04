@@ -3,14 +3,13 @@ from datetime import time
 from aiomql import Bot, Config, Sessions, Session
 
 from ..symbols import AdmiralSymbol
-from ..closers import closer, trailing_stop, hedge
-from ..strategies import PostNut, FingerFractal, RADI, FractalRADI
-from ..traders import PTrader
-from ..utils import RAM
+from ..closers import trailing_stops
+from ..strategies import PostNut, FingerFractal, RADI, FractalRADI, FingerTrap
 
 
 def build_bot():
-    conf = Config(config_dir='configs', filename='admiral.json', reload=True, records_dir='records/admiral/')
+    conf = Config(config_dir='configs', filename='admiral.json', reload=True, records_dir='records/admiral/',
+                  use_ram=True, tsl=True)
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
@@ -19,10 +18,8 @@ def build_bot():
     syms = [AdmiralSymbol(name='EURUSD-T'), AdmiralSymbol(name='GBPUSD-T'), AdmiralSymbol(name='USDJPY-T'),
             AdmiralSymbol(name='AUDUSD-T'), AdmiralSymbol(name='USDCHF-T')]
 
-    sts = [St(symbol=sym, sessions=Sessions(intl), trader=PTrader(symbol=sym, ram=RAM(risk_to_reward=1))) for sym in syms for St in
-           [FingerFractal, RADI, FractalRADI, PostNut]]
+    sts = [St(symbol=sym, sessions=Sessions(intl)) for sym in syms for St in
+           [FingerFractal, RADI, FractalRADI, PostNut, FingerTrap]]
     bot.add_strategies(sts)
-    # bot.add_coroutine(closer)
-    bot.add_coroutine(hedge)
-    bot.add_coroutine(trailing_stop)
+    bot.add_coroutine(trailing_stops)
     bot.execute()

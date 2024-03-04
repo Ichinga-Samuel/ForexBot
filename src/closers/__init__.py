@@ -8,4 +8,6 @@ from .hedge import hedge
 from .alt_hedge import hedge as alt_hedge
 from .trailing_stops import trailing_stops
 from .catch_up import linkups
+from .trailing_loss import trail_sl
+from .fixed_closer import fixed_closer
 # TODO: use trailing stop in the closers if the trade is in profit

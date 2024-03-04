@@ -77,11 +77,11 @@ class FractalRADI(Strategy):
             above = candles.ta_lib.cross(candles.mfi, candles.ema)
             below = candles.ta_lib.cross(candles.mfi, candles.ema, above=False)
             if self.tracker.bullish and above.iloc[-1]:
-                e_candles = candles[-48:]
+                e_candles = candles[-12:]
                 sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and below.iloc[-1]:
-                e_candles = candles[-48:]
+                e_candles = candles[-12:]
                 sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
