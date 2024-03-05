@@ -59,7 +59,7 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            profit = {'expected_profit': profit, 'last_profit': 0, 'trail': 0.25}
+            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.25, 'trail': 0.05}
             loss = {'sl_trail': 0.05, 'last_price': result.price}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss

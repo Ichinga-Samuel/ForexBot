@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 async def fixed_closer(*, position: TradePosition):
     try:
         config = Config()
-        ram = getattr(config, 'ram', -2)
+        ram = getattr(config, 'ram', -10)
         positions = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()

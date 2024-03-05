@@ -3,13 +3,13 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import PostNut, FingerTrap, FractalRADI, RADI, FingerFractal
-from ..closers import closer, trailing_stop, hedge, linkups, trailing_stops
+from ..strategies import PostNut, FingerFractal
+from ..closers import monitor
 
 
 def build_bot():
     conf = Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
-                  use_telegram=True)
+                  use_telegram=True, trailing_stops=True, exit_signals=True, trailing_loss=False)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_1.log', datefmt='%Y-%m-%d %H:%M:%S')
     conf.state['hedge'] = {'reversals': [], 'reversed': {}}
@@ -20,6 +20,5 @@ def build_bot():
     syms = [ForexSymbol(name=sym) for sym in syms]
     pn_sts = [ST(symbol=sym) for sym in syms for ST in [PostNut, FingerFractal]]
     bot.add_strategies(pn_sts)
-    bot.add_coroutine(trailing_stops)
-    bot.add_coroutine(linkups)
+    bot.add_coroutine(monitor)
     bot.execute()

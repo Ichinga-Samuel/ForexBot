@@ -29,7 +29,7 @@ async def modify_stop(*, position: TradePosition):
         for i, j in enumerate(profit_levels[:current_level]):
             if position.profit > profit * j:
                 sym = Symbol(name=position.symbol)
-                res = await modify_order(pos=position, symbol=sym, pp=j)
+                res = await modify_order(position=position, symbol=sym)
                 if res:
                     config.state['profits'][position.ticket]['profit'] = profit
                     config.state['profits'][position.ticket]['profit_levels'] = profit_levels
@@ -39,33 +39,30 @@ async def modify_stop(*, position: TradePosition):
         logger.error(f"{err} in modify_trade")
 
 
-async def modify_order(*, pos, symbol, extra=0.0, tries=0, pp=0.0):
+async def modify_order(*, position: TradePosition, symbol: Symbol, trail: float = 0.05):
     try:
         await symbol.init()
         tick = await symbol.info_tick()
-        ask = tick.ask
+        price = tick.ask if position.type == OrderType.BUY else tick.bid
         spread = symbol.spread
-        points = (symbol.trade_stops_level + spread + (spread * extra)) * symbol.point
-        if pos.type == OrderType.BUY:
-            sl = ask - points
+        min_points = symbol.trade_stops_level + spread
+        points = (abs(position.price_open - position.tp) / symbol.point) * trail
+        points = max(points, min_points)
+        dp = round(points * symbol.point, symbol.digits)
+        if position.type == OrderType.BUY:
+            sl = price - dp
         else:
-            sl = ask + points
-        order = Order(position=pos.ticket, sl=sl, action=TradeAction.SLTP, tp=pos.tp)
+            sl = price + dp
+        order = Order(position=position.ticket, sl=sl, action=TradeAction.SLTP, tp=position.tp)
         res = await order.send()
-        if res.retcode == 10016:
-            if tries < 6:
-                return await modify_order(pos=pos, symbol=symbol, extra=extra + 0.05, tries=tries + 1)
-            else:
-                logger.warning(f"Could not modify order {res.comment}")
-                return False
-        elif res.retcode == 10009:
-            logger.warning(f"Successfully modified {res.comment} at {pp} for {pos.symbol}")
+        if res.retcode == 10009:
+            logger.info(f"Successfully modified {symbol}")
             return True
         else:
-            logger.error(f"Could not modify order {res.comment}")
+            logger.error(f"Could not modify order {res.comment} for {symbol}")
             return False
     except Exception as err:
-        logger.error(f"{err} in modify_order")
+        logger.error(f"{err} in trailing_stop.modify_order")
 
 
 # change the interval to two minutes
@@ -75,7 +72,7 @@ async def trailing_stop(*, tf: TimeFrame = TimeFrame.M2):
     while True:
         try:
             positions = await pos.positions_get()
-            await asyncio.gather(*[modify_stop(position=position) for position in positions], return_exceptions=True)
+            await asyncio.gather(*[modify_stop(position=position) for position in positions if position.profit > 0], return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:
             logger.error(f'An error occurred in function trailing_stop {exe}')
