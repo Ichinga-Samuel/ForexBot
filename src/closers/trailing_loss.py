@@ -18,7 +18,7 @@ async def trail_sl(*, position: TradePosition):
                                                           position.price_open, position.tp)
             config.state['profits'][position.ticket]['expected_profit'] = profit
 
-        if position.profit < 0 and position.profit < (-profit * (trail - 1)) and position.profit < last_profit:
+        if position.profit < 0 and position.profit < (-profit * (1 - trail)) and position.profit < last_profit:
             sym = Symbol(name=position.symbol)
             await sym.init()
             rev = await check_reversal(sym=sym, position=position)
@@ -33,8 +33,10 @@ async def trail_sl(*, position: TradePosition):
                 if not points:
                     points = abs(position.price_open - position.sl) / sym.point
                     config.state['profits'][position.ticket]['points'] = points
+                    # don't reset points
                 positions = await positions.positions_get(ticket=position.ticket)
                 position = positions[0]
+                # check profit again
                 mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
                 if mod:
                     config.state['profits'][position.ticket]['last_profit'] = position.profit
