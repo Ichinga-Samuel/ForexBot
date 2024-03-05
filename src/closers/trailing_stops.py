@@ -17,7 +17,7 @@ async def modify_stop(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = order.get('trail', 0.20)
+        trail = order.get('trail', 0.25)
         expected_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                                position.price_open, position.tp)
         if expected_profit is None:
