@@ -9,18 +9,17 @@ async def trail_sl(*, position: TradePosition):
     try:
         positions = Positions()
         config = Config()
-        order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
-        trail = order.get('sl_trail', 0.075)
-        last_profit = order.get('last_profit', 0)
-        profit = order.get('expected_profit', 0)
-        if not profit:
-            profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
-                                                          position.price_open, position.tp)
-            config.state['profits'][position.ticket]['expected_profit'] = profit
-
-        if position.profit < 0 and position.profit < (-profit * (1 - trail)) and position.profit < last_profit:
-            sym = Symbol(name=position.symbol)
-            await sym.init()
+        order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
+        trail = order.get('sl_trail', 0.05)
+        last_price = order.get('last_price', position.price_open)
+        sym = Symbol(name=position.symbol)
+        await sym.init()
+        points = abs(position.price_open - position.sl) / sym.point
+        tick = await sym.info_tick()
+        price = tick.ask if position.type == OrderType.BUY else tick.bid
+        rem_points = abs(price - position.sl) / sym.point
+        start = price < last_price if position.type == OrderType.BUY else price > last_price
+        if position.profit < 0 and rem_points <= (trail * points) and start:
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
@@ -29,17 +28,14 @@ async def trail_sl(*, position: TradePosition):
                 else:
                     logger.error(f"Unable to close trade in trail_sl {res.comment}")
             else:
-                points = order.get('points', 0)
-                if not points:
-                    points = abs(position.price_open - position.sl) / sym.point
-                    config.state['profits'][position.ticket]['points'] = points
-                    # don't reset points
                 positions = await positions.positions_get(ticket=position.ticket)
                 position = positions[0]
-                # check profit again
-                mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
-                if mod:
-                    config.state['profits'][position.ticket]['last_profit'] = position.profit
+                enter = position.price_current < last_price if position.type == OrderType.BUY else (
+                        position.price_current > last_price)
+                if enter:
+                    mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
+                    if mod:
+                        config.state['loss'][position.ticket]['last_price'] = last_price
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
 

@@ -16,23 +16,17 @@ async def modify_stop(*, position: TradePosition):
     try:
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
-        expected_profit = order.get('expected_profit', None)
         last_profit = order.get('last_profit', 0)
-        trail = order.get('trail', 0.15)
-        if not expected_profit:
-            expected_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
-                                                                   position.price_open, position.tp)
-            config.state['profits'][position.ticket]['expected_profit'] = expected_profit
+        trail = order.get('trail', 0.20)
+        expected_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
+                                                               position.price_open, position.tp)
         if expected_profit is None:
             logger.warning(f"Could not get profit for {position.symbol}")
             return
         if position.profit > (expected_profit * trail) and position.profit > last_profit:
             sym = Symbol(name=position.symbol)
             await sym.init()
-            points = order.get('points', 0)
-            if not points:
-                points = abs(position.price_open - position.sl) / sym.point
-                config.state['profits'][position.ticket]['points'] = points
+            points = abs(position.price_open - position.tp) / sym.point
             tick = await sym.info_tick()
             price = tick.ask if position.type == OrderType.BUY else tick.bid
             trail_points = trail * points
@@ -41,13 +35,19 @@ async def modify_stop(*, position: TradePosition):
             points = max(trail_points, min_points)
             dp = round(points * sym.point, sym.digits)
             # tdp = round(trail_points * sym.point, sym.digits)
-            sl, tp = (price - dp, price + dp) if position.type == OrderType.BUY else (price + dp, price - dp)
+            if position.type == OrderType.BUY:
+                sl = price - dp
+                tp = price + dp
+                tp = position.tp if tp < position.tp else tp
+            else:
+                sl = price + dp
+                tp = price - dp
+                tp = position.tp if tp > position.tp else tp
             order = Order(position=position.ticket, sl=sl, tp=tp, action=TradeAction.SLTP)
             res = await order.send()
             if res.retcode == 10009:
                 logger.warning(f"Successfully modified {res.comment} at {dp} for {position.symbol}")
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
-                logger.error(f"Last profit: {position.profit}")
             else:
                 logger.error(f"Could not modify order {res.comment}")
     except Exception as err:

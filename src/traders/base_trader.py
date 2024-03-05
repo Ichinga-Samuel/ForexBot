@@ -59,10 +59,10 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            points = abs(self.order.sl - self.order.price) / self.symbol.point
-            logger.error(f"result: {result.price}, price: {self.order.price} diff: {abs(result.price - self.order.price)}")
-            data = {'expected_profit': profit, 'last_profit': 0, 'trail': 0.15, 'points': points, 'sl_trail': 0.075}
-            self.config.state.setdefault('profits', {})[result.order] = data
+            profit = {'expected_profit': profit, 'last_profit': 0, 'trail': 0.25}
+            loss = {'sl_trail': 0.05, 'last_price': result.price}
+            self.config.state.setdefault('profits', {})[result.order] = profit
+            self.config.state.setdefault('loss', {})[result.order] = loss
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 

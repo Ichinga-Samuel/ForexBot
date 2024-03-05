@@ -20,7 +20,7 @@ async def link_up(*, position: TradePosition):
         if expected_profit is None:
             logger.warning(f"Could not get profit for {position.symbol}")
             return
-        catch = order.get('catch', 0.3)
+        catch = order.get('catch', 0.5)
         if abs(position.profit) > (expected_profit * catch):
             link_order = Order(type=position.type, symbol=position.symbol, volume=position.volume,
                                comment=f"Link{position.ticket}", sl=position.sl, tp=position.tp)
@@ -62,8 +62,10 @@ async def net_close(*, item: tuple[int, int]):
         second = second[0] if second else None
         profit_2 = second.profit if second else 0
         if profit_1 + profit_2 > 0:
-            tasks = [Positions().close_by(position) for position in [first, second] if position is not None]
-            await asyncio.gather(*tasks, return_exceptions=True)
+            if first.profit < 0:
+                await Positions().close_by(first)
+            if second.profit < 0:
+                await Positions().close_by(second)
             link_ups = Config().state.get('link_ups', {})
             link_ups.pop(item[0]) if item[0] in link_ups else ...
     except Exception as exe:
