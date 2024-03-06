@@ -5,7 +5,7 @@ from aiomql import Positions, TimeFrame, Config
 
 from ..utils.sleep import sleep
 from .fixed_closer import fixed_closer
-from .trailing_stops import modify_stops
+from .trailing_stops import check_stops
 from .trailing_loss import trail_sl
 from .closer import OpenTrade
 
@@ -25,7 +25,7 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             tts = getattr(config, 'trailing_stops', False)
             if tts:
                 print('Using trailing stops')
-                tts = [modify_stops(position=position) for position in positions if position.profit > 0]
+                tts = [check_stops(position=position) for position in positions if position.profit > 0]
                 tasks.extend(tts)
 
             # use exit signals

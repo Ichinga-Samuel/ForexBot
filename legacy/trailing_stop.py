@@ -4,7 +4,7 @@ from logging import getLogger
 
 from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, TimeFrame, Config
 
-from ..utils.sleep import sleep
+from src.utils.sleep import sleep
 
 logger = getLogger(__name__)
 
