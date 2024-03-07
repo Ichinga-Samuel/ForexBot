@@ -20,13 +20,17 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
         try:
             positions = await pos.positions_get()
             config = Config()
+            hedges = config.state.get('hedges', {})
+            hedged_b = list(hedges.values())
+            hedged = list(hedges.keys()) + hedged_b
             tasks = []
 
             # use trailing stops
             tts = getattr(config, 'trailing_stops', False)
             if tts:
                 print('Using trailing stops')
-                tts = [check_stops(position=position) for position in positions if position.profit > 0]
+                tts = [check_stops(position=position) for position in positions
+                       if position.profit > 0 and position.ticket not in hedged]
                 tasks.extend(tts)
 
             # use exit signals
@@ -42,7 +46,8 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             tsl = getattr(config, 'trailing_loss', False)
             if tsl:
                 print('Using trailing stop loss')
-                tsl = [trail_sl(position=position) for position in positions if position.profit < 0]
+                tsl = [trail_sl(position=position) for position in positions if position.profit < 0 if position.ticket
+                       not in hedged_b]
                 tasks.extend(tsl)
 
             # use fixed_closer
@@ -56,8 +61,9 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             hedging = getattr(config, 'hedging', False)
             if hedging:
                 print('Using hedge')
-                hg = [hedge(position=position) for position in positions if position.profit < 0]
-                hedges = config.state.get('hedges', {})
+                hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
+                      not in hedged]
+
                 hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
                 tasks.extend(hg)
                 tasks.extend(hedges)
