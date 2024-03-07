@@ -28,12 +28,13 @@ async def check_stops(*, position: TradePosition):
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
-            await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=0)
+            await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit)
     except Exception as err:
         logger.error(f"{err} in modify_stop")
 
 
-async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.0, tries=3, last_profit=0):
+async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.0, tries=3,
+                       last_profit=0):
     try:
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -62,8 +63,8 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
             if res.retcode == 10009:
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
             elif res.retcode == 10016 and tries > 0:
-                await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05, tries=tries - 1,
-                                   last_profit=last_profit)
+                await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
+                                   tries=tries - 1, last_profit=last_profit)
             else:
                 logger.error(f"Could not modify order {res.comment} with {extra=} and {tries=} for {sym}")
     except Exception as err:

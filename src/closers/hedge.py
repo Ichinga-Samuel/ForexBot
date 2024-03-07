@@ -1,34 +1,27 @@
 import asyncio
 from logging import getLogger
-from aiomql import Order, OrderType, TradePosition, Symbol, Positions, Config
+from aiomql import Order, OrderType, TradePosition, Symbol, Positions, Config, TradeAction
 
 from ..utils.sleep import sleep
 
 logger = getLogger(__name__)
 
 
-async def reverse_trade(*, position: TradePosition):
+async def hedge(*, position: TradePosition):
     try:
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
         config = Config()
-        rev_point = getattr(config, 'rev_point', 0.3)
-        hedge = config.state.setdefault('hedge', {})
-        revd = hedge.setdefault('reversed', {})
-        reversals = hedge.setdefault('reversals', [])
+        rev_point = getattr(config, 'rev_point', 0.95)
+        hedges = config.state.setdefault('hedges', {})
         sym = Symbol(name=position.symbol)
         await sym.init()
         points = abs(position.sl - position.price_open) / sym.point
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
-        price_points = abs(position.price_open - price) / sym.point
-        points_per = price_points / points
-        if position.profit <= 0 and points_per >= rev_point:
+        taken_points = abs(position.price_open - price) / sym.point
+        if position.profit <= 0 and taken_points >= (rev_point * points):
             tp_points = abs(position.tp - position.price_open) / sym.point
-            diff = abs(position.sl - position.price_open)
-            rev_price = position.price_open - (rev_point * diff) if position.type == OrderType.BUY\
-                else position.price_open + (rev_point * diff)
-
             if position.type == OrderType.BUY:
                 order_type = OrderType.SELL
                 sl = tick.ask + (points * sym.point)
@@ -37,75 +30,86 @@ async def reverse_trade(*, position: TradePosition):
                 order_type = OrderType.BUY
                 sl = tick.bid - (points * sym.point)
                 tp = tick.bid + (tp_points * sym.point)
+
             comm = getattr(position, 'comment', str(position.ticket)[:6])
             order = Order(type=order_type, symbol=sym, sl=sl, tp=tp, volume=position.volume, comment=f"Rev{comm}")
             res = await order.send()
             if res.retcode == 10009:
-                reversals.append(res.order)
-                revd[position.ticket] = {'reverse_ticket': res.order, 'reverse_price': rev_price}
-                logger.warning(f"Reversed {position.ticket} for {position.symbol} with {res.comment} At {position.profit}")
-                return
+                hedges[position.ticket] = res.order
+                logger.warning(f"Reversed {position.ticket} for {position.symbol} At {position.profit}")
             else:
                 logger.error(f"Could not reverse {position.ticket} for {position.symbol} with {res.comment}")
         else:
             return
     except Exception as exe:
-        logger.error(f'An error occurred in function reverse_trade {exe}')
+        logger.error(f'An error occurred in function hedger {exe}')
 
 
-async def close_reversed(*, position: TradePosition):
+async def check_hedge(*, main: int, rev: int):
     try:
-        position = await Positions().positions_get(ticket=position.ticket)
-        position = position[0]
         config = Config()
+        hedges = config.state.get('hedges', {})
         pos = Positions()
-        rev = config.state.get('hedge', {}).get('reversed', {}).get(position.ticket, {})
-        sym = Symbol(name=position.symbol)
-        tick = await sym.info_tick(name=position.symbol)
-
-        if position.type == OrderType.BUY and tick.ask < rev['reverse_price']:
-            await pos.close_by(position)
-            rev.pop(position.ticket) if position.ticket in rev else ...
-        elif position.type == OrderType.SELL and tick.bid > rev['reverse_price']:
-            await pos.close_by(position)
-            rev.pop(position.ticket) if position.ticket in rev else ...
-        else:
-            return
+        poss = await pos.positions_get(ticket=main)
+        main_pos = poss[0] if poss else None
+        poss = await pos.positions_get(ticket=rev)
+        rev_pos = poss[0] if poss else None
+        if main_pos and rev_pos:
+            if main_pos.profit > 0:
+                await pos.close_by(rev_pos)
+                hedges.pop(main) if main in hedges else ...
+            elif rev_pos.profit > 0:
+                await extend_tp(position=rev_pos)
+        if not main_pos and rev_pos:
+            hedges.pop(main) if main in hedges else ...
     except Exception as exe:
         logger.error(f'An error occurred in function close_reversed {exe} of hedging')
 
 
-async def close_reversal(*, position: TradePosition):
+async def extend_tp(*, position: TradePosition):
     try:
-        position = await Positions().positions_get(ticket=position.ticket)
-        position = position[0]
-        config = Config()
-        reversals = config.state.get('hedge', {}).get('reversals', [])
-        pos = Positions()
-        if position.profit <= 0:
-            await pos.close_by(position)
-            reversals.remove(position.ticket) if position.ticket in reversals else ...
+        positions = await Positions().positions_get(ticket=position.ticket)
+        position = positions[0]
+        sym = Symbol(name=position.symbol)
+        await sym.init()
+        points = abs(position.tp - position.price_open) / sym.point
+        tick = await sym.info_tick()
+        price = tick.ask if position.type == OrderType.BUY else tick.bid
+        taken_points = abs(position.price_open - price) / sym.point
+        if position.profit > 0 and taken_points >= (0.95 * points):
+            tp_points = 0.05 * points
+            dp = round(tp_points * sym.point, sym.digits)
+            if position.type == OrderType.BUY:
+                tp = price + dp
+            else:
+                tp = price - dp
+            order = Order(ticket=position.ticket, tp=tp, sl=position.sl, symbol=sym, action=TradeAction.SLTP)
+            res = await order.send()
+            if res.retcode == 10009:
+                logger.warning(f"Extended TP for {position.ticket} for {position.symbol} At {position.profit}")
+            else:
+                logger.error(f"Could not extend TP for {position.ticket} for {position.symbol} with {res.comment}")
+        else:
+            return
     except Exception as exe:
-        logger.error(f'An error occurred in function close_reversal {exe} of hedging')
+        logger.error(f'An error occurred in function extend_tp {exe}')
 
 
-async def hedge(*, tf: int = 30):
+async def hedger(*, tf: int = 30):
     print('Hedging started')
     await sleep(tf)
     conf = Config()
     pos = Positions()
     while True:
         try:
+            tasks = []
             positions = await pos.positions_get()
-            revd = conf.state.get('hedge', {}).get('reversed', {})
-            reversals = conf.state.get('hedge', {}).get('reversals', [])
-            await asyncio.gather(*[reverse_trade(position=p) for p in positions if
-                                   (p.ticket not in reversals and p.ticket not in revd and p.profit <= 0)],
-                                 return_exceptions=True)
-            await asyncio.gather(*[close_reversed(position=p) for p in positions if p.ticket in revd],
-                                 return_exceptions=True)
-            await asyncio.gather(*[close_reversal(position=p) for p in positions if p.ticket in reversals],
-                                 return_exceptions=True)
+            hedges = conf.state.get('hedges', {})
+            hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
+            revs = [hedge(position=p) for p in positions if p.profit < 0 and p.ticket not in hedges]
+            tasks.extend(hedges)
+            tasks.extend(revs)
+            await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)
         except Exception as exe:
             logger.error(f'An error occurred in function hedge {exe}')

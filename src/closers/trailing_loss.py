@@ -42,20 +42,22 @@ async def trail_sl(*, position: TradePosition):
 
 async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
     try:
-        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.M30)
+        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.H1)
         fast, slow = 8, 13
         candles.ta.ema(length=fast, append=True)
         candles.ta.ema(length=slow, append=True)
         candles.rename(**{f"EMA_{fast}": "fast", f"EMA_{slow}": "slow"})
         if position.type == OrderType.BUY:
-            fxs = candles.ta_lib.cross(candles.fast, candles.slow, above=False)
-            if fxs.iloc[-1]:
+            fbs = candles.ta_lib.below(candles.fast, candles.slow)
+            cbf = candles.ta_lib.below(candles.close, candles.fast, above=True)
+            if fbs.iloc[-1] and cbf.iloc[-1]:
                 return True
             else:
                 return False
         elif position.type == OrderType.SELL:
-            fxs = candles.ta_lib.cross(candles.fast, candles.slow, above=True)
-            if fxs.iloc[-1]:
+            fab = candles.ta_lib.above(candles.fast, candles.slow)
+            caf = candles.ta_lib.above(candles.close, candles.fast)
+            if fab.iloc[-1] and caf.iloc[-1]:
                 return True
             else:
                 return False

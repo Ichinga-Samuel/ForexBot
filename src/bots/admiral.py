@@ -9,8 +9,8 @@ from ..strategies import PostNut, FingerFractal, FingerTrap
 
 def build_bot():
     conf = Config(config_dir='configs', filename='admiral.json', reload=True, records_dir='records/admiral/',
-                  use_ram=True, trailing_stops=True, exit_signals=True, trailing_loss=True)
-    conf.state['hedge'] = {'reversals': [], 'reversed': {}}
+                  use_ram=True, trailing_stops=True, exit_signals=True, trailing_loss=True,
+                  trail_start=0.95, hedging=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()

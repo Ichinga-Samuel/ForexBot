@@ -8,6 +8,7 @@ from .fixed_closer import fixed_closer
 from .trailing_stops import check_stops
 from .trailing_loss import trail_sl
 from .closer import OpenTrade
+from .hedge import hedge, check_hedge
 
 logger = getLogger(__name__)
 
@@ -51,6 +52,15 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
                 tasks.extend(fc)
 
+            # hedge
+            hedging = getattr(config, 'hedging', False)
+            if hedging:
+                print('Using hedge')
+                hg = [hedge(position=position) for position in positions if position.profit < 0]
+                hedges = config.state.get('hedges', {})
+                hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
+                tasks.extend(hg)
+                tasks.extend(hedges)
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:
