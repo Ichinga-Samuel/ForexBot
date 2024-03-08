@@ -59,7 +59,7 @@ async def check_hedge(*, main: int, rev: int):
         main_pos = poss[0] if poss else None
         poss = await pos.positions_get(ticket=rev)
         rev_pos = poss[0] if poss else None
-        tick = await Symbol().info_tick(name=main_pos.symbol)
+        tick = await Symbol(name=main_pos.symbol).info_tick(name=main_pos.symbol)
         if main_pos and rev_pos:
             data = hedges[main]
             rev_close = data['rev_close']
@@ -79,7 +79,7 @@ async def check_hedge(*, main: int, rev: int):
             hedges.pop(main) if main in hedges else ...
 
     except Exception as exe:
-        logger.error(f'An error occurred in function check_hedge {exe} of hedging')
+        logger.error(f'An error occurred in function check_hedge hedging: {exe}')
 
 
 async def last_chance(position: TradePosition):
@@ -88,7 +88,7 @@ async def last_chance(position: TradePosition):
         pos = Positions()
         positions = await pos.positions_get(ticket=position.ticket)
         position = positions[0]
-        tick = await Symbol().info_tick(name=position.symbol)
+        tick = await Symbol(name=position.symbol).info_tick(name=position.symbol)
         close = tick.ask > position.sl if position.type == OrderType.BUY else tick.bid < position.sl
         if close:
             await pos.close_by(position)

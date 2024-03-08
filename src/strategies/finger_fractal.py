@@ -74,7 +74,7 @@ class FingerFractal(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(3600)
+            # await self.sleep(3600)
             while True:
                 await sess.check()
                 try:

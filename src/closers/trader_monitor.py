@@ -31,7 +31,6 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             # use exit signals
             es = getattr(config, 'exit_signals', False)
             if es:
-                print('Using exit signals')
                 data = config.state.get(key, {})
                 open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data]
                 closers = [trade.close() for trade in open_trades]
@@ -43,6 +42,7 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 exclude = lc + revs
                 tsl = [trail_sl(position=position) for position in positions if (position.profit < 0 and position.ticket
                        not in exclude)]
+                # print(f'tsl:{len(tsl)}')
                 tasks.extend(tsl)
 
             # use fixed_closer
@@ -57,6 +57,7 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 exclude = hedged + lc
                 hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
                       not in exclude]
+                # print(f'hedging:{len(hg)}')
 
                 hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
                 tasks.extend(hg)
@@ -68,6 +69,7 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 tts = [check_stops(position=position) for position in positions
                        if (position.profit > 0 and position.ticket not in revs)]
                 tasks.extend(tts)
+            # print(f'trailing stops:{len(tts)}')
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:

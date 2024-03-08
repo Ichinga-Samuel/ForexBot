@@ -10,7 +10,7 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail = order.get('sl_trail', 0.05)
+        trail = order.get('sl_trail', 0.10)
         last_price = order.get('last_price', position.price_open)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -18,8 +18,13 @@ async def trail_sl(*, position: TradePosition):
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         rem_points = abs(price - position.sl) / sym.point
+        rem = int(rem_points)
+        ratio = round(rem_points / points, 2)
+        trp = int(trail * points)
         start = price < last_price if position.type == OrderType.BUY else price > last_price
-        if position.profit < 0 and rem_points <= (trail * points) and start:
+        # print(f'{rem=}: {trp=} {ratio=} {start=}')
+        if position.profit < 0 and ratio <= trail and start:
+            # print(f'{rem_points=}:{trail * points} after')
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)

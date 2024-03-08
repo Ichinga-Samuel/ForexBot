@@ -94,7 +94,7 @@ class FingerTrap(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol}")
         async with self.sessions as sess:
-            await self.sleep(self.ttf.time)
+            # await self.sleep(self.ttf.time)
             while True:
                 await sess.check()
                 try:
