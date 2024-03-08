@@ -29,6 +29,7 @@ async def check_stops(*, position: TradePosition):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit)
+
     except Exception as err:
         logger.error(f"{err} in modify_stop")
 

@@ -12,13 +12,14 @@ async def hedge(*, position: TradePosition):
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
         config = Config()
-        rev_point = getattr(config, 'rev_point', 0.95)
+        order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
+        rev_point = order.get('rev_point', 0.8)
         hedges = config.state.setdefault('hedges', {})
         sym = Symbol(name=position.symbol)
         await sym.init()
-        points = abs(position.sl - position.price_open) / sym.point
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
+        points = order.get('points', abs(position.sl - position.price_open) / sym.point)
         taken_points = abs(position.price_open - price) / sym.point
         if position.profit <= 0 and taken_points >= (rev_point * points):
             tp_points = abs(position.tp - position.price_open) / sym.point
@@ -42,7 +43,7 @@ async def hedge(*, position: TradePosition):
         else:
             return
     except Exception as exe:
-        logger.error(f'An error occurred in function hedger {exe}')
+        logger.error(f'An error occurred in function hedge {exe}')
 
 
 async def check_hedge(*, main: int, rev: int):
@@ -63,7 +64,7 @@ async def check_hedge(*, main: int, rev: int):
         if not main_pos and rev_pos:
             hedges.pop(main) if main in hedges else ...
     except Exception as exe:
-        logger.error(f'An error occurred in function close_reversed {exe} of hedging')
+        logger.error(f'An error occurred in function check_hedge {exe} of hedging')
 
 
 async def extend_tp(*, position: TradePosition):
