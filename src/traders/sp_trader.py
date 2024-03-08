@@ -16,7 +16,8 @@ class SPTrader(BaseTrader):
                                                                                           self.symbol.point)
         min_points = self.symbol.trade_stops_level + self.symbol.spread * 2
         points = max(min_points, points)
-        await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=False)
+        await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=True,
+                                       round_down=False, adjust=True)
         self.data |= self.parameters
 
     async def place_trade(self, *, order_type: OrderType, sl,  parameters: dict = None):

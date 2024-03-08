@@ -21,17 +21,12 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             positions = await pos.positions_get()
             config = Config()
             hedges = config.state.get('hedges', {})
-            hedged_b = list(hedges.values())
-            hedged = list(hedges.keys()) + hedged_b
-            tasks = []
+            unhedged = config.state.get('last_chance', {})
+            revs = [v['rev'] for v in hedges.values()]
+            lc = list(unhedged.keys())
 
-            # use trailing stops
-            tts = getattr(config, 'trailing_stops', False)
-            if tts:
-                print('Using trailing stops')
-                tts = [check_stops(position=position) for position in positions
-                       if position.profit > 0 and position.ticket not in hedged]
-                tasks.extend(tts)
+            hedged = list(hedges.keys()) + revs
+            tasks = []
 
             # use exit signals
             es = getattr(config, 'exit_signals', False)
@@ -45,28 +40,34 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
             # use trailing stop loss
             tsl = getattr(config, 'trailing_loss', False)
             if tsl:
-                print('Using trailing stop loss')
-                tsl = [trail_sl(position=position) for position in positions if position.profit < 0 if position.ticket
-                       not in hedged_b]
+                exclude = lc + revs
+                tsl = [trail_sl(position=position) for position in positions if (position.profit < 0 and position.ticket
+                       not in exclude)]
                 tasks.extend(tsl)
 
             # use fixed_closer
             uc = getattr(config, 'fixed_closer', False)
             if uc:
-                print('Using fixed closer')
                 fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
                 tasks.extend(fc)
 
             # hedge
             hedging = getattr(config, 'hedging', False)
             if hedging:
-                print('Using hedge')
+                exclude = hedged + lc
                 hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
-                      not in hedged]
+                      not in exclude]
 
                 hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
                 tasks.extend(hg)
                 tasks.extend(hedges)
+
+            # use trailing stops
+            tts = getattr(config, 'trailing_stops', False)
+            if tts:
+                tts = [check_stops(position=position) for position in positions
+                       if (position.profit > 0 and position.ticket not in revs)]
+                tasks.extend(tts)
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf.time)
         except Exception as exe:
