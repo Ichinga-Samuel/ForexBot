@@ -24,8 +24,6 @@ async def check_stops(*, position: TradePosition):
         if (initial_profit or current_profit) is None:
             logger.warning(f"Could not get profit for {position.symbol}")
             return
-        initial_profit = initial_profit or current_profit
-        print(f"{current_profit=} pc={current_profit * trail_start} {last_profit=} mow={position.profit}")
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
@@ -55,11 +53,13 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
             tp = position.tp + dt
             if sl > position.price_open:
                 flag = True
+            flag = True  # remove this line
         else:
             sl = price + dp
             tp = position.tp - dt
             if sl < position.price_open:
                 flag = True
+            flag = True  # remove this line
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:
