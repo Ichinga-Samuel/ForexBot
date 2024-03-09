@@ -10,7 +10,8 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail = order.get('sl_trail', 0.25)
+        trail = getattr(config, 'sl_trail', order.get('sl_trail', 0.15))
+        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.15))
         last_price = order.get('last_price', position.price_open)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -20,12 +21,12 @@ async def trail_sl(*, position: TradePosition):
         rem_points = abs(price - position.sl) / sym.point
         ratio = round(rem_points / points, 2)
         start = price < last_price if position.type == OrderType.BUY else price > last_price
-        if position.profit < 0 and ratio <= trail and start:
+        if position.profit < 0 and ratio <= trail_start and start:
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
                 if res.retcode == 10009:
-                    logger.warning(f"Closed trade {position.ticket} with trail_sl")
+                    logger.warning(f"Closed trade {position.ticket} due to reversal")
                 else:
                     logger.error(f"Unable to close trade in trail_sl {res.comment}")
             else:
@@ -36,7 +37,7 @@ async def trail_sl(*, position: TradePosition):
                 if enter:
                     mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
                     if mod:
-                        config.state['loss'][position.ticket]['last_price'] = last_price
+                        config.state['loss'][position.ticket]['last_price'] = position.price_current
                         logger.warning(f"Modified sl for {position.ticket} with trail_sl")
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
@@ -68,14 +69,12 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
         return False
 
 
-async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float = 0.075, points: float, extra=0.0, tries=4) -> bool:
+async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, points: float, extra=0.0, tries=4) -> bool:
     try:
         trail_points = trail * points
         points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
-        tick = await sym.info_tick()
-        price = tick.ask if position.type == OrderType.BUY else tick.bid
-        sl = price - dp if position.type == OrderType.BUY else price + dp
+        sl = position.sl - dp if position.type == OrderType.BUY else position.tp + dp
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:

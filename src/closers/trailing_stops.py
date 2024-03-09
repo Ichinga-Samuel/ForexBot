@@ -14,21 +14,14 @@ async def check_stops(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = order.get('trail', 0.10)
-        trail_start = order.get('trail_start', 0.6)
-        ts = getattr(config, 'trail_start', 0.95)
-        trail_start = trail_start or ts
-        initial_profit = order.get('initial_profit')
+        trail = getattr(config, 'trail', order.get('trail', 0.15))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.5))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
-        if (initial_profit or current_profit) is None:
-            logger.warning(f"Could not get profit for {position.symbol}")
-            return
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit)
-
     except Exception as err:
         logger.error(f"{err} in modify_stop")
 
@@ -39,27 +32,27 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
         position = positions[0]
-        points = abs(position.price_open - position.tp) / sym.point
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
-        trail_points = trail * points
+        t_points = abs(position.price_open - price) / sym.point
+        points = abs(position.price_open - position.tp) / sym.point
+        use_full = getattr(config, 'use_full', False)
+        trail_points = trail * (points if use_full else t_points)
         min_points = sym.trade_stops_level + sym.spread + (sym.spread * extra)
         points = max(trail_points, min_points)
         dp = round(points * sym.point, sym.digits)
-        dt = round(trail_points * sym.point, sym.digits)
+        dt = round(points * trail * sym.point, sym.digits)
         flag = False
         if position.type == OrderType.BUY:
             sl = price - dp
             tp = position.tp + dt
             if sl > position.price_open:
                 flag = True
-            flag = True  # remove this line
         else:
             sl = price + dp
             tp = position.tp - dt
             if sl < position.price_open:
                 flag = True
-            flag = True  # remove this line
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:

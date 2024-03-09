@@ -21,7 +21,7 @@ class BaseTrader(Trader):
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=1, risk=0.01)
+        ram = ram or RAM(risk_to_reward=2, risk=0.01)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -61,8 +61,8 @@ class BaseTrader(Trader):
         try:
             p_points = abs(result.price - self.order.tp) / self.symbol.point
             l_points = abs(result.price - self.order.sl) / self.symbol.point
-            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.6, 'trail': 0.10, 'points': p_points}
-            loss = {'sl_trail': 0.25, 'last_price': result.price, 'points': l_points, 'rev_point': 0.70}
+            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.5, 'trail': 0.15, 'points': p_points}
+            loss = {'sl_trail': 0.10, 'last_price': result.price, 'points': l_points, 'sl_trail_start': 0.10}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
         except Exception as err:
