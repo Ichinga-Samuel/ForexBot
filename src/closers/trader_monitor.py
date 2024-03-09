@@ -60,18 +60,21 @@ async def monitor(*, tf: int = 20, key: str = 'trades'):
             # hedge
             hedging = getattr(config, 'hedging', False)
             if hedging:
-                main = []
-                exclude = hedged + lc
-                hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
-                      not in exclude]
-                lcs = [last_chance(position=position) for position in positions if
-                       (position.ticket in lc and position.profit < 0)]
+                try:
+                    main = []
+                    exclude = hedged + lc
+                    hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
+                          not in exclude]
+                    lcs = [last_chance(position=position) for position in positions if
+                           (position.ticket in lc and position.profit < 0)]
 
-                ch = [check_hedge(main=k, rev=k['rev']) for k in hedges]
-                main.extend(hg)
-                main.extend(ch)
-                main.extend(lcs)
-                await asyncio.gather(*main, return_exceptions=True)
+                    ch = [check_hedge(main=k, rev=v['rev']) for k, v in hedges.items()]
+                    main.extend(hg)
+                    main.extend(ch)
+                    main.extend(lcs)
+                    await asyncio.gather(*main, return_exceptions=True)
+                except Exception as exe:
+                    logger.error(f'An error occurred in hedging monitor: {exe}')
 
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)
