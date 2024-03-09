@@ -52,15 +52,16 @@ async def hedge(*, position: TradePosition):
 async def check_hedge(*, main: int, rev: int):
     try:
         config = Config()
-        hedges = config.state.get('hedges', {})
+        hedges = config.state.setdefault('hedges', {})
         unhedged = config.state.setdefault('last_chance', {})
         pos = Positions()
         poss = await pos.positions_get(ticket=main)
         main_pos = poss[0] if poss else None
         poss = await pos.positions_get(ticket=rev)
         rev_pos = poss[0] if poss else None
-        tick = await Symbol(name=main_pos.symbol).info_tick(name=main_pos.symbol)
         if main_pos and rev_pos:
+            sym = Symbol(name=main_pos.symbol)
+            tick = await sym.info_tick(name=main_pos.symbol)
             data = hedges[main]
             rev_close = data['rev_close']
             close = tick.ask > rev_close if main_pos.type == OrderType.BUY else tick.bid < rev_close

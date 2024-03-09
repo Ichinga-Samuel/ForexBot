@@ -8,7 +8,7 @@ from .fixed_closer import fixed_closer
 from .trailing_stops import check_stops
 from .trailing_loss import trail_sl
 from .closer import OpenTrade
-from .hedge import hedge, check_hedge
+from .hedge import hedge, check_hedge, last_chance
 
 logger = getLogger(__name__)
 
@@ -57,11 +57,13 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 exclude = hedged + lc
                 hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
                       not in exclude]
-                # print(f'hedging:{len(hg)}')
+                lcs = [last_chance(position=position) for position in positions if
+                       (position.ticket in lc and position.profit < 0)]
 
-                hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
+                ch = [check_hedge(main=k, rev=k['rev']) for k in hedges]
                 tasks.extend(hg)
-                tasks.extend(hedges)
+                tasks.extend(ch)
+                tasks.extend(lcs)
 
             # use trailing stops
             tts = getattr(config, 'trailing_stops', False)

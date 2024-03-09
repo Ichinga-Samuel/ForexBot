@@ -18,13 +18,9 @@ async def trail_sl(*, position: TradePosition):
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         rem_points = abs(price - position.sl) / sym.point
-        rem = int(rem_points)
         ratio = round(rem_points / points, 2)
-        trp = int(trail * points)
         start = price < last_price if position.type == OrderType.BUY else price > last_price
-        # print(f'{rem=}: {trp=} {ratio=} {start=}')
         if position.profit < 0 and ratio <= trail and start:
-            # print(f'{rem_points=}:{trail * points} after')
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
@@ -41,6 +37,7 @@ async def trail_sl(*, position: TradePosition):
                     mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
                     if mod:
                         config.state['loss'][position.ticket]['last_price'] = last_price
+                        logger.warning(f"Modified sl for {position.ticket} with trail_sl")
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
 
