@@ -10,7 +10,7 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail = order.get('sl_trail', 0.10)
+        trail = order.get('sl_trail', 0.25)
         last_price = order.get('last_price', position.price_open)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -51,7 +51,7 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
         candles.rename(**{f"EMA_{fast}": "fast", f"EMA_{slow}": "slow"})
         if position.type == OrderType.BUY:
             fbs = candles.ta_lib.below(candles.fast, candles.slow)
-            cbf = candles.ta_lib.below(candles.close, candles.fast, above=True)
+            cbf = candles.ta_lib.below(candles.close, candles.fast)
             if fbs.iloc[-1] and cbf.iloc[-1]:
                 return True
             else:
@@ -68,10 +68,10 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
         return False
 
 
-async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float = 0.075, points):
+async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float = 0.075, points: float, extra=0.0, tries=4) -> bool:
     try:
         trail_points = trail * points
-        points = max(trail_points, sym.trade_stops_level + sym.spread)
+        points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
         tick = await sym.info_tick()
         price = tick.ask if position.type == OrderType.BUY else tick.bid
@@ -81,6 +81,8 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float = 0.07
         if res.retcode == 10009:
             logger.warning(f"Successfully modified sl at {dp} for {position.symbol}")
             return True
+        elif res.retcode == 10016 and tries > 0:
+            await modify_sl(position=position, sym=sym, trail=trail, points=points, extra=extra + 0.05, tries=tries - 1)
         else:
             logger.error(f"Could not modify order sl {res.comment}")
             return False

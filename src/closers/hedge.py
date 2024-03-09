@@ -127,20 +127,35 @@ async def extend_tp(*, position: TradePosition):
         logger.error(f'An error occurred in function extend_tp {exe}')
 
 
-async def hedger(*, tf: int = 30):
+async def hedger(*, tf: int = 60):
     print('Hedging started')
     await sleep(tf)
-    conf = Config()
     pos = Positions()
     while True:
         try:
-            tasks = []
             positions = await pos.positions_get()
-            hedges = conf.state.get('hedges', {})
-            hedges = [check_hedge(main=k, rev=v) for k, v in hedges.items()]
-            revs = [hedge(position=p) for p in positions if p.profit < 0 and p.ticket not in hedges]
-            tasks.extend(hedges)
-            tasks.extend(revs)
+            config = Config()
+            hedges = config.state.setdefault('hedges', {})
+            unhedged = config.state.get('last_chance', {})
+            revs = [v['rev'] for v in hedges.values() if (isinstance(v, dict) and 'rev' in v)]
+            logger.warning(f'{hedges=}')
+            lc = list(unhedged.keys())
+            hedged = list(hedges.keys()) + revs
+            tasks = []
+            # hedge
+            hedging = getattr(config, 'hedging', False)
+            if hedging:
+                exclude = hedged + lc
+                hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
+                      not in exclude]
+                lcs = [last_chance(position=position) for position in positions if
+                       (position.ticket in lc and position.profit < 0)]
+
+                ch = [check_hedge(main=k, rev=k['rev']) for k in hedges]
+                tasks.extend(hg)
+                tasks.extend(ch)
+                tasks.extend(lcs)
+
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)
         except Exception as exe:

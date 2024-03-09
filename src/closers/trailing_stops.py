@@ -14,8 +14,8 @@ async def check_stops(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = order.get('trail', 0.05)
-        trail_start = order.get('trail_start', 0.5)
+        trail = order.get('trail', 0.10)
+        trail_start = order.get('trail_start', 0.6)
         ts = getattr(config, 'trail_start', 0.95)
         trail_start = trail_start or ts
         initial_profit = order.get('initial_profit')

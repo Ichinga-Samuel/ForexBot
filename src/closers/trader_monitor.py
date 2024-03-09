@@ -1,7 +1,7 @@
 import asyncio
 from logging import getLogger
 
-from aiomql import Positions, TimeFrame, Config
+from aiomql import Positions, Config
 
 from ..utils.sleep import sleep
 from .fixed_closer import fixed_closer
@@ -13,19 +13,19 @@ from .hedge import hedge, check_hedge, last_chance
 logger = getLogger(__name__)
 
 
-async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
+async def monitor(*, tf: int = 20, key: str = 'trades'):
     print('Trade Monitoring started')
     pos = Positions()
     while True:
         try:
             positions = await pos.positions_get()
             config = Config()
-            hedges = config.state.get('hedges', {})
+            hedges = config.state.setdefault('hedges', {})
+            logger.warning(f'{hedges=}')
             unhedged = config.state.get('last_chance', {})
-            revs = [v['rev'] for v in hedges.values()]
+            revs = [v['rev'] for v in hedges.values() if (isinstance(v, dict) and 'rev' in v)]
             lc = list(unhedged.keys())
-
-            hedged = list(hedges.keys()) + revs
+            hedged = list(hedges.keys()) + lc
             tasks = []
 
             # use exit signals
@@ -42,7 +42,6 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 exclude = lc + revs
                 tsl = [trail_sl(position=position) for position in positions if (position.profit < 0 and position.ticket
                        not in exclude)]
-                # print(f'tsl:{len(tsl)}')
                 tasks.extend(tsl)
 
             # use fixed_closer
@@ -51,9 +50,17 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                 fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
                 tasks.extend(fc)
 
+            # use trailing stops
+            tts = getattr(config, 'trailing_stops', False)
+            if tts:
+                tts = [check_stops(position=position) for position in positions
+                       if (position.profit > 0 and position.ticket not in revs)]
+                tasks.extend(tts)
+
             # hedge
             hedging = getattr(config, 'hedging', False)
             if hedging:
+                main = []
                 exclude = hedged + lc
                 hg = [hedge(position=position) for position in positions if position.profit < 0 and position.ticket
                       not in exclude]
@@ -61,19 +68,13 @@ async def monitor(*, tf: TimeFrame = TimeFrame.M1, key: str = 'trades'):
                        (position.ticket in lc and position.profit < 0)]
 
                 ch = [check_hedge(main=k, rev=k['rev']) for k in hedges]
-                tasks.extend(hg)
-                tasks.extend(ch)
-                tasks.extend(lcs)
+                main.extend(hg)
+                main.extend(ch)
+                main.extend(lcs)
+                await asyncio.gather(*main, return_exceptions=True)
 
-            # use trailing stops
-            tts = getattr(config, 'trailing_stops', False)
-            if tts:
-                tts = [check_stops(position=position) for position in positions
-                       if (position.profit > 0 and position.ticket not in revs)]
-                tasks.extend(tts)
-            # print(f'trailing stops:{len(tts)}')
             await asyncio.gather(*tasks, return_exceptions=True)
-            await sleep(tf.time)
+            await sleep(tf)
         except Exception as exe:
             logger.error(f'An error occurred in function monitor {exe}')
-            await sleep(tf.time)
+            await sleep(tf)
