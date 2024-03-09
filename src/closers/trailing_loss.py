@@ -37,7 +37,7 @@ async def trail_sl(*, position: TradePosition):
                 if enter:
                     mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
                     if mod:
-                        config.state['loss'][position.ticket]['last_price'] = position.price_current
+                        config.state['loss'][position.ticket]['last_price'] = position.sl
                         logger.warning(f"Modified sl for {position.ticket} with trail_sl")
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
