@@ -16,10 +16,8 @@ def build_bot():
     # syms = ['Volatility 25 Index', 'Volatility 50 Index', 'Volatility 10 Index', 'Volatility 75 Index',
     #         'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',
     #         'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
-    syms = ['Volatility 10 Index', 'Volatility 250 (1s) Index', 'Volatility 150 (1s) Index',
-            'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',
-            'Volatility 300 (1s) Index', 'Volatility 75 Index', 'Volatility 10 (1s) Index',
-            'Volatility 100 Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index', 'Volatility 200 (1s) Index',
+    syms = ['Volatility 10 Index', 'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',
+            'Volatility 75 Index', 'Volatility 10 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index',
             'Volatility 75 (1s) Index']
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
     ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FingerTrap, PostNut]]
