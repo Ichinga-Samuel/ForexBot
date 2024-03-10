@@ -43,7 +43,7 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         min_points = sym.trade_stops_level + sym.spread + (sym.spread * extra)
         points = max(trail_points, min_points)
         dp = round(points * sym.point, sym.digits)
-        dt = round(points * trail * sym.point, sym.digits)
+        dt = round(points * shift_profit * sym.point, sym.digits)
         flag = False
         if position.type == OrderType.BUY:
             sl = price - dp
