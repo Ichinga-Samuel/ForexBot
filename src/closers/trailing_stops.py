@@ -16,18 +16,20 @@ async def check_stops(*, position: TradePosition):
         last_profit = order.get('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.15))
         trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.5))
+        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.5))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
-            await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit)
+            await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit,
+                               shift_profit=shift_profit)
     except Exception as err:
         logger.error(f"{err} in modify_stop")
 
 
 async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.0, tries=3,
-                       last_profit=0):
+                       last_profit=0, shift_profit=0.5):
     try:
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -47,11 +49,13 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
             sl = price - dp
             tp = position.tp + dt
             if sl > position.price_open:
+                logger.warning(f'Modify take profit flag is true for {config.login}')
                 flag = True
         else:
             sl = price + dp
             tp = position.tp - dt
             if sl < position.price_open:
+                logger.warning(f'Modify take profit flag is true for {config.login}')
                 flag = True
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
