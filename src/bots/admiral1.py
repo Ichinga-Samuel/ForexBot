@@ -11,7 +11,7 @@ from ..closers import monitor
 def build_bot():
     conf = Config(config_dir='configs', filename='admiral_1.json', reload=True, records_dir='records/admiral1/',
                   use_ram=True, trailing_stops=True, exit_signals=True, trailing_loss=True,
-                  trail_start=0.95, hedging=True)
+                  trail_start=0.95)
 
     conf.state['hedges'] = {}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral1.log',
