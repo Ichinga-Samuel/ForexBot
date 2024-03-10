@@ -15,8 +15,8 @@ async def check_stops(*, position: TradePosition):
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.15))
-        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.5))
-        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.5))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.85))
+        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.25))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
@@ -29,7 +29,7 @@ async def check_stops(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.0, tries=3,
-                       last_profit=0, shift_profit=0.5):
+                       last_profit=0, shift_profit=0.25):
     try:
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -44,29 +44,29 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         points = max(trail_points, min_points)
         dp = round(points * sym.point, sym.digits)
         dt = round(points * shift_profit * sym.point, sym.digits)
-        flag = False
+        # flag = False
         if position.type == OrderType.BUY:
             sl = price - dp
             tp = position.tp + dt
-            if sl > position.price_open:
-                logger.warning(f'Modify take profit flag is true for {config.login}')
-                flag = True
+            # # if sl > position.price_open:
+            #     logger.warning(f'Modify take profit flag is true for {config.login}')
+            #     flag = True
         else:
             sl = price + dp
             tp = position.tp - dt
-            if sl < position.price_open:
-                logger.warning(f'Modify take profit flag is true for {config.login}')
-                flag = True
-        if flag:
-            res = await send_order(position=position, sl=sl, tp=tp)
-            if res.retcode == 10009:
-                config.state['profits'][position.ticket]['last_profit'] = position.profit
-                logger.warning(f"Modified trade {position.ticket} with {extra=} and {tries=} for {sym}")
-            elif res.retcode == 10016 and tries > 0:
-                await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
-                                   tries=tries - 1, last_profit=last_profit)
-            else:
-                logger.error(f"Could not modify order {res.comment} with {extra=} and {tries=} for {sym}")
+            # if sl < position.price_open:
+            # logger.warning(f'Modify take profit flag is true for {config.login}')
+            # flag = True
+        # if flag:
+        res = await send_order(position=position, sl=sl, tp=tp)
+        if res.retcode == 10009:
+            config.state['profits'][position.ticket]['last_profit'] = position.profit
+            logger.warning(f"Modified trade {position.ticket} with {extra=} and {tries=} for {sym}")
+        elif res.retcode == 10016 and tries > 0:
+            await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
+                               tries=tries - 1, last_profit=last_profit)
+        else:
+            logger.error(f"Could not modify order {res.comment} with {extra=} and {tries=} for {sym}")
     except Exception as err:
         logger.error(f"{err} in modify_stops")
 

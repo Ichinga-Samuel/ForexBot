@@ -22,6 +22,7 @@ async def trail_sl(*, position: TradePosition):
         ratio = round(rem_points / points, 2)
         # start = price < last_price if position.type == OrderType.BUY else price > last_price
         if position.profit < 0 and ratio <= trail_start:
+            logger.warning(f"Trail stared {position.profit} with {ratio} ratio")
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
@@ -32,13 +33,13 @@ async def trail_sl(*, position: TradePosition):
             else:
                 positions = await positions.positions_get(ticket=position.ticket)
                 position = positions[0]
-                enter = position.price_current < last_price if position.type == OrderType.BUY else (
-                        position.price_current > last_price)
-                if enter:
-                    mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
-                    if mod:
-                        config.state['loss'][position.ticket]['last_price'] = position.price_current
-                        logger.warning(f"Modified sl for {position.ticket} with trail_sl")
+                # enter = position.price_current < last_price if position.type == OrderType.BUY else (
+                #         position.price_current > last_price)
+                # if enter:
+                mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
+                if mod:
+                    config.state['loss'][position.ticket]['last_price'] = position.price_current
+                    logger.warning(f"Modified sl for {position.ticket} with trail_sl")
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
 
@@ -74,7 +75,9 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         trail_points = trail * points
         points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
-        sl = position.sl - dp if position.type == OrderType.BUY else position.tp + dp
+        tick = await sym.info_tick()
+        price = tick.ask if position.type == OrderType.BUY else tick.bid
+        sl = price - dp if position.type == OrderType.BUY else price + dp
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
