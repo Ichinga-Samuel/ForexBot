@@ -21,7 +21,7 @@ class BaseTrader(Trader):
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=2, risk=0.01)
+        ram = ram or RAM(risk_to_reward=1, risk=0.01)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
