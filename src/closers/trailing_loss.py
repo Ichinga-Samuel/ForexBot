@@ -2,6 +2,8 @@ from logging import getLogger
 
 from aiomql import Positions, Symbol, OrderType, TradePosition, TimeFrame, Config, Order, TradeAction
 
+from ..utils import calc_loss
+
 logger = getLogger(__name__)
 
 
@@ -10,19 +12,17 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail = getattr(config, 'sl_trail', order.get('sl_trail', 0.15))
-        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.15))
-        last_price = order.get('last_price', position.price_open)
+        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.6))
+        last_profit = order.get('last_profit', position.price_open)
         sym = Symbol(name=position.symbol)
         await sym.init()
-        points = abs(position.price_open - position.sl) / sym.point
-        tick = await sym.info_tick()
-        price = tick.ask if position.type == OrderType.BUY else tick.bid
-        rem_points = abs(price - position.sl) / sym.point
-        ratio = round(rem_points / points, 2)
-        # start = price < last_price if position.type == OrderType.BUY else price > last_price
-        if position.profit < 0 and ratio <= trail_start:
-            logger.warning(f"Trail stared {position.profit} with {ratio} ratio")
+        points = order.get('l_points', abs(position.price_open - position.sl) / sym.point)
+        loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
+                         order_type=position.type)
+        trail_loss = trail_start * loss
+        if position.profit < 0 and position.profit <= trail_loss and position.profit < last_profit:
+            logger.error(f"Trade {position.ticket} is in loss {position.profit} with {trail_loss} trail_loss"
+                         f" {last_profit} last_profit")
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
@@ -33,12 +33,9 @@ async def trail_sl(*, position: TradePosition):
             else:
                 positions = await positions.positions_get(ticket=position.ticket)
                 position = positions[0]
-                # enter = position.price_current < last_price if position.type == OrderType.BUY else (
-                #         position.price_current > last_price)
-                # if enter:
-                mod = await modify_sl(position=position, sym=sym, trail=trail, points=points)
+                mod = await modify_sl(position=position, sym=sym, trail=trail_start, points=points)
                 if mod:
-                    config.state['loss'][position.ticket]['last_price'] = position.price_current
+                    config.state['loss'][position.ticket]['last_profit'] = position.profit
                     logger.warning(f"Modified sl for {position.ticket} with trail_sl")
     except Exception as exe:
         logger.error(f'An error occurred in function trail_sl {exe}')
@@ -75,9 +72,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         trail_points = trail * points
         points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
-        tick = await sym.info_tick()
-        price = tick.ask if position.type == OrderType.BUY else tick.bid
-        sl = price - dp if position.type == OrderType.BUY else price + dp
+        sl = position.sl - dp if position.type == OrderType.BUY else position.sl + dp
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
