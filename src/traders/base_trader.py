@@ -61,7 +61,7 @@ class BaseTrader(Trader):
         try:
             p_points = abs(result.price - self.order.tp) / self.symbol.point
             l_points = abs(result.price - self.order.sl) / self.symbol.point
-            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.55, 'trail': 0.15,
+            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.55, 'trail': 0.20,
                       'points': p_points, 'shift_profit': 0.15}
             loss = {'sl_trail': 0.20, 'last_price': result.price, 'points': l_points, 'sl_trail_start': 0.60}
             self.config.state.setdefault('profits', {})[result.order] = profit
