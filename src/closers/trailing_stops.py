@@ -28,7 +28,7 @@ async def check_stops(*, position: TradePosition):
         logger.error(f"{err} in modify_stop")
 
 
-async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.0, tries=3,
+async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.1, tries=3,
                        last_profit=0, shift_profit=0.25):
     try:
         assert position.profit > last_profit
@@ -38,8 +38,9 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         points = abs(position.price_open - position.tp) / sym.point
         trail_points = trail * points
-        min_points = sym.trade_stops_level + sym.spread + (sym.spread * extra)
+        min_points = sym.trade_stops_level
         points = max(trail_points, min_points)
+        points = points + sym.spread * (1 + extra)
         dp = round(trail_points * sym.point, sym.digits)
         dt = round(points * shift_profit * sym.point, sym.digits)
         flag = False
