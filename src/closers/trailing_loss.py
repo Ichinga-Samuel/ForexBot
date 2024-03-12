@@ -13,7 +13,7 @@ async def trail_sl(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
         trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.6))
-        last_profit = order.get('last_profit', position.price_open)
+        last_profit = order.get('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
         points = order.get('l_points', abs(position.price_open - position.sl) / sym.point)
@@ -52,16 +52,16 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
             fbs = candles.ta_lib.below(candles.fast, candles.slow)
             cbf = candles.ta_lib.below(candles.close, candles.fast)
             if fbs.iloc[-1] and cbf.iloc[-1]:
-                return True
+                return False  # True
             else:
                 return False
         elif position.type == OrderType.SELL:
             fab = candles.ta_lib.above(candles.fast, candles.slow)
             caf = candles.ta_lib.above(candles.close, candles.fast)
             if fab.iloc[-1] and caf.iloc[-1]:
-                return True
+                return False  # False
             else:
-                return False
+                return False  # False
     except Exception as exe:
         logger.error(f'An error occurred in function check_reversal {exe}')
         return False
