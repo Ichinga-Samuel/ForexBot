@@ -20,7 +20,8 @@ def build_bot():
             'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
 
     syms = [ForexSymbol(name=sym) for sym in syms]
-    pn_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, ram=RAM(risk_to_reward=1.5, max_amount=2, min_amount=2)))
+    pn_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, ram=RAM(risk_to_reward=1.5, max_amount=2, min_amount=2,
+                                                                 loss_limit=1)))
               for sym in syms for ST in [PostNut, FingerFractal]]
     bot.add_strategies(pn_sts)
     bot.add_coroutine(monitor)

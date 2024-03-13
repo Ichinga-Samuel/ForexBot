@@ -21,7 +21,7 @@ class BaseTrader(Trader):
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=3, risk=0.01)
+        ram = ram or RAM(risk_to_reward=3, risk=0.01, loss_limit=1)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -61,15 +61,18 @@ class BaseTrader(Trader):
         try:
             p_points = abs(result.price - self.order.tp) / self.symbol.point
             l_points = abs(result.price - self.order.sl) / self.symbol.point
-            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.55, 'trail': 0.15,
-                      'points': p_points, 'shift_profit': 0.30}
-            loss = {'sl_trail': 0.20, 'last_profit': 0, 'points': l_points, 'sl_trail_start': 0.60}
+            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.3, 'trail': 0.15,
+                      'points': p_points, 'shift_profit': 0.25}
+            loss = {'sl_trail': 0.20, 'last_profit': 0, 'points': l_points, 'sl_trail_start': 0.70}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def check_ram(self):
+        open_pos = await self.ram.check_open_positions()
+        if open_pos:
+            raise RuntimeError("Open positions present")
         bal = await self.ram.check_balance_level()
         if bal:
             raise RuntimeError("Balance level too low")

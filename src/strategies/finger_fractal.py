@@ -24,9 +24,10 @@ class FingerFractal(Strategy):
     first_sl: float
     second_sl: float
     trend: int
+    itf: TimeFrame
     ecc: int
     parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
-                  'closer': ema_rsi_closer, "etf": TimeFrame.H1, 'ecc': 24}
+                  'closer': ema_rsi_closer, "etf": TimeFrame.H1, 'ecc': 24, 'itf': TimeFrame.M15}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -55,20 +56,20 @@ class FingerFractal(Strategy):
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
-            if candles[-2].is_bullish() and all([current.caf, current.fas, current.sat]):
+            if candles[-1].is_bullish() and all([current.caf, current.fas, current.sat]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
-                self.tracker.update(sl=sl, snooze=self.ttf, order_type=OrderType.BUY)
+                self.tracker.update(sl=sl, snooze=self.etf.time, order_type=OrderType.BUY)
 
-            elif candles[-2].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
+            elif candles[-1].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
-                self.tracker.update(snooze=self.ttf, order_type=OrderType.SELL, sl=sl)
+                self.tracker.update(snooze=self.etf.time, order_type=OrderType.SELL, sl=sl)
             else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
+                self.tracker.update(trend="ranging", snooze=self.itf.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
-            self.tracker.update(snooze=self.ttf.time, order_type=None)
+            self.tracker.update(snooze=self.etf.time, order_type=None)
 
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
@@ -89,4 +90,4 @@ class FingerFractal(Strategy):
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
-                    await self.sleep(self.trend_time_frame.time)
+                    await self.sleep(self.tracker.snooze)
