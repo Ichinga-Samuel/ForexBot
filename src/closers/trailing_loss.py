@@ -12,7 +12,7 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.6))
+        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.7))
         last_profit = order.get('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -43,25 +43,28 @@ async def trail_sl(*, position: TradePosition):
 
 async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
     try:
-        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.H1)
-        fast, slow = 8, 13
+        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.M15)
+        fast, mid, slow = 13, 21, 34
         candles.ta.ema(length=fast, append=True)
         candles.ta.ema(length=slow, append=True)
-        candles.rename(**{f"EMA_{fast}": "fast", f"EMA_{slow}": "slow"})
+        candles.ta.ema(length=mid, append=True)
+        candles.rename(**{f"EMA_{fast}": "fast", f"EMA_{slow}": "slow", f"EMA_{mid}": "mid"})
         if position.type == OrderType.BUY:
-            fbs = candles.ta_lib.below(candles.fast, candles.slow)
+            mbs = candles.ta_lib.below(candles.mid, candles.slow)
+            fbs = candles.ta_lib.below(candles.fast, candles.mid)
             cbf = candles.ta_lib.below(candles.close, candles.fast)
-            if fbs.iloc[-1] and cbf.iloc[-1]:
-                return False  # True
+            if fbs.iloc[-1] and cbf.iloc[-1] and mbs.iloc[-1]:
+                return True
             else:
                 return False
         elif position.type == OrderType.SELL:
-            fab = candles.ta_lib.above(candles.fast, candles.slow)
+            fab = candles.ta_lib.above(candles.fast, candles.mid)
+            mas = candles.ta_lib.above(candles.mid, candles.slow)
             caf = candles.ta_lib.above(candles.close, candles.fast)
-            if fab.iloc[-1] and caf.iloc[-1]:
-                return False  # False
+            if fab.iloc[-1] and caf.iloc[-1] and mas.iloc[-1]:
+                return True
             else:
-                return False  # False
+                return False
     except Exception as exe:
         logger.error(f'An error occurred in function check_reversal {exe}')
         return False

@@ -10,8 +10,8 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         positions = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
-        tf = parameters.get('etf', parameters.get('etf', TimeFrame.M15))
-        cc = parameters.get('ecc', parameters.get('ecc', 1000))
+        tf = TimeFrame.M15
+        cc = 1000
         order_type = position.type
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=tf)
         fast_ema, slow_ema = parameters.get('fast_ema', 8), parameters.get('slow_ema', 13)

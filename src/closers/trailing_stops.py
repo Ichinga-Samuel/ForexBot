@@ -14,9 +14,9 @@ async def check_stops(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = getattr(config, 'trail', order.get('trail', 0.15))
+        trail = getattr(config, 'trail', order.get('trail', 0.20))
         trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.7))
-        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.15))
+        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.30))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:

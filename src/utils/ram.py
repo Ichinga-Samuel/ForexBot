@@ -2,8 +2,8 @@ from aiomql import RAM as _RAM, Positions
 
 
 class RAM(_RAM):
-    min_amount: float = 5
-    max_amount: float = 5
+    min_amount: float = 1
+    max_amount: float = 1
     loss_limit: int = 2
     balance_level: float = 50
 
