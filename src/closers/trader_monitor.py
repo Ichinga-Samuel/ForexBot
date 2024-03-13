@@ -12,7 +12,7 @@ from .closer import OpenTrade
 logger = getLogger(__name__)
 
 
-async def monitor(*, tf: int = 60, key: str = 'trades'):
+async def monitor(*, tf: int = 107, key: str = 'trades'):
     print('Trade Monitoring started')
     pos = Positions()
     while True:
