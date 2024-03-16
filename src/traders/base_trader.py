@@ -70,9 +70,9 @@ class BaseTrader(Trader):
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def check_ram(self):
-        open_pos = await self.ram.check_open_positions()
+        open_pos = await self.ram.check_open_positions(symbol=self.symbol.name)
         if open_pos:
-            raise RuntimeError("Open positions present")
+            raise RuntimeError(f"Open positions present for {self.symbol.name}")
         bal = await self.ram.check_balance_level()
         if bal:
             raise RuntimeError("Balance level too low")
