@@ -32,11 +32,12 @@ class PostNut(Strategy):
     trend: int
     interval: int = 180
     parameters = {"ttf": TimeFrame.M15, "etf": TimeFrame.M15, "tcc": 720, "ecc": 4320, "first_sma": 5, "second_sma": 9,
-                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180, 'closer': ema_rsi_closer}
+                  "mfi_length": 14, "third_sma": 2, 'fourth_sma': 15, 'interval': 180, 'closer': ema_rsi_closer,
+                  'cap': 5}
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
-        ram = RAM(risk_to_reward=3, risk=0.01, min_amount=3, max_amount=3, loss_limit=4, use_ram=True)
+        ram = RAM(risk=0.01, min_amount=3, max_amount=3, loss_limit=4, use_ram=True)
         self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, multiple=True, risk_to_rewards=[2, 2.5, 3])
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 

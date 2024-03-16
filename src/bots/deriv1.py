@@ -10,8 +10,8 @@ from ..utils import RAM
 
 
 def build_bot():
-    conf = Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
-                  trailing_stops=True, exit_signals=True, trailing_loss=True, use_ram=True)
+    Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
+           trailing_stops=True, exit_signals=True, trailing_loss=True, use_ram=True, fixed_closer=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_1.log', datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
@@ -20,7 +20,7 @@ def build_bot():
             'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
 
     syms = [ForexSymbol(name=sym) for sym in syms]
-    ft_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, ram=RAM(risk_to_reward=3, max_amount=2, min_amount=2,
+    ft_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, ram=RAM(risk_to_reward=2, max_amount=2, min_amount=2,
                                                                  loss_limit=1)))
               for sym in syms for ST in [FingerFractal]]
     pn_sts = [PostNut(symbol=sym) for sym in syms]

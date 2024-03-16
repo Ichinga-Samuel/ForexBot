@@ -38,7 +38,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use fixed_closer
             uc = getattr(config, 'fixed_closer', False)
             if uc:
-                fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
+                fc = [fixed_closer(position=position) for position in positions if position.profit > 0]
                 tasks.extend(fc)
 
             # use trailing stops
