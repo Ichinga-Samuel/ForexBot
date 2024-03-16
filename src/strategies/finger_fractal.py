@@ -59,17 +59,17 @@ class FingerFractal(Strategy):
             if candles[-1].is_bullish() and all([current.caf, current.fas, current.sat]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
-                self.tracker.update(sl=sl, snooze=self.etf.time, order_type=OrderType.BUY)
+                self.tracker.update(sl=sl, snooze=self.ttf.time, order_type=OrderType.BUY)
 
             elif candles[-1].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
-                self.tracker.update(snooze=self.etf.time, order_type=OrderType.SELL, sl=sl)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.itf.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
-            self.tracker.update(snooze=self.etf.time, order_type=None)
+            self.tracker.update(snooze=self.ttf.time, order_type=None)
 
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")

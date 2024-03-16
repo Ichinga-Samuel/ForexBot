@@ -16,7 +16,7 @@ async def trail_sl(*, position: TradePosition):
         last_profit = order.get('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
-        l_points = order.get('l_points', 0)
+        l_points = order.get('l_points', 0.0)
         points = abs(position.price_open - position.sl) / sym.point
         points = max(l_points, points)
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
@@ -77,7 +77,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         trail_points = trail * points
         points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
-        sl = position.sl - dp if position.type == OrderType.BUY else position.sl + dp
+        sl = position.price_current - dp if position.type == OrderType.BUY else position.price_current + dp
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:

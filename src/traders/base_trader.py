@@ -61,9 +61,9 @@ class BaseTrader(Trader):
         try:
             p_points = abs(result.price - self.order.tp) / self.symbol.point
             l_points = abs(result.price - self.order.sl) / self.symbol.point
-            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.3, 'trail': 0.15,
-                      'points': p_points, 'shift_profit': 0.25}
-            loss = {'sl_trail': 0.20, 'last_profit': 0, 'points': l_points, 'sl_trail_start': 0.70}
+            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.10, 'trail': 0.10,
+                      'points': p_points, 'shift_profit': 0.2}
+            loss = {'sl_trail': 0.20, 'last_profit': 0, 'points': l_points, 'sl_trail_start': 0.80}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
         except Exception as err:

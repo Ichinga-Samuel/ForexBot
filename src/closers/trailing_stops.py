@@ -14,9 +14,9 @@ async def check_stops(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = getattr(config, 'trail', order.get('trail', 0.20))
-        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.7))
-        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.30))
+        trail = getattr(config, 'trail', order.get('trail', 0.10))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.10))
+        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.20))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
@@ -42,16 +42,19 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         t_points = max(trail_points, min_points)
         t_points = t_points + sym.spread * (1 + extra)
         dp = round(t_points * sym.point, sym.digits)
-        dt = round(points * shift_profit * sym.point, sym.digits)
+        # dt = round(points * shift_profit * sym.point, sym.digits)
+        dt = round(t_points * 0.56 * sym.point, sym.digits)
         flag = False
         if position.type == OrderType.BUY:
             sl = price - dp
-            tp = position.tp + dt
+            # tp = position.tp + dt
+            tp = price + dt
             if sl > position.price_open:
                 flag = True
         else:
             sl = price + dp
-            tp = position.tp - dt
+            # tp = position.tp - dt
+            tp = price - dt
             if sl < position.price_open:
                 flag = True
         if flag:

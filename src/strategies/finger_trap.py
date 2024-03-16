@@ -18,7 +18,7 @@ class FingerTrap(Strategy):
     entry_ema: int
     ecc: int
     tcc: int
-    interval: TimeFrame = TimeFrame.H2
+    interval: TimeFrame = TimeFrame.H4
     trader: Trader
     tracker: Tracker
 
@@ -54,7 +54,7 @@ class FingerTrap(Strategy):
             elif current.fbs and current.cbf:
                 self.tracker.update(trend="bearish")  # 7
             else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None) # 8
+                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)  # 8
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.ttf.time, order_type=None)
