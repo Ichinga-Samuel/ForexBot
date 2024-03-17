@@ -12,7 +12,7 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.7))
+        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.8))
         last_profit = order.get('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -31,21 +31,22 @@ async def trail_sl(*, position: TradePosition):
                 if res.retcode == 10009:
                     logger.warning(f"Closed trade {position.ticket} due to reversal")
                 else:
-                    logger.error(f"Unable to close trade in trail_sl {res.comment}")
+                    logger.error(f"Unable to close trade in trail_sl for {position.ticket}:{position.symbol}"
+                                 f" due to {res.comment}")
             else:
                 positions = await positions.positions_get(ticket=position.ticket)
                 position = positions[0]
                 mod = await modify_sl(position=position, sym=sym, trail=trail_start, points=points)
                 if mod:
                     config.state['loss'][position.ticket]['last_profit'] = position.profit
-                    logger.warning(f"Modified sl for {position.ticket} with trail_sl")
+                    logger.warning(f"Trailed stop loss {position.ticket}:{position.symbol}")
     except Exception as exe:
-        logger.error(f'An error occurred in function trail_sl {exe}')
+        logger.error(f'Trailing stop loss failed due to {exe} for {position.ticket}:{position.symbol}')
 
 
 async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
     try:
-        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.M15)
+        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.M5)
         fast, mid, slow = 13, 21, 34
         candles.ta.ema(length=fast, append=True)
         candles.ta.ema(length=slow, append=True)
@@ -68,7 +69,7 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
             else:
                 return False
     except Exception as exe:
-        logger.error(f'An error occurred in function check_reversal {exe}')
+        logger.error(f'An error occurred in function check_reversal {exe} for {position.ticket}:{position.symbol}')
         return False
 
 
@@ -81,13 +82,13 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
-            logger.warning(f"Successfully modified sl at {dp} for {position.symbol}")
+            logger.warning(f"Successfully modified sl at {dp} for {position.ticket}:{position.symbol}")
             return True
         elif res.retcode == 10016 and tries > 0:
             await modify_sl(position=position, sym=sym, trail=trail, points=points, extra=extra + 0.05, tries=tries - 1)
         else:
-            logger.error(f"Could not modify order sl {res.comment}")
+            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.ticket}:{position.symbol}")
             return False
     except Exception as exe:
-        logger.error(f'An error occurred in function modify_sl {exe}')
+        logger.error(f'Trailing stop loss failed due to {exe} for {position.ticket}:{position.symbol}')
         return False

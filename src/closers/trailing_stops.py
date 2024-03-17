@@ -14,9 +14,9 @@ async def check_stops(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
-        trail = getattr(config, 'trail', order.get('trail', 0.10))
-        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.10))
-        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.20))
+        trail = getattr(config, 'trail', order.get('trail', 0.15))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.15))
+        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.25))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
@@ -25,7 +25,7 @@ async def check_stops(*, position: TradePosition):
             await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit,
                                shift_profit=shift_profit)
     except Exception as err:
-        logger.error(f"{err} in modify_stop")
+        logger.error(f"{err} in modify_stop for {position.ticket}:{position.symbol}")
 
 
 async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.05, tries=4,
@@ -38,9 +38,8 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         price = tick.ask if position.type == OrderType.BUY else tick.bid
         points = abs(position.price_open - position.tp) / sym.point
         trail_points = trail * points
-        min_points = sym.trade_stops_level
+        min_points = sym.trade_stops_level + sym.spread * (1 + extra)
         t_points = max(trail_points, min_points)
-        t_points = t_points + sym.spread * (1 + extra)
         dp = round(t_points * sym.point, sym.digits)
         # dt = round(points * shift_profit * sym.point, sym.digits)
         dt = round(t_points * 0.56 * sym.point, sym.digits)
@@ -61,14 +60,15 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
-                logger.warning(f"Modified trade {position.ticket} with {extra=} and {tries=} for {sym}")
+                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {tries} tries")
             elif res.retcode == 10016 and tries > 0:
                 await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
                                    tries=tries - 1, last_profit=last_profit)
             else:
-                logger.error(f"Could not modify order {res.comment} with {extra=} and {tries=} for {sym}")
+                logger.error(f"Trailing profits failed due to {res.comment} after {tries} tries for "
+                             f"{position.ticket}:{sym}")
     except Exception as err:
-        logger.error(f"{err} in modify_stops")
+        logger.error(f"Trailing profits failed due to {err} for {position.ticket}:{sym}")
 
 
 async def send_order(position: TradePosition, sl: float, tp: float) -> OrderSendResult:
