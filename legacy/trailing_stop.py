@@ -63,9 +63,8 @@ async def modify_order(*, position: TradePosition, symbol: Symbol, trail: float 
             return False
     except Exception as err:
         logger.error(f"{err} in trailing_stop.modify_order")
-
-
 # change the interval to two minutes
+
 async def trailing_stop(*, tf: TimeFrame = TimeFrame.M2):
     print('Trailing stop started')
     pos = Positions()
@@ -77,3 +76,46 @@ async def trailing_stop(*, tf: TimeFrame = TimeFrame.M2):
         except Exception as exe:
             logger.error(f'An error occurred in function trailing_stop {exe}')
             await sleep(tf.time)
+
+
+async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.05, tries=4,
+                       last_profit=0, shift_profit=0.25):
+    try:
+        assert position.profit > last_profit
+        positions = await Positions().positions_get(ticket=position.ticket)
+        position = positions[0]
+        tick = await sym.info_tick()
+        price = tick.ask if position.type == OrderType.BUY else tick.bid
+        points = abs(position.price_open - position.tp) / sym.point
+        trail_points = trail * points
+        min_points = sym.trade_stops_level + sym.spread * (1 + extra)
+        t_points = max(trail_points, min_points)
+        dp = round(t_points * sym.point, sym.digits)
+        # dt = round(points * shift_profit * sym.point, sym.digits)
+        dt = round(t_points * 0.56 * sym.point, sym.digits)
+        flag = False
+        if position.type == OrderType.BUY:
+            sl = price - dp
+            # tp = position.tp + dt
+            tp = price + dt
+            if sl > position.price_open:
+                flag = True
+        else:
+            sl = price + dp
+            # tp = position.tp - dt
+            tp = price - dt
+            if sl < position.price_open:
+                flag = True
+        if flag:
+            res = await send_order(position=position, sl=sl, tp=tp)
+            if res.retcode == 10009:
+                config.state['profits'][position.ticket]['last_profit'] = position.profit
+                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {tries} tries")
+            elif res.retcode == 10016 and tries > 0:
+                await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
+                                   tries=tries - 1, last_profit=last_profit)
+            else:
+                logger.error(f"Trailing profits failed due to {res.comment} after {tries} tries for "
+                             f"{position.ticket}:{sym}")
+    except Exception as err:
+        logger.error(f"Trailing profits failed due to {err} for {position.ticket}:{sym}")

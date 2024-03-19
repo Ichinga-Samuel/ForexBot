@@ -5,6 +5,7 @@ from logging import getLogger
 from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, TimeFrame, Config, OrderSendResult
 
 from ..utils.sleep import sleep
+from ..utils.sym_utils import calc_profit
 
 logger = getLogger(__name__)
 
@@ -15,7 +16,7 @@ async def check_stops(*, position: TradePosition):
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.15))
-        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.15))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.70))
         shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.25))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
@@ -29,7 +30,7 @@ async def check_stops(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.05, tries=4,
-                       last_profit=0, shift_profit=0.25):
+                       last_profit=0, shift_profit=0.25, trail_start=0.70):
     try:
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -46,21 +47,31 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
         flag = False
         if position.type == OrderType.BUY:
             sl = price - dp
+            captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
+                                          order_type=OrderType.SELL)
+            current_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
+                                         volume=position.volume, order_type=OrderType.BUY)
+            logger.warning(f"Captured profit for {position.ticket}:{position.symbol} is {captured_profit}")
             # tp = position.tp + dt
             tp = price + dt
-            if sl > position.price_open:
+            if captured_profit > trail * current_profit:
                 flag = True
         else:
             sl = price + dp
+            captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
+                                          order_type=OrderType.BUY)
+            current_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
+                                         volume=position.volume, order_type=OrderType.SELL)
+            logger.warning(f"Captured profit for {position.ticket}:{position.symbol} is {captured_profit}")
             # tp = position.tp - dt
             tp = price - dt
-            if sl < position.price_open:
+            if captured_profit > trail_start * current_profit:
                 flag = True
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
-                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {tries} tries")
+                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {4-tries+1} tries")
             elif res.retcode == 10016 and tries > 0:
                 await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
                                    tries=tries - 1, last_profit=last_profit)

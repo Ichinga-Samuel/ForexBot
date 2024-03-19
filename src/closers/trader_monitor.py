@@ -19,6 +19,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
         try:
             positions = await pos.positions_get()
             config = Config()
+            ntr = config.state.get('ntr', [])
             tasks = []
 
             # use exit signals
@@ -32,7 +33,8 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use trailing stop loss
             tsl = getattr(config, 'trailing_loss', False)
             if tsl:
-                tsl = [trail_sl(position=position) for position in positions if position.profit < 0]
+                tsl = [trail_sl(position=position) for position in positions if position.profit < 0
+                       and position.ticket not in ntr]
                 tasks.extend(tsl)
 
             # use fixed_closer

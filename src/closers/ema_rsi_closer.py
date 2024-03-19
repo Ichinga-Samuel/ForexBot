@@ -10,7 +10,7 @@ async def ema_rsi_closer(*, position: TradePosition, parameters: dict):
         pos = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
-        tf = TimeFrame.M5
+        tf = TimeFrame.H1
         cc = 1000
         first_ema = parameters.get('first_ema', 13)
         second_ema = parameters.get('second_ema', 21)
