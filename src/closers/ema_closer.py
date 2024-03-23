@@ -10,11 +10,11 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         positions = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
-        tf = TimeFrame.H1
+        tf = TimeFrame.M15
         cc = 1000
         order_type = position.type
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=tf)
-        fast_ema, slow_ema = parameters.get('fast_ema', 8), parameters.get('slow_ema', 13)
+        fast_ema, slow_ema = 8, 13
         candles.ta.ema(length=fast_ema, append=True)
         candles.ta.ema(length=slow_ema, append=True)
         candles.rename(**{f"EMA_{fast_ema}": "fast_ema", f"EMA_{slow_ema}": "slow_ema"})

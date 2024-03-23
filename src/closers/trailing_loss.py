@@ -46,8 +46,8 @@ async def trail_sl(*, position: TradePosition):
 
 async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
     try:
-        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.H1)
-        fast, mid, slow = 13, 21, 34
+        candles = await sym.copy_rates_from_pos(count=1000, timeframe=TimeFrame.M15)
+        fast, mid, slow = 8, 13, 21
         candles.ta.ema(length=fast, append=True)
         candles.ta.ema(length=slow, append=True)
         candles.ta.ema(length=mid, append=True)

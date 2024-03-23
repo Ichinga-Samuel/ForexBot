@@ -16,21 +16,20 @@ async def check_stops(*, position: TradePosition):
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.get('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.15))
-        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.70))
-        shift_profit = getattr(config, 'shift_profit', order.get('shift_profit', 0.25))
+        trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.50))
         current_profit = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                               position.price_open, position.tp)
         if position.profit > (current_profit * trail_start) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, trail=trail, sym=symbol, config=config, last_profit=last_profit,
-                               shift_profit=shift_profit)
+                               trail_start=trail_start)
     except Exception as err:
         logger.error(f"{err} in modify_stop for {position.ticket}:{position.symbol}")
 
 
 async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, config: Config, extra=0.05, tries=4,
-                       last_profit=0, shift_profit=0.25, trail_start=0.70):
+                       last_profit=0, trail_start=0.50):
     try:
         assert position.profit > last_profit
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -49,29 +48,30 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
             sl = price - dp
             captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
                                           order_type=OrderType.SELL)
-            current_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
-                                         volume=position.volume, order_type=OrderType.BUY)
+            target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
+                                        volume=position.volume, order_type=OrderType.BUY)
             logger.warning(f"Captured profit for {position.ticket}:{position.symbol} is {captured_profit}")
             # tp = position.tp + dt
             tp = price + dt
-            if captured_profit > trail * current_profit:
+            if captured_profit > trail_start * target_profit:
                 flag = True
         else:
             sl = price + dp
             captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
                                           order_type=OrderType.BUY)
-            current_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
-                                         volume=position.volume, order_type=OrderType.SELL)
-            logger.warning(f"Captured profit for {position.ticket}:{position.symbol} is {captured_profit}")
+            captured_profit = round(captured_profit, 2)
+            target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
+                                        volume=position.volume, order_type=OrderType.SELL)
+            logger.warning(f"{position.symbol}:{position.ticket} {captured_profit=} {target_profit=}")
             # tp = position.tp - dt
             tp = price - dt
-            if captured_profit > trail_start * current_profit:
+            if captured_profit > trail_start * target_profit:
                 flag = True
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
-                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {4-tries+1} tries")
+                logger.warning(f"Trailed profit for {sym}:{position.ticket} after {4 - tries + 1} tries")
             elif res.retcode == 10016 and tries > 0:
                 await modify_stops(position=position, trail=trail, sym=sym, config=config, extra=extra + 0.05,
                                    tries=tries - 1, last_profit=last_profit)
