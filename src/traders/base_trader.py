@@ -59,11 +59,11 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            p_points = abs(result.price - self.order.tp) / self.symbol.point
-            l_points = abs(result.price - self.order.sl) / self.symbol.point
-            profit = {'initial_profit': profit, 'last_profit': 0, 'trail_start': 0.50, 'trail': 0.15,
-                      'points': p_points, 'cap': self.parameters.get('cap', 3)}
-            loss = {'sl_trail': 0.20, 'last_profit': 0, 'points': l_points, 'sl_trail_start': 0.80}
+            p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
+            l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
+            profit = {'target_profit': profit, 'trail_start': 0.50, 'trail': 0.15, 'trailing': False,
+                      'points': p_points, 'cap': self.parameters.get('cap', 3), 'extend_start': 0.95}
+            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.85}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
             self.config.state.setdefault('ntr', [])

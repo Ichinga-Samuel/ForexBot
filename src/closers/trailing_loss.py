@@ -12,34 +12,26 @@ async def trail_sl(*, position: TradePosition):
         positions = Positions()
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail_start = getattr(config, 'sl_trail_start', order.get('sl_trail_start', 0.8))
-        last_profit = order.get('last_profit', 0)
+        trail_start = getattr(config, 'sl_trail_start', order.get('trail_start', 0.85))
+        trail = getattr(config, 'sl_trail', order.get('trail', 0.5))
+        last_profit = order.setdefault('last_profit', position.profit)
         sym = Symbol(name=position.symbol)
         await sym.init()
-        l_points = order.get('l_points', 0.0)
-        points = abs(position.price_open - position.sl) / sym.point
-        points = max(l_points, points)
+        points = order.setdefault('l_points', int(abs(position.price_open - position.sl) / sym.point))
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
         trail_loss = trail_start * loss
-        if position.profit < 0 and position.profit <= trail_loss and position.profit < last_profit:
-            logger.error(f"Trade {position.ticket} is in loss {position.profit} with {trail_loss} trail_loss"
-                         f" {last_profit} last_profit")
+        if position.profit < 0 and position.profit < last_profit and position.profit <= trail_loss:
+            logger.error(f"Trailing loss for {position.symbol}:{position.ticket} loss={position.profit}:{trail_loss=}")
             rev = await check_reversal(sym=sym, position=position)
             if rev:
                 res = await positions.close_by(position)
                 if res.retcode == 10009:
-                    logger.warning(f"Closed trade {position.ticket} due to reversal")
+                    logger.warning(f"{position.symbol}:{position.ticket} Closed by trailing reversal")
                 else:
-                    logger.error(f"Unable to close trade in trail_sl for {position.ticket}:{position.symbol}"
-                                 f" due to {res.comment}")
+                    logger.error(f"Closed {position.symbol}:{position.ticket} due to {res.comment}")
             else:
-                positions = await positions.positions_get(ticket=position.ticket)
-                position = positions[0]
-                mod = await modify_sl(position=position, sym=sym, trail=trail_start, points=points)
-                if mod:
-                    config.state['loss'][position.ticket]['last_profit'] = position.profit
-                    logger.warning(f"Trailed stop loss {position.ticket}:{position.symbol}")
+                await modify_sl(position=position, sym=sym, trail=trail_start, points=points)
     except Exception as exe:
         logger.error(f'Trailing stop loss failed due to {exe} for {position.ticket}:{position.symbol}')
 
@@ -75,6 +67,9 @@ async def check_reversal(*, sym: Symbol, position: TradePosition) -> bool:
 
 async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, points: float, extra=0.0, tries=4) -> bool:
     try:
+        config = Config()
+        positions = await Positions().positions_get(ticket=position.ticket)
+        position = positions[0]
         trail_points = trail * points
         points = max(trail_points, sym.trade_stops_level + sym.spread * (1 + extra))
         dp = round(points * sym.point, sym.digits)
@@ -82,13 +77,18 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
-            logger.warning(f"Successfully modified sl at {dp} for {position.ticket}:{position.symbol}")
+            points = int(abs(res.price - order.sl) / sym.point)
+            config.state['loss'][position.ticket]['last_profit'] = position.profit
+            config.state['loss']['position.ticket']['l_points'] = points
+            loss = calc_loss(sym=sym, open_price=res.price, close_price=order.sl, volume=position.volume,
+                             order_type=position.type)
+            logger.warning(f"Trailing loss {position.ticket}:{position.symbol} loss={position.profit} {loss=}")
             return True
         elif res.retcode == 10016 and tries > 0:
-            await modify_sl(position=position, sym=sym, trail=trail, points=points, extra=extra + 0.05, tries=tries - 1)
+            await modify_sl(position=position, sym=sym, trail=trail, points=points, extra=extra + 0.01, tries=tries - 1)
         else:
-            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.ticket}:{position.symbol}")
+            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.symbol}:{position.symbol}")
             return False
     except Exception as exe:
-        logger.error(f'Trailing stop loss failed due to {exe} for {position.ticket}:{position.symbol}')
+        logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.symbol}')
         return False

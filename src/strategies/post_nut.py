@@ -37,8 +37,9 @@ class PostNut(Strategy):
 
     def __init__(self, *, symbol: Symbol, trader: Trader = None, sessions: Sessions = None, name: str = 'PostNut'):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
-        ram = RAM(risk=0.01, min_amount=3, max_amount=3, loss_limit=4, use_ram=True)
-        self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, multiple=True, risk_to_rewards=[2, 2.5, 3])
+        # ram = RAM(risk=0.01, min_amount=3, max_amount=3, loss_limit=4, use_ram=True)
+        # self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, multiple=True, risk_to_rewards=[2, 2.5, 3])
+        self.trader = trader or SPTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def first_entry(self):
