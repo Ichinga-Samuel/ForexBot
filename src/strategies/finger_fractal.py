@@ -25,6 +25,7 @@ class FingerFractal(Strategy):
     second_sl: float
     trend: int
     itf: TimeFrame
+    interval: TimeFrame = TimeFrame.H4
     ecc: int
     parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H1, "tcc": 720, 'trend': 2,
                   'closer': ema_rsi_closer, "etf": TimeFrame.H1, 'ecc': 24, 'itf': TimeFrame.M5}
@@ -59,12 +60,12 @@ class FingerFractal(Strategy):
             if candles[-1].is_bullish() and all([current.caf, current.fas, current.sat]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
-                self.tracker.update(sl=sl, snooze=self.ttf.time, order_type=OrderType.BUY)
+                self.tracker.update(sl=sl, snooze=self.interval.time, order_type=OrderType.BUY)
 
             elif candles[-1].is_bearish() and all([current.cbf, current.fbs, current.sbt]):
                 e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
                 sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
+                self.tracker.update(snooze=self.interval.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.itf.time, order_type=None)
         except Exception as exe:

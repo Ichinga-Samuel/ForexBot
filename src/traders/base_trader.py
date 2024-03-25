@@ -62,7 +62,7 @@ class BaseTrader(Trader):
             p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
             l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
             profit = {'target_profit': profit, 'trail_start': 0.50, 'trail': 0.15, 'trailing': False,
-                      'points': p_points, 'cap': self.parameters.get('cap', 3), 'extend_start': 0.95}
+                      'points': p_points, 'cap': self.parameters.get('cap', 3), 'extend_start': 0.85}
             loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.85}
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss

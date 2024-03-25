@@ -79,7 +79,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         if res.retcode == 10009:
             points = int(abs(res.price - order.sl) / sym.point)
             config.state['loss'][position.ticket]['last_profit'] = position.profit
-            config.state['loss']['position.ticket']['l_points'] = points
+            config.state['loss'][position.ticket]['l_points'] = points
             loss = calc_loss(sym=sym, open_price=res.price, close_price=order.sl, volume=position.volume,
                              order_type=position.type)
             logger.warning(f"Trailing loss {position.ticket}:{position.symbol} loss={position.profit} {loss=}")
@@ -87,8 +87,8 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, trail: float, point
         elif res.retcode == 10016 and tries > 0:
             await modify_sl(position=position, sym=sym, trail=trail, points=points, extra=extra + 0.01, tries=tries - 1)
         else:
-            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.symbol}:{position.symbol}")
+            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.symbol}:{position.ticket}")
             return False
     except Exception as exe:
-        logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.symbol}')
+        logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.ticket}')
         return False

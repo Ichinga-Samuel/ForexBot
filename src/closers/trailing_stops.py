@@ -18,7 +18,7 @@ async def check_stops(*, position: TradePosition):
         last_profit = order.setdefault('last_profit', position.profit)
         trail = getattr(config, 'trail', order.get('trail', 0.15))
         trail_start = getattr(config, 'trail_start', order.get('trail_start', 0.50))
-        extend_start = getattr(config, 'extend_start', order.get('extend_start', 0.95))
+        extend_start = getattr(config, 'extend_start', order.get('extend_start', 0.85))
         target_profit = order.setdefault('target_profit',
                                          await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                               position.volume,
@@ -35,7 +35,7 @@ async def check_stops(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, extra=0.01, tries: int = 4, trail: float = 0.15,
-                       last_profit: float = 0.0, trail_start: float = 0.50, extend_start: float = 0.95, trailing=False):
+                       last_profit: float = 0.0, trail_start: float = 0.50, extend_start: float = 0.85, trailing=False):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -54,8 +54,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, extra=0.01, trie
         change_tp = False
         if position.type == OrderType.BUY:
             sl = price - dp
-            captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
-                                          order_type=OrderType.SELL)
+            captured_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=sl, volume=position.volume,
+                                          order_type=OrderType.BUY)
             captured_profit = round(captured_profit, sym.digits)
             target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                         volume=position.volume, order_type=OrderType.BUY)
@@ -70,8 +70,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, extra=0.01, trie
                 flag = True
         else:
             sl = price + dp
-            captured_profit = calc_profit(sym=sym, open_price=price, close_price=sl, volume=position.volume,
-                                          order_type=OrderType.BUY)
+            captured_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=sl, volume=position.volume,
+                                          order_type=OrderType.SELL)
             captured_profit = round(captured_profit, sym.digits)
             target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                         volume=position.volume, order_type=OrderType.SELL)
@@ -87,13 +87,16 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, extra=0.01, trie
         if flag:
             res = await send_order(position=position, sl=sl, tp=tp)
             if res.retcode == 10009:
+                logger.warning(f"Trailing Stops for {position.symbol}:{position.ticket} is"
+                               f" {captured_profit=} {target_profit=}")
                 config.state['profits'][position.ticket]['last_profit'] = position.profit
                 if change_tp:
                     config.state['profits'][position.ticket]['target_profit'] = target_profit
                     config.state['profits'][position.ticket]['trailing'] = True
             elif res.retcode == 10016 and tries > 0:
                 await modify_stops(position=position, trail=trail, sym=sym, extra=extra + 0.01,
-                                   tries=tries - 1, last_profit=last_profit, trailing=trailing)
+                                   tries=tries - 1, last_profit=last_profit, trailing=trailing,
+                                   extend_start=extend_start)
             else:
                 logger.error(f"Trailing profits failed due to {res.comment} for {position.symbol}:{position.ticket}")
     except Exception as err:
