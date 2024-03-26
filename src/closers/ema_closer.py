@@ -10,17 +10,15 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         positions = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
-        tf = TimeFrame.M15
-        cc = 1000
-        order_type = position.type
-        candles = await sym.copy_rates_from_pos(count=cc, timeframe=tf)
-        fast_ema, slow_ema = 8, 13
+        candles = await sym.copy_rates_from_pos(count=96, timeframe=TimeFrame.M15)
+        fast_ema, slow_ema = 13, 21
         candles.ta.ema(length=fast_ema, append=True)
         candles.ta.ema(length=slow_ema, append=True)
         candles.rename(**{f"EMA_{fast_ema}": "fast_ema", f"EMA_{slow_ema}": "slow_ema"})
-        if order_type == OrderType.BUY:
+        if position.type == OrderType.BUY:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=False)
-            if any(fxs.iloc[-2:]):
+            cxf = candles.ta_lib.cross(candles.close, candles.fast_ema, above=False)
+            if fxs.iloc[-1] and cxf.iloc[-1]:
                 position = await positions.positions_get(ticket=position.ticket)
                 position = position[0]
                 if position.profit < 0:
@@ -29,9 +27,10 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
                         logger.warning(f"Closed trade {position.ticket} with ema_closer")
                     else:
                         logger.error(f"Unable to close trade in ema_closer {res.comment}")
-        elif order_type == OrderType.SELL:
+        elif position.type == OrderType.SELL:
             fxs = candles.ta_lib.cross(candles.fast_ema, candles.slow_ema, above=True)
-            if any(fxs.iloc[-2:]):
+            cxf = candles.ta_lib.cross(candles.close, candles.fast_ema, above=True)
+            if fxs.iloc[-1] and cxf.iloc[-1]:
                 position = await positions.positions_get(ticket=position.ticket)
                 position = position[0]
                 if position.profit < 0:

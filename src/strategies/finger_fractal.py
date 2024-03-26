@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
-from ..closers.ema_rsi_closer import ema_rsi_closer
+from ..closers.ema_closer import ema_closer
 from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
@@ -27,8 +27,8 @@ class FingerFractal(Strategy):
     itf: TimeFrame
     interval: TimeFrame = TimeFrame.H4
     ecc: int
-    parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H1, "tcc": 720, 'trend': 2,
-                  'closer': ema_rsi_closer, "etf": TimeFrame.H1, 'ecc': 24, 'itf': TimeFrame.M5}
+    parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
+                  'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 96, 'itf': TimeFrame.M15}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
