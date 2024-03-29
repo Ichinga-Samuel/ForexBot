@@ -119,3 +119,38 @@ async def modify_stops(*, position: TradePosition, trail: float, sym: Symbol, co
                              f"{position.ticket}:{sym}")
     except Exception as err:
         logger.error(f"Trailing profits failed due to {err} for {position.ticket}:{sym}")
+
+
+async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4):
+    try:
+        config = Config()
+        positions = await Positions().positions_get(ticket=position.ticket)
+        position = positions[0]
+        price = await sym.info_tick()
+        price = price.ask if position.type == OrderType.BUY else price.bid
+        points = sym.trade_stops_level + sym.spread * (1 + extra)
+        dp = round(points * sym.point, sym.digits)
+        if position.type == OrderType.BUY:
+            sl = price - dp
+            assert sl < position.sl, f"{sl=} {position.sl=} limits not extended"
+        else:
+            sl = price + dp
+            assert sl > position.sl, f"{sl=} {position.sl=} limits not extended"
+
+        order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
+        res = await order.send()
+        if res.retcode == 10009:
+            price = res.ask if position.type == OrderType.BUY else res.bid
+            points = int(abs(price - sl) / sym.point)
+            config.state['loss'][position.ticket]['last_profit'] = position.profit
+            config.state['loss'][position.ticket]['l_points'] = points
+            loss = calc_loss(sym=sym, open_price=price, close_price=sl, volume=position.volume,
+                             order_type=position.type)
+            logger.warning(f"Trailing loss {position.symbol}:{position.ticket} {loss=} {points=}")
+        elif res.retcode == 10016 and tries > 0:
+            await modify_sl(position=position, sym=sym, extra=extra + 0.01, tries=tries - 1)
+        else:
+            logger.error(f"Trailing stop loss failed due to {res.comment} for {position.symbol}:{position.ticket}")
+    except Exception as exe:
+        logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.ticket}')
+        return False
