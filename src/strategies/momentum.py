@@ -79,7 +79,7 @@ class Momentum(Strategy):
             candles.rename(**{f'RSI_{self.rsi_length}': 'rsi'})
             ca = candles.ta_lib.cross(candles.adx, candles.sma)
             cb = candles.ta_lib.cross(candles.adx, candles.sma, above=False)
-            if candles.rsi <= 60 and any([ca.iloc[-1], cb.iloc[-1]]):
+            if candles[-1].rsi <= 60 and any([ca.iloc[-1], cb.iloc[-1]]):
                 e_candles = candles[-96:]
                 sl = 0
                 if self.tracker.bullish:
@@ -99,7 +99,7 @@ class Momentum(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.interval.time)
+            await self.sleep(3600)
             while True:
                 await sess.check()
                 try:
