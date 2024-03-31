@@ -22,9 +22,8 @@ async def trail_sl(*, position: TradePosition):
         # per = round(taken_points / points, 2)
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
-        trail_loss = trail_start * loss
+        trail_loss = round(trail_start * loss, 2)
         if position.profit < last_profit and position.profit <= trail_loss:
-            logger.warning(f"Trailing stop loss for {position.symbol}:{position.ticket} {trail_loss=} {loss=}")
             await modify_sl(position=position, sym=sym)
     except Exception as exe:
         logger.error(f'Trailing stop loss for {position.symbol}:{position.ticket} failed due to {exe}')
@@ -42,10 +41,10 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
         sl_value = round(sl_points * sym.point, sym.digits)
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
-            # assert sl < position.sl, f"{sl=} {position.sl=} limits not extended"
+            assert sl < position.sl, f"{sl=} {position.sl=} limits not extended"
         else:
             sl = position.price_current + sl_value
-            # assert sl > position.sl, f"{sl=} {position.sl=} limits not extended"
+            assert sl > position.sl, f"{sl=} {position.sl=} limits not extended"
 
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
@@ -55,7 +54,9 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
             config.state['loss'][position.ticket]['l_points'] = points
             loss = calc_loss(sym=sym, open_price=position.price_open, close_price=sl, volume=position.volume,
                              order_type=position.type)
-            logger.warning(f"Trailing loss {position.symbol}:{position.ticket} {loss=}")
+            prev_loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl,
+                                  volume=position.volume, order_type=position.type)
+            logger.warning(f"Trailing loss {position.symbol}:{position.ticket} {loss=} {prev_loss=}")
         elif res.retcode == 10016 and tries > 0:
             await modify_sl(position=position, sym=sym, extra=extra + 0.01, tries=tries - 1)
         else:
