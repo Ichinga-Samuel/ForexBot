@@ -15,11 +15,7 @@ async def trail_sl(*, position: TradePosition):
         last_profit = order.setdefault('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
-        # price = await sym.info_tick()
-        # price = price.ask if position.type == OrderType.BUY else price.bid
-        # points = order.setdefault('l_points', int(abs(position.price_open - position.sl) / sym.point))
-        # taken_points = int(abs(position.price_open - price) / sym.point)
-        # per = round(taken_points / points, 2)
+
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
         trail_loss = round(trail_start * loss, 2)
@@ -41,10 +37,10 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
         sl_value = round(sl_points * sym.point, sym.digits)
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
-            assert sl < position.sl, f"{sl=} {position.sl=} limits not extended"
+            assert sl < position.sl
         else:
             sl = position.price_current + sl_value
-            assert sl > position.sl, f"{sl=} {position.sl=} limits not extended"
+            assert sl > position.sl
 
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
@@ -61,6 +57,15 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
             await modify_sl(position=position, sym=sym, extra=extra + 0.01, tries=tries - 1)
         else:
             logger.error(f"Trailing stop loss failed due to {res.comment} for {position.symbol}:{position.ticket}")
+    except AssertionError:
+        pass
     except Exception as exe:
         logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.ticket}')
         return False
+
+
+# price = await sym.info_tick()
+# price = price.ask if position.type == OrderType.BUY else price.bid
+# points = order.setdefault('l_points', int(abs(position.price_open - position.sl) / sym.point))
+# taken_points = int(abs(position.price_open - price) / sym.point)
+# per = round(taken_points / points, 2)

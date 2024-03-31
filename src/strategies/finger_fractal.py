@@ -6,7 +6,7 @@ from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
 from ..closers.ema_closer import ema_closer
-from ..traders.sp_trader import SPTrader
+from ..traders.p_trader import PTrader
 
 logger = getLogger(__name__)
 
@@ -32,7 +32,7 @@ class FingerFractal(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True)
+        self.trader = trader or PTrader(symbol=self.symbol, trail_profits={'trail_start': 0.50})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -68,7 +68,7 @@ class FingerFractal(Strategy):
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
-            logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend\n")
+            logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.ttf.time, order_type=None)
 
     async def trade(self):
@@ -89,5 +89,5 @@ class FingerFractal(Strategy):
                                                   sl=self.tracker.sl)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
-                    logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
+                    logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
                     await self.sleep(self.tracker.snooze)

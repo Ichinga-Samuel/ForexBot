@@ -6,7 +6,7 @@ from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
 from ..closers.ema_closer import ema_closer
-from ..traders.sp_trader import SPTrader
+from ..traders.p_trader import PTrader
 
 logger = getLogger(__name__)
 
@@ -33,8 +33,8 @@ class Momentum(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'Momentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True,
-                                         trail_profits={'trail_start': 0.50})
+        self.trader = trader or PTrader(symbol=self.symbol, track_trades=True,
+                                        trail_profits={'trail_start': 0.50})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):

@@ -16,7 +16,7 @@ async def check_stops(*, position: TradePosition):
         order = config.state.setdefault('profits', {}).setdefault(position.ticket, {})
         last_profit = order.setdefault('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.10))
-        trail_start = getattr(config, 'trail_start', order.setdefault('trail_start', 0.50))
+        trail_start = getattr(config, 'trail_start', order.setdefault('trail_start', 0.10))
         extend_start = getattr(config, 'extend_start', order.setdefault('extend_start', 0.75))
         initial_profit = order.setdefault('initial_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
@@ -24,7 +24,6 @@ async def check_stops(*, position: TradePosition):
                                                                                position.price_open, position.tp))
 
         if position.profit > (initial_profit * trail_start) and position.profit > last_profit:
-            logger.warning(f"Trailing stops for {position.symbol}:{position.ticket} {position.profit=} {last_profit=}")
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, sym=symbol, initial_profit=initial_profit, trail=trail,
@@ -57,14 +56,11 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: 
 
             target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                         volume=position.volume, order_type=OrderType.BUY)
-            assert captured_profit > (initial_profit * trail_start) and sl > position.sl, "Limits not extended"
+            assert captured_profit > (initial_profit * trail_start) and sl > max(position.sl, position.price_open)
 
             if captured_profit >= (extend_start * target_profit):
                 tp = position.price_current + tp_value
-                if tp > position.tp:
-                    change_tp = True
-                else:
-                    tp = position.tp
+                change_tp = True
             else:
                 tp = position.tp
 
@@ -75,14 +71,11 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: 
             target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                         volume=position.volume, order_type=OrderType.SELL)
 
-            assert captured_profit > (trail_start * initial_profit) and sl < position.sl, "Limits not extended"
+            assert captured_profit > (trail_start * initial_profit) and sl < min(position.sl, position.price_open)
 
             if captured_profit >= (extend_start * target_profit):
                 tp = position.price_current - tp_value
-                if tp < position.tp:
-                    change_tp = True
-                else:
-                    tp = position.tp
+                change_tp = True
             else:
                 tp = position.tp
 
@@ -95,7 +88,7 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: 
                 config.state['profits'][position.ticket]['target_profit'] = target_profit
                 config.state['profits'][position.ticket]['trailing'] = True
                 logger.warning(f"Increased TP for {position.symbol}:{position.ticket} {target_profit=} "
-                               f"{initial_profit=} {position.profit} {captured_profit=}")
+                               f"{initial_profit=} {position.profit=} {captured_profit=}")
             else:
                 logger.warning(f"Trailing Stops for {position.symbol}:{position.ticket} is "
                                f"{captured_profit=} {target_profit=} {initial_profit=}")
@@ -104,6 +97,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: 
                                extra=(extra + 0.01), tries=tries - 1, extend_start=extend_start)
         else:
             logger.error(f"Trailing profits failed due to {res.comment} for {position.symbol}:{position.ticket}")
+    except AssertionError as _:
+        pass
     except Exception as err:
         logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}")
 
