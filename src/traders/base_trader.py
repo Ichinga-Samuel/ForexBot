@@ -10,6 +10,8 @@ logger = getLogger(__name__)
 class BaseTrader(Trader):
     risk_to_rewards: list[float]  # risk to reward ratios for multiple trades
     order_updates: list[dict]  # take profit levels for multiple trades
+    trail_profits: dict
+    trail_loss: dict
 
     order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
                    "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
@@ -19,7 +21,7 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
-                 use_ram: bool = None):
+                 use_ram: bool = None, trail_loss: dict = None, trail_profits: dict = None):
         self.data = {}
         ram = ram or RAM(risk_to_reward=2, risk=0.01, loss_limit=1)
         self.order_updates = []
@@ -28,6 +30,8 @@ class BaseTrader(Trader):
         self.multiple = multiple
         self.use_telegram = use_telegram
         self.track_trades = track_trades
+        self.trail_profits = trail_profits or {}
+        self.trail_loss = trail_loss or {}
         self.tracker_key = tracker_key or self.__class__.__name__
         super().__init__(symbol=symbol, ram=ram)
         ur = getattr(self.config, 'use_ram', False)
@@ -61,9 +65,9 @@ class BaseTrader(Trader):
         try:
             p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
             l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            profit = {'initial_profit': profit, 'trail_start': 0.15, 'trail': 0.15, 'trailing': False,
-                      'points': p_points, 'cap': self.parameters.get('cap', 3), 'extend_start': 0.80}
-            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.70}
+            profit = {'initial_profit': profit, 'trail_start': 0.10, 'trail': 0.15, 'trailing': False, 'points': p_points,
+                      'cap': self.parameters.get('cap', 3), 'extend_start': 0.75} | self.trail_profits
+            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.75} | self.trail_loss
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
             self.config.state.setdefault('ntr', [])

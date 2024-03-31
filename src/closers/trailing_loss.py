@@ -11,7 +11,7 @@ async def trail_sl(*, position: TradePosition):
     try:
         config = Config()
         order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail_start = getattr(config, 'sl_trail_start', order.get('trail_start', 0.90))
+        trail_start = getattr(config, 'sl_trail_start', order.get('trail_start', 0.75))
         last_profit = order.setdefault('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()

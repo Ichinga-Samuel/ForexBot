@@ -25,15 +25,16 @@ class Momentum(Strategy):
     first_sl: float
     second_sl: float
     trend: int
-    interval: TimeFrame = TimeFrame.M15
+    interval: TimeFrame = TimeFrame.M30
     ecc: int
-    parameters = {"first_ema": 8, "second_ema": 21, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
+    parameters = {"first_ema": 8, "second_ema": 16, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
                   'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 2880, 'sma_length': 15, 'rsi_length': 9}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'Momentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True)
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True,
+                                         trail_profits={'trail_start': 0.50})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -54,15 +55,15 @@ class Momentum(Strategy):
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             current = candles[-1]
             if candles[-1].is_bullish() and all([current.caf, current.fas]):
-                self.tracker.update(trend='bullish', order_type=OrderType.BUY)
+                self.tracker.update(trend='bullish')
 
             elif candles[-1].is_bearish() and all([current.cbf, current.fbs]):
-                self.tracker.update(trend='bearish', order_type=OrderType.SELL)
+                self.tracker.update(trend='bearish')
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
-            self.tracker.update(snooze=self.ttf.time, order_type=None)
+            self.tracker.update(snooze=self.interval.time, order_type=None)
 
     async def confirm_trend(self):
         try:
@@ -78,17 +79,20 @@ class Momentum(Strategy):
             candles.ta.rsi(close='sma', length=self.rsi_length, append=True)
             candles.rename(**{f'RSI_{self.rsi_length}': 'rsi'})
             ca = candles.ta_lib.cross(candles.adx, candles.sma)
-            cb = candles.ta_lib.cross(candles.adx, candles.sma, above=False)
-            if candles[-1].rsi <= 60 and any([ca.iloc[-1], cb.iloc[-1]]):
+            if candles[-1].rsi <= 60 and ca.iloc[-1]:
                 e_candles = candles[-96:]
-                sl = 0
                 if self.tracker.bullish:
                     sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
+                    self.tracker.update(snooze=self.ttf.time, sl=sl, order_type=OrderType.BUY)
                 elif self.tracker.bearish:
                     sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
-                self.tracker.update(snooze=self.ttf.time, sl=sl)
-            self.tracker.update(snooze=self.etf.time)
+                    self.tracker.update(snooze=self.ttf.time, sl=sl, order_type=OrderType.SELL)
+                else:
+                    self.tracker.update(snooze=self.interval.time, order_type=None)
+            else:
+                self.tracker.update(snooze=self.etf.time, order_type=None)
         except Exception as exe:
+            self.tracker.update(snooze=self.etf.time)
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.confirm_trend")
 
     async def watch_market(self):

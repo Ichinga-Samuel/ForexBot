@@ -153,7 +153,7 @@ class PostNut(Strategy):
             await self.sleep(self.ttf.time)
 
     async def trade(self):
-        print(f"Trading {self.symbol} with {self.name}")
+        print(f"Trading {self.symbol} with {self.name}-l")
         async with self.sessions as sess:
             await self.sleep(self.etf.time)
             while True:

@@ -69,13 +69,12 @@ class FingerTrap(Strategy):
             candles['cae'] = candles.ta_lib.cross(candles.close, candles.ema)
             candles['cbe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)  # 10
             current = candles[-1]
+            e_candles = candles[-288:]
             if self.tracker.bullish and current.cae:
-                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.tcc)
-                sl = getattr(find_bullish_fractal(e_candles[-96:]), 'low', min(e_candles.low))
+                sl = getattr(find_bullish_fractal(e_candles), 'low', min(e_candles.low))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
             elif self.tracker.bearish and current.cbe:
-                e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.tcc)
-                sl = getattr(find_bearish_fractal(e_candles[-96:]), 'high', max(e_candles.high))
+                sl = getattr(find_bearish_fractal(e_candles), 'high', max(e_candles.high))
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)  # 11
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
@@ -89,7 +88,7 @@ class FingerTrap(Strategy):
             await self.confirm_trend()  # 12
 
     async def trade(self):
-        print(f"Trading {self.symbol}")
+        print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.ttf.time)
             while True:
