@@ -25,7 +25,7 @@ class FingerFractal(Strategy):
     first_sl: float
     second_sl: float
     trend: int
-    interval: TimeFrame = TimeFrame.M15
+    interval: TimeFrame = TimeFrame.H1
     ecc: int
     parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
                   'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 96}
@@ -70,12 +70,12 @@ class FingerFractal(Strategy):
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
-            self.tracker.update(snooze=self.ttf.time, order_type=None)
+            self.tracker.update(snooze=self.interval.time, order_type=None)
 
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(3600)
+            await self.sleep(self.interval.time)
             while True:
                 await sess.check()
                 try:

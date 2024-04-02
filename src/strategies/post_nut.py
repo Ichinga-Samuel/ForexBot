@@ -9,7 +9,7 @@ from logging import getLogger
 from ..utils.find_fractals import find_bearish_fractals, find_bullish_fractals
 from ..utils.patterns import is_half_bearish_fractal, is_half_bullish_fractal
 # from ..traders.pn_trader import PNTrader
-from ..traders.sp_trader import SPTrader
+from ..traders.p_trader import PTrader
 from ..utils.tracker import Tracker
 from ..utils.ram import RAM
 from ..closers import ema_closer
@@ -39,7 +39,7 @@ class PostNut(Strategy):
         super().__init__(symbol=symbol, sessions=sessions, name=name)
         # ram = RAM(risk=0.01, min_amount=3, max_amount=3, loss_limit=4, use_ram=True)
         # self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, multiple=True, risk_to_rewards=[2, 2.5, 3])
-        self.trader = trader or SPTrader(symbol=self.symbol)
+        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=6), trail_profits={'trail_start': 0.50})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def first_entry(self):

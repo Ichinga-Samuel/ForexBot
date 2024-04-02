@@ -18,7 +18,7 @@ async def place_multiple_random_orders():
                     order_type = randint(0, 1)
                     stl = sym.trade_stops_level * 2
                     price, sl, tp = await stop_levels(sym, stl, order_type)
-                    volume = sym.volume_min
+                    volume = sym.volume_max / 3
                     volume = round(volume, abs(math.ceil(math.log10(sym.volume_step))))
                     order = Order(symbol=sym, type=order_type, volume=sym.volume_max, price=price, sl=sl, tp=tp)
                     orders.append(order)

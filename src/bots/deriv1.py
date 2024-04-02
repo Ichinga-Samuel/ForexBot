@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import PostNut, Momentum
+from ..strategies import PostNut, Momentum, MRMomentum
 from ..closers import monitor
 # from ..traders import SPTrader
 # from ..utils import RAM
@@ -21,7 +21,7 @@ def build_bot():
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [PostNut, Momentum]]
+    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [PostNut, Momentum, MRMomentum]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

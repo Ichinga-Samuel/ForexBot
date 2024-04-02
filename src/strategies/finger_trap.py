@@ -18,16 +18,17 @@ class FingerTrap(Strategy):
     entry_ema: int
     ecc: int
     tcc: int
+    interval: TimeFrame = TimeFrame.M15
     trader: Trader
     tracker: Tracker
 
     parameters = {"fast_ema": 8, "slow_ema": 20, "etf": TimeFrame.M5, 'closer': ema_closer,
-                  "ttf": TimeFrame.H4, "entry_ema": 5, "tcc": 720, "ecc": 1440}  # 1
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(min_amount=2, max_amount=2, risk_to_reward=3))
+        self.trader = trader or PTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)  # 2
 
     async def check_trend(self):
@@ -46,15 +47,15 @@ class FingerTrap(Strategy):
             candles['caf'] = candles.ta_lib.above(candles.close, candles.fast)
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.fast)  # 6
             current = candles[-1]
-            if candles[-1].is_bullish() and current.fas and current.caf:
+            if current.fas and current.caf:
                 self.tracker.update(trend="bullish")
-            elif candles[-1].is_bearish() and current.fbs and current.cbf:
+            elif current.fbs and current.cbf:
                 self.tracker.update(trend="bearish")  # 7
             else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)  # 8
+                self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)  # 8
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
-            self.tracker.update(snooze=self.ttf.time, order_type=None)
+            self.tracker.update(snooze=self.interval.time, order_type=None)
 
     async def confirm_trend(self):
         try:
@@ -89,7 +90,7 @@ class FingerTrap(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.ttf.time)
+            await self.sleep(self.interval.time)
             while True:
                 await sess.check()
                 try:
