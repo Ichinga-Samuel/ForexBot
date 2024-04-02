@@ -7,6 +7,7 @@ from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 from ..utils.tracker import Tracker
 from ..closers.ema_closer import ema_closer
 from ..traders.p_trader import PTrader
+from ..utils.ram import RAM
 
 logger = getLogger(__name__)
 
@@ -33,7 +34,7 @@ class Momentum(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'Momentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, track_trades=True,
+        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=6),
                                         trail_profits={'trail_start': 0.50})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 

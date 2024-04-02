@@ -23,7 +23,7 @@ class BaseTrader(Trader):
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = None, trail_loss: dict = None, trail_profits: dict = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=2, risk=0.01, loss_limit=1)
+        ram = ram or RAM(risk_to_reward=2, risk=0.01, loss_limit=2)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -65,9 +65,9 @@ class BaseTrader(Trader):
         try:
             p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
             l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            profit = {'initial_profit': profit, 'trail_start': 0.10, 'trail': 0.15, 'trailing': False, 'points': p_points,
+            profit = {'initial_profit': profit, 'trail_start': 0.20, 'trail': 0.25, 'trailing': False, 'points': p_points,
                       'cap': self.parameters.get('cap', 3), 'extend_start': 0.75} | self.trail_profits
-            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.75} | self.trail_loss
+            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.85} | self.trail_loss
             self.config.state.setdefault('profits', {})[result.order] = profit
             self.config.state.setdefault('loss', {})[result.order] = loss
             self.config.state.setdefault('ntr', [])

@@ -4,9 +4,9 @@ import logging
 from aiomql import Tracker, ForexSymbol, TimeFrame, OrderType, Sessions, Strategy, Candles, Trader
 from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
-from ..traders.sp_trader import SPTrader
+from ..traders.p_trader import PTrader
 from ..closers.ema_closer import ema_closer
-
+from ..utils.ram import RAM
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +18,6 @@ class FingerTrap(Strategy):
     entry_ema: int
     ecc: int
     tcc: int
-    interval: TimeFrame = TimeFrame.H4
     trader: Trader
     tracker: Tracker
 
@@ -28,7 +27,7 @@ class FingerTrap(Strategy):
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol)
+        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(min_amount=2, max_amount=2, risk_to_reward=3))
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)  # 2
 
     async def check_trend(self):
