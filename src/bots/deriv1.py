@@ -11,7 +11,7 @@ from ..closers import monitor
 
 def build_bot():
     Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
-           trailing_stops=True, exit_signals=True, trailing_loss=True, use_ram=True)
+           trailing_stops=True, exit_signals=True, trailing_loss=True, use_ram=True, fixed_closer=True)
 
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_1.log', datefmt='%Y-%m-%d %H:%M:%S')

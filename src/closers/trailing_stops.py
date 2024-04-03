@@ -17,7 +17,7 @@ async def check_stops(*, position: TradePosition):
         last_profit = order.setdefault('last_profit', 0)
         trail = getattr(config, 'trail', order.get('trail', 0.10))
         trail_start = getattr(config, 'trail_start', order.setdefault('trail_start', 0.10))
-        extend_start = getattr(config, 'extend_start', order.setdefault('extend_start', 0.75))
+        extend_start = getattr(config, 'extend_start', order.setdefault('extend_start', 0.5))
         initial_profit = order.setdefault('initial_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                                position.volume,
@@ -34,7 +34,7 @@ async def check_stops(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: float, extra: float = 0.0,
-                       tries: int = 4, trail: float = 0.10, trail_start: float = 0.50, extend_start: float = 0.90):
+                       tries: int = 4, trail: float = 0.10, trail_start: float = 0.50, extend_start: float = 0.50):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)

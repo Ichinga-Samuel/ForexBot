@@ -55,9 +55,9 @@ class MRMomentum(Strategy):
             candles['rxs'] = candles.ta_lib.cross(candles.rsi, candles.sma)
             candles['rxbs'] = candles.ta_lib.cross(candles.rsi, candles.sma, above=False)
             current = candles[-1]
-            if current.fas and current.rxs:
+            if current.rxs and current.fas:
                 self.tracker.update(trend='bullish')
-            elif current.fbs and current.rxbs:
+            elif current.rxbs and current.fbs:
                 self.tracker.update(trend='bearish')
             else:
                 self.tracker.update(snooze=self.interval.time, trend='ranging')
@@ -76,10 +76,12 @@ class MRMomentum(Strategy):
             candles.rename(**{'MACD_12_26_9': 'macd', 'MACDh_12_26_9': 'macdh', 'MACDs_12_26_9': 'macds'})
             candles['mxs'] = candles.ta_lib.cross(candles.macd, candles.macds)
             candles['mxsb'] = candles.ta_lib.cross(candles.macd, candles.macds, above=False)
+            candles['hxz'] = candles.ta_lib.cross_value(candles.macdh, 0)
+            candles['hxbz'] = candles.ta_lib.cross_value(candles.macdh, 0, above=False)
             current = candles[-1]
-            if self.tracker.bullish and current.mxs:
+            if self.tracker.bullish and (current.mxs or candles.hxz):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and current.mxsb:
+            elif self.tracker.bearish and (current.mxsb or candles.hxbz):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
@@ -110,5 +112,5 @@ class MRMomentum(Strategy):
                                                   sl=self.tracker.sl)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
-                    logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade\n")
+                    logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
                     await self.sleep(self.tracker.snooze)

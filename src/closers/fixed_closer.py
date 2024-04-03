@@ -8,11 +8,11 @@ logger = getLogger(__name__)
 async def fixed_closer(*, position: TradePosition):
     try:
         config = Config()
-        cap = config.state.get('profits', {}).get(position.ticket, {}).get('cap', 3)
+        cap = config.state.get('profits', {}).get(position.ticket, {}).get('cap', -6)
         positions = Positions()
         position = await positions.positions_get(ticket=position.ticket)
         position = position[0]
-        if position.profit > cap:
+        if position.profit < cap:
             res = await positions.close_by(position)
             if res.retcode == 10009:
                 logger.warning(f"Closed trade {position.ticket} with fixed_closer")
