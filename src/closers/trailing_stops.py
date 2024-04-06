@@ -82,6 +82,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, initial_profit: 
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
             config.state['profits'][position.ticket]['last_profit'] = position.profit
+            if position.profit >= (initial_profit * 0.95):
+                config.state['profits'][position.ticket]['initial_profit'] = target_profit
             if change_tp:
                 target_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=tp,
                                             volume=position.volume, order_type=OrderType.SELL)
