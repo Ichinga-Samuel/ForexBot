@@ -32,7 +32,7 @@ class MRMomentum(Strategy):
                  name: str = 'MRMomentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=6),
-                                        trail_profits={'trail_start': 0.50})
+                                        trail_profits={'trail_start': 0.45})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time, sl=0)
 
     async def check_trend(self):
@@ -79,9 +79,9 @@ class MRMomentum(Strategy):
             candles['hxz'] = candles.ta_lib.cross_value(candles.macdh, 0)
             candles['hxbz'] = candles.ta_lib.cross_value(candles.macdh, 0, above=False)
             current = candles[-1]
-            if self.tracker.bullish and (current.mxs or candles.hxz):
+            if self.tracker.bullish and (current.mxs or current.hxz):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
-            elif self.tracker.bearish and (current.mxsb or candles.hxbz):
+            elif self.tracker.bearish and (current.mxsb or current.hxbz):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(snooze=self.etf.time, order_type=None)
