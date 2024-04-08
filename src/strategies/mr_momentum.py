@@ -31,8 +31,8 @@ class MRMomentum(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'MRMomentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=6),
-                                        trail_profits={'trail_start': 0.45})
+        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=3),
+                                        trail_profits={'trail_start': 0.55})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time, sl=0)
 
     async def check_trend(self):

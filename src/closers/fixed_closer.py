@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from aiomql import Positions, Symbol, Config, TradePosition
+from aiomql import Positions, Config, TradePosition
 
 logger = getLogger(__name__)
 
@@ -8,12 +8,18 @@ logger = getLogger(__name__)
 async def fixed_closer(*, position: TradePosition):
     try:
         config = Config()
-        cap = config.state.get('profits', {}).get(position.ticket, {}).get('cap', -6)
+        fixed = config.state.setdefault('fixed_closer', {})
+
         positions = Positions()
         position = await positions.positions_get(ticket=position.ticket)
-        position = position[0]
-        if position.profit < cap:
+        position = position[0] if position else None
+        if not position:
+            fixed.pop(position.ticket) if position.ticket in fixed else ...
+            return
+        order = fixed[position.ticket]
+        if order.get('close', False) and position.profit < order['cut_off']:
             res = await positions.close_by(position)
+            fixed.pop(position.ticket) if position.ticket in fixed else ...
             if res.retcode == 10009:
                 logger.warning(f"Closed trade {position.ticket} with fixed_closer")
             else:

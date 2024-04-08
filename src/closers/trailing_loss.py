@@ -10,12 +10,11 @@ logger = getLogger(__name__)
 async def trail_sl(*, position: TradePosition):
     try:
         config = Config()
-        order = config.state.setdefault('loss', {}).setdefault(position.ticket, {})
-        trail_start = getattr(config, 'sl_trail_start', order.get('trail_start', 0.75))
+        order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
+        trail_start = order.setdefault('trail_start', 0.75)
         last_profit = order.setdefault('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
-
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
         trail_loss = round(trail_start * loss, 2)
@@ -45,9 +44,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
-            points = int(abs(position.price_open - sl) / sym.point)
             config.state['loss'][position.ticket]['last_profit'] = position.profit
-            config.state['loss'][position.ticket]['l_points'] = points
             loss = calc_loss(sym=sym, open_price=position.price_open, close_price=sl, volume=position.volume,
                              order_type=position.type)
             prev_loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl,
@@ -62,10 +59,3 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
     except Exception as exe:
         logger.error(f'Trailing stop loss failed due to {exe} for {position.symbol}:{position.ticket}')
         return False
-
-
-# price = await sym.info_tick()
-# price = price.ask if position.type == OrderType.BUY else price.bid
-# points = order.setdefault('l_points', int(abs(position.price_open - position.sl) / sym.point))
-# taken_points = int(abs(position.price_open - price) / sym.point)
-# per = round(taken_points / points, 2)

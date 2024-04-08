@@ -5,9 +5,10 @@ from aiomql import Positions, Config
 
 from ..utils.sleep import sleep
 from .fixed_closer import fixed_closer
-from .trailing_stops import check_stops
+from .trailing_profit import trail_tp
 from .trailing_loss import trail_sl
 from .closer import OpenTrade
+from .hedge import check_hedge, hedge_position
 
 logger = getLogger(__name__)
 
@@ -19,8 +20,22 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
         try:
             positions = await pos.positions_get()
             config = Config()
-            ntr = config.state.get('ntr', [])
+            hedged = config.state.get('hedges', {})
+            main = list(hedged.keys())
+            rev = list(hedged.values())
             tasks = []
+
+            # use hedging
+            hedging = getattr(config, 'hedging', False)
+            if hedging:
+                hedge = [hedge_position(position=position) for position in positions if position.profit < 0 and
+                         position.ticket not in main + rev]
+                check_hedges = [check_hedge(main=main, rev=rev) for main, rev in hedged.items()]
+                hedge_tasks = check_hedges + hedge
+                await asyncio.gather(*hedge_tasks, return_exceptions=True)
+
+            fixed = config.state.get('fixed_closer', {})
+            fixed = [ticket for ticket, order in fixed.items() if order.get('close', False)]
 
             # use exit signals
             es = getattr(config, 'exit_signals', False)
@@ -33,20 +48,20 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use trailing stop loss
             tsl = getattr(config, 'trailing_loss', False)
             if tsl:
-                tsl = [trail_sl(position=position) for position in positions if position.profit < 0
-                       and position.ticket not in ntr]
+                tsl = [trail_sl(position=position) for position in positions if position.profit < 0]
                 tasks.extend(tsl)
 
             # use fixed_closer
             uc = getattr(config, 'fixed_closer', False)
             if uc:
-                fc = [fixed_closer(position=position) for position in positions if position.profit < 0]
+                fc = [fixed_closer(position=position) for position in positions if position.profit < 0 and
+                      position.ticket in fixed]
                 tasks.extend(fc)
 
             # use trailing stops
             tts = getattr(config, 'trailing_stops', False)
             if tts:
-                tts = [check_stops(position=position) for position in positions if position.profit > 0]
+                tts = [trail_tp(position=position) for position in positions if position.profit > 0]
                 tasks.extend(tts)
 
             await asyncio.gather(*tasks, return_exceptions=True)

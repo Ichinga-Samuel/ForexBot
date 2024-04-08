@@ -27,13 +27,14 @@ class FingerFractal(Strategy):
     trend: int
     interval: TimeFrame = TimeFrame.H1
     ecc: int
-    parameters = {"first_ema": 13, "second_ema": 21, "third_ema": 34, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
+    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
                   'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 96}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=6), trail_profits={'trail_start': 0.50})
+        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=3),
+                                        trail_profits={'trail_start': 0.55})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):

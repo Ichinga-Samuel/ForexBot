@@ -10,7 +10,7 @@ from ..closers import monitor
 
 def build_bot():
     Config(config_dir='configs', filename='admiral_1.json', reload=True, records_dir='records/admiral/',
-           use_ram=True, trailing_stops=True, exit_signals=True, trailing_loss=True)
+           use_ram=True, trailing_stops=True, exit_signals=True, trailing_loss=True, hedging=True, fixed_closer=True)
 
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/admiral1.log',
                         datefmt='%Y-%m-%d %H:%M:%S')

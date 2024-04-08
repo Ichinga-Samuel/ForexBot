@@ -63,16 +63,14 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
-            l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            profit = {'initial_profit': profit, 'trail_start': 0.05, 'trail': 0.30, 'trailing': False, 'points': p_points,
-                      'cap': self.parameters.get('cap', -6), 'extend_start': 0.50} | self.trail_profits
-            loss = {'trail': 0.5, 'points': l_points, 'trail_start': 0.75} | self.trail_loss
-            self.config.state.setdefault('profits', {})[result.order] = profit
-            self.config.state.setdefault('loss', {})[result.order] = loss
-            self.config.state.setdefault('ntr', [])
-            if self.parameters.get('ntr', False):
-                self.config.state.get('ntr', []).append(result.order)
+            # p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
+            # l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
+            profit = {'current_profit': profit, 'trail_start': 0.05, 'trail': 0.30, 'trailing': False,
+                      'extend_start': 0.55, 'hedge_point': -3} | self.trail_profits
+            loss = {'trail': 0.5, 'trail_start': 0.75} | self.trail_loss
+            self.config.state.setdefault('winning', {})[result.order] = profit
+            self.config.state.setdefault('losing', {})[result.order] = loss
+            self.config.state.setdefault('fixed_closer', {})[result.order] = {'close': False, 'cut_off': -3}
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
