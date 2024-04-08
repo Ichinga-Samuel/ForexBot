@@ -1,0 +1,2 @@
+actual_profit,ask,bid,closed,closer,date,deal,ecc,etf,expected_profit,first_ema,name,order,price,rsi_length,second_ema,sma_length,symbol,tcc,time,ttf,volume,win
+0,1480.84,1480.39,False,<function ema_closer at 0x000001E6D0D32520>,2024-04-04,1981812528,2880,M15,12.0,8,MRMomentum,5084682157,1480.39,9,25,9,Volatility 100 (1s) Index,720,00:00:05.183925,H4,0.2,False

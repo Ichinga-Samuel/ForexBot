@@ -29,7 +29,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             hedging = getattr(config, 'hedging', False)
             if hedging:
                 hedge = [hedge_position(position=position) for position in positions if position.profit < 0 and
-                         position.ticket not in main + rev]
+                         position.ticket not in (main + rev)]
                 check_hedges = [check_hedge(main=main, rev=rev) for main, rev in hedged.items()]
                 hedge_tasks = check_hedges + hedge
                 await asyncio.gather(*hedge_tasks, return_exceptions=True)
