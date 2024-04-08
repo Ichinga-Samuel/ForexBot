@@ -11,7 +11,7 @@ async def trail_sl(*, position: TradePosition):
     try:
         config = Config()
         order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
-        trail_start = order.setdefault('trail_start', 0.75)
+        trail_start = order.setdefault('trail_start', 0.7)
         last_profit = order.setdefault('last_profit', 0)
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -44,7 +44,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, extra=0.0, tries=4)
         order = Order(position=position.ticket, sl=sl, tp=position.tp, action=TradeAction.SLTP)
         res = await order.send()
         if res.retcode == 10009:
-            config.state['loss'][position.ticket]['last_profit'] = position.profit
+            config.state['losing'][position.ticket]['last_profit'] = position.profit
             loss = calc_loss(sym=sym, open_price=position.price_open, close_price=sl, volume=position.volume,
                              order_type=position.type)
             prev_loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl,

@@ -12,10 +12,10 @@ async def trail_tp(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('winning', {}).setdefault(position.ticket, {})
         last_profit = order.setdefault('last_profit', 0)
-        trail = order.setdefault('trail', 0.10)
+        trail = order.setdefault('trail', 0.30)
         trailing = order.get('trailing', False)
-        trail_start = order.setdefault('trail_start', 0.10)
-        extend_start = order.setdefault('extend_start', 0.5)
+        trail_start = order.setdefault('trail_start', 0.5)
+        extend_start = order.setdefault('extend_start', 0.7)
         current_profit = order.setdefault('current_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                                position.volume,
@@ -68,12 +68,12 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
 
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            config.state['profits'][position.ticket]['last_profit'] = position.profit
-            config.state['profits'][position.ticket]['trailing'] = True
+            config.state['winning'][position.ticket]['last_profit'] = position.profit
+            config.state['winning'][position.ticket]['trailing'] = True
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
-                config.state['profits'][position.ticket]['current_profit'] = new_profit
+                config.state['winning'][position.ticket]['current_profit'] = new_profit
                 logger.warning(f"Increased TP for {position.symbol}:{position.ticket} {current_profit} {new_profit=}")
             else:
                 logger.warning(f"Trailing Stops for {position.symbol}:{position.ticket} {position.profit=}")

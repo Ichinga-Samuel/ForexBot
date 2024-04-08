@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from aiomql import Order, OrderType, TradePosition, Symbol, Positions, Config, OrderSendResult, OrderError
+# from ..utils.sym_utils import calc_profit
 
 logger = getLogger(__name__)
 
@@ -11,14 +12,17 @@ async def hedge_position(*, position: TradePosition):
         position = position[0]
         config = Config()
         order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
+        winning = config.state.setdefault('winning', {})
+        winning_order = winning.setdefault(position.ticket, {})
         hedges = config.state.setdefault('hedges', {})
-        assert not position.comment.startswith('Rev'), f"Already hedged {position.ticket}"
+        assert not position.comment.startswith('Rev'), f"Already hedged {position.ticket}:{position.comment}"
         hedge_point = order.get('hedge_point', -3)
         if position.profit <= hedge_point:
             sym = Symbol(name=position.symbol)
             await sym.init()
             res = await make_hedge(position=position, symbol=sym)
             hedges[position.ticket] = res.order
+            winning[res.order] = winning_order
     except Exception as exe:
         logger.error(f'An error occurred in function hedge {exe}')
 
@@ -64,8 +68,8 @@ async def check_hedge(*, main: int, rev: int):
             if main_pos.profit > 0:
                 if rev_pos:
                     await pos.close_by(rev_pos)
-                order = fixed_closer.setdefault(main, {})
-                order['close'] = True
+                    order = fixed_closer.setdefault(main, {})
+                    order['close'] = True
 
             if rev_pos and rev_pos.profit < hedge_point:
                 await pos.close_by(rev_pos)

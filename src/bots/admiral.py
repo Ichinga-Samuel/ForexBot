@@ -4,7 +4,7 @@ from aiomql import Bot, Config, Sessions, Session
 
 from ..symbols import AdmiralSymbol
 from ..closers import monitor
-from ..strategies import RMomentum, MRMomentum, NMomentum, Momentum
+from ..strategies import RMomentum, NMomentum, Momentum
 
 
 def build_bot():

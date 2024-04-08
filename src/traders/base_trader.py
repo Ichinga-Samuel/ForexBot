@@ -65,9 +65,9 @@ class BaseTrader(Trader):
         try:
             # p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
             # l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            profit = {'current_profit': profit, 'trail_start': 0.05, 'trail': 0.30, 'trailing': False,
-                      'extend_start': 0.55, 'hedge_point': -3} | self.trail_profits
-            loss = {'trail': 0.5, 'trail_start': 0.75} | self.trail_loss
+            profit = {'current_profit': profit, 'trail_start': 0.5, 'trail': 0.30, 'trailing': False,
+                      'extend_start': 0.7} | self.trail_profits
+            loss = {'trail_start': 0.7, 'hedge_point': -3} | self.trail_loss
             self.config.state.setdefault('winning', {})[result.order] = profit
             self.config.state.setdefault('losing', {})[result.order] = loss
             self.config.state.setdefault('fixed_closer', {})[result.order] = {'close': False, 'cut_off': -3}
