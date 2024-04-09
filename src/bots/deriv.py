@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerFractal, FMomentum, HAFF
+from ..strategies import FingerFractal, FMomentum, HAFF, NFF
 from ..closers import monitor
 
 
@@ -20,7 +20,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FMomentum, HAFF]]
+    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FMomentum, HAFF, NFF]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

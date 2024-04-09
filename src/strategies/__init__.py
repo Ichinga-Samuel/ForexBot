@@ -7,3 +7,4 @@ from .r_momentum import RMomentum
 from .n_momentum import NMomentum
 from .f_momentum import FMomentum
 from .haff import HAFF
+from .nff import NFF
