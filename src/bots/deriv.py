@@ -3,13 +3,13 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerFractal, Momentum, NMomentum, RMomentum
+from ..strategies import FingerFractal, FMomentum, HAFF
 from ..closers import monitor
 
 
 def build_bot():
     Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
-           fixed_closer=True, hedging=True, use_ram=True)
+           fixed_closer=True, hedging=True, use_ram=True, trailing_stops=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
@@ -20,7 +20,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, Momentum, RMomentum, NMomentum]]
+    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FMomentum, HAFF]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

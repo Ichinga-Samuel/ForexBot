@@ -14,14 +14,14 @@ async def trail_tp(*, position: TradePosition):
         last_profit = order.setdefault('last_profit', 0)
         trail = order.setdefault('trail', 0.30)
         trailing = order.get('trailing', False)
-        trail_start = order.setdefault('trail_start', 0.5)
-        extend_start = order.setdefault('extend_start', 0.7)
+        trail_start = order.setdefault('trail_start', 0.25)
+        extend_start = order.setdefault('extend_start', 0.80)
         current_profit = order.setdefault('current_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                                position.volume,
                                                                                position.price_open, position.tp))
 
-        if (position.profit > (current_profit * trail_start) or trailing) and position.profit > last_profit:
+        if ((position.profit > (current_profit * trail_start)) or trailing) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, sym=symbol, current_profit=current_profit, trail=trail,
@@ -32,19 +32,21 @@ async def trail_tp(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: float, extra: float = 0.0,
-                       tries: int = 4, trail: float = 0.10, extend_start: float = 0.50):
+                       tries: int = 4, trail: float = 0.10, extend_start: float = 0.80):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
         position = positions[0]
+        full_points = int(abs(position.price_open - position.tp) / sym.point)
+        trail = (2 / position.profit) or trail
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        remaining_points = int(abs(position.price_current - position.tp) / sym.point)
+        # remaining_points = int(abs(position.price_current - position.tp) / sym.point)
+        extend = 3 / current_profit
         sl_points = int(trail * captured_points)
         stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
         sl_points = max(sl_points, stops_level)
         sl_value = round(sl_points * sym.point, sym.digits)
-        tp_points = remaining_points * 2
-        tp_points = max(tp_points, stops_level)
+        tp_points = full_points * extend
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
 
@@ -52,16 +54,15 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
             sl = position.price_current - sl_value
             assert sl > max(position.sl, position.price_open)
             if position.profit >= (extend_start * current_profit):
-                tp = position.price_current + tp_value
+                tp = position.tp + tp_value
                 change_tp = True
             else:
                 tp = position.tp
-
         else:
             sl = position.price_current + sl_value
             assert sl < min(position.sl, position.price_open)
             if position.profit >= (extend_start * current_profit):
-                tp = position.price_current - tp_value
+                tp = position.tp - tp_value
                 change_tp = True
             else:
                 tp = position.tp

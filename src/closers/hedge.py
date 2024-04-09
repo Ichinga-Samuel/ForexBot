@@ -84,7 +84,7 @@ async def check_hedge(*, main: int, rev: int):
                 if rev_pos.profit > 0:
                     order = fixed_closer.setdefault(rev, {})
                     order['close'] = True
-                    order['cut_off'] = 0.01
+                    order['cut_off'] = max(rev_pos.profit - 0.5, 0.01)
                 if rev_pos.profit < 0:
                     await pos.close_by(rev_pos)
             hedges.pop(main) if main in hedges else ...

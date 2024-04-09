@@ -12,7 +12,7 @@ from ..utils.ram import RAM
 logger = getLogger(__name__)
 
 
-class FingerFractal(Strategy):
+class HAFF(Strategy):
     ttf: TimeFrame
     etf: TimeFrame
     first_ema: int
@@ -31,7 +31,7 @@ class FingerFractal(Strategy):
                   'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 96}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerFractal'):
+                 name: str = 'HAFF'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=3),
                                         trail_profits={'trail_start': 0.25})
@@ -44,18 +44,19 @@ class FingerFractal(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
-            candles.ta.ema(length=self.first_ema, append=True)
-            candles.ta.ema(length=self.second_ema, append=True)
-            candles.ta.ema(length=self.third_ema, append=True)
+            candles.ta.ha(append=True)
+            candles.ta.ema(close='HA_close', length=self.first_ema, append=True)
+            candles.ta.ema(close='HA_close', length=self.second_ema, append=True)
+            candles.ta.ema(close='HA_close', length=self.third_ema, append=True)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             f"EMA_{self.third_ema}": "third"})
 
             candles['cxf'] = candles.ta_lib.cross(candles.close, candles.first)
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
+            candles['caf'] = candles.ta_lib.above(candles.HA_close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
 
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
+            candles['cbf'] = candles.ta_lib.below(candles.HA_close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             candles['cbt'] = candles.ta_lib.cross(candles.close, candles.third, above=False)

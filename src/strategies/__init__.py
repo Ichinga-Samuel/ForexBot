@@ -5,3 +5,5 @@ from .momentum import Momentum
 from .mr_momentum import MRMomentum
 from .r_momentum import RMomentum
 from .n_momentum import NMomentum
+from .f_momentum import FMomentum
+from .haff import HAFF

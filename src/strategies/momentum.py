@@ -36,7 +36,7 @@ class Momentum(Strategy):
                  name: str = 'Momentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=3),
-                                        trail_profits={'trail_start': 0.55})
+                                        trail_profits={'trail_start': 0.25})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):

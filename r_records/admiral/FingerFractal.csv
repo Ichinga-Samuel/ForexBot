@@ -1,2 +1,0 @@
-actual_profit,ask,bid,closed,closer,date,deal,ecc,etf,expected_profit,first_ema,name,order,price,second_ema,symbol,tcc,third_ema,time,trend,ttf,volume,win
-0,0.0,0.0,False,<function ema_closer at 0x00000204005987C0>,2024-04-08,0,96,M15,15.0,5,FingerFractal,1172997246,0.0,8,ETHUSD-T,720,13,02:29:42.840811,2,H4,0.01,False
