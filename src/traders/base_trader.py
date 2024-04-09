@@ -65,11 +65,11 @@ class BaseTrader(Trader):
         try:
             # p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
             # l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            profit = {'current_profit': profit, 'trail_start': 0.25, 'trail': 0.30, 'trailing': False,
-                      'extend_start': 0.8} | self.trail_profits
-            loss = {'trail_start': 0.8, 'hedge_point': -3} | self.trail_loss
-            self.config.state.setdefault('winning', {})[result.order] = profit
-            self.config.state.setdefault('losing', {})[result.order] = loss
+            winning = {'current_profit': profit, 'trail_start': 0.375, 'trail': 0.30, 'trailing': False,
+                       'extend_start': 0.8, 'start_trailing': True} | self.trail_profits
+            losing = {'trail_start': 0.8, 'hedge_point': -3} | self.trail_loss
+            self.config.state.setdefault('winning', {})[result.order] = winning
+            self.config.state.setdefault('losing', {})[result.order] = losing
             self.config.state.setdefault('fixed_closer', {})[result.order] = {'close': False, 'cut_off': -3}
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")

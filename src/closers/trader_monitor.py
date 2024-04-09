@@ -23,13 +23,14 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             hedged = config.state.get('hedges', {})
             main = list(hedged.keys())
             rev = list(hedged.values())
+            hedged_orders = main + rev
             tasks = []
 
             # use hedging
             hedging = getattr(config, 'hedging', False)
             if hedging:
                 hedge = [hedge_position(position=position) for position in positions if position.profit < 0 and
-                         position.ticket not in (main + rev)]
+                         position.ticket not in hedged_orders]
                 check_hedges = [check_hedge(main=main, rev=rev) for main, rev in hedged.items()]
                 hedge_tasks = check_hedges + hedge
                 await asyncio.gather(*hedge_tasks, return_exceptions=True)
@@ -54,8 +55,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use fixed_closer
             uc = getattr(config, 'fixed_closer', False)
             if uc:
-                fc = [fixed_closer(position=position) for position in positions if position.profit < 0 and
-                      position.ticket in fixed]
+                fc = [fixed_closer(position=position) for position in positions if position.ticket in fixed]
                 tasks.extend(fc)
 
             # use trailing stops

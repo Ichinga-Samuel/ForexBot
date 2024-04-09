@@ -9,10 +9,9 @@ async def fixed_closer(*, position: TradePosition):
     try:
         config = Config()
         fixed = config.state.setdefault('fixed_closer', {})
-
-        positions = Positions()
-        position = await positions.positions_get(ticket=position.ticket)
-        position = position[0] if position else None
+        pos = Positions()
+        positions = await pos.positions_get(ticket=position.ticket)
+        position = positions[0] if positions else None
         if not position:
             fixed.pop(position.ticket) if position.ticket in fixed else ...
             return

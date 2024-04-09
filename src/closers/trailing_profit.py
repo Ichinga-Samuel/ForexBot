@@ -14,14 +14,16 @@ async def trail_tp(*, position: TradePosition):
         last_profit = order.setdefault('last_profit', 0)
         trail = order.setdefault('trail', 0.30)
         trailing = order.get('trailing', False)
-        trail_start = order.setdefault('trail_start', 0.25)
+        trail_start = order.setdefault('trail_start', 0.375)
         extend_start = order.setdefault('extend_start', 0.80)
+        start_trailing = order.get('start_trailing', True)
         current_profit = order.setdefault('current_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                                position.volume,
                                                                                position.price_open, position.tp))
 
-        if ((position.profit > (current_profit * trail_start)) or trailing) and position.profit > last_profit:
+        if (start_trailing and ((position.profit > (current_profit * trail_start)) or trailing)
+                and position.profit > last_profit):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, sym=symbol, current_profit=current_profit, trail=trail,
@@ -32,7 +34,7 @@ async def trail_tp(*, position: TradePosition):
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: float, extra: float = 0.0,
-                       tries: int = 4, trail: float = 0.10, extend_start: float = 0.80):
+                       tries: int = 4, trail: float = 0.30, extend_start: float = 0.80):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -75,7 +77,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 config.state['winning'][position.ticket]['current_profit'] = new_profit
-                logger.warning(f"Increased TP for {position.symbol}:{position.ticket} {current_profit} {new_profit=}")
+                logger.warning(f"Increased TP for {position.symbol}:{position.ticket} {current_profit} {new_profit=}"
+                               f"{res.profit=}")
             else:
                 logger.warning(f"Trailing Stops for {position.symbol}:{position.ticket} {position.profit=}")
         elif res.retcode == 10016 and tries > 0:
