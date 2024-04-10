@@ -12,7 +12,7 @@ async def place_multiple_random_orders():
         [await sym.init() for sym in syms]
         orders = []
         await Positions().close_all()
-        count = 9
+        count = 20
         # account.margin_free > 100
         while count > 0:
             await account.refresh()
@@ -25,7 +25,7 @@ async def place_multiple_random_orders():
                     volume = sym.volume_max / 3
                     volume = round(volume, abs(math.ceil(math.log10(sym.volume_step))))
                     await trader.place_trade(order_type=order_type, parameters={'volume': volume, 'sl': sl, 'tp': tp, 'age': 10, 'price': 90,
-                                                                                'type': order_type, 'name': 'Ranndoms'})
+                                                                                'type': order_type, 'name': 'Random', 'closer': stop_levels})
                     count -= 1
                     # order = Order(symbol=sym, type=order_type, volume=sym.volume_max, price=price, sl=sl, tp=tp)
                     # orders.append(order)

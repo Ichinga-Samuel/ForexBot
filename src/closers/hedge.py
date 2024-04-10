@@ -22,8 +22,8 @@ async def hedge_position(*, position: TradePosition):
             await sym.init()
             res = await make_hedge(position=position, symbol=sym)
             hedges[position.ticket] = res.order
-            logger.warning(f"{winning_order}")
             winning[res.order] = winning_order | {'start_trailing': False}
+            logger.warning(f"winnings {res.order}:{winning[res.order]} {position.ticket}:{winning_order}")
     except Exception as exe:
         logger.error(f'An error occurred in function hedge {exe}')
 
@@ -41,13 +41,12 @@ async def make_hedge(*, position: TradePosition, symbol: Symbol) -> OrderSendRes
                   type=position.type.opposite, sl=sl, tp=tp, comment=f"Rev{position.ticket}")
     res = await order.send()
     if res.retcode == 10009:
-        loss = calc_loss(sym=symbol, volume=position.volume, open_price=position.price_open,
-                         close_price=position.sl, order_type=position.type.opposite)
-        profit = calc_profit(sym=symbol, volume=position.volume, open_price=position.price_open,
-                             close_price=position.sl, order_type=position.type.opposite)
-        logger.warning(f"Make_Hedge {profit=}:{loss=}")
-        logger.warning(f"Hedged {position.ticket} for {position.symbol} at {position.profit} with"
-                       f" {res.order}{res.profit=}")
+        loss = calc_loss(sym=symbol, volume=position.volume, open_price=position.price_current,
+                         close_price=sl, order_type=position.type.opposite)
+        profit = calc_profit(sym=symbol, volume=position.volume, open_price=position.price_current,
+                             close_price=tp, order_type=position.type.opposite)
+        # logger.warning(f"Make_Hedge {profit=}:{loss=}")
+        logger.warning(f"Hedged {position.ticket} for {position.symbol} at {position.profit} with {res.order}. Make_Hedge {profit=}:{loss=}")
         return res
     else:
         raise OrderError(f"Could not reverse {position.ticket} for {position.symbol} with {res.comment}")
