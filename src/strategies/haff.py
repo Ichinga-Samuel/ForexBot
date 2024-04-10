@@ -2,6 +2,7 @@ from logging import getLogger
 import asyncio
 
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
+import warnings
 # from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
@@ -10,7 +11,7 @@ from ..traders.p_trader import PTrader
 from ..utils.ram import RAM
 
 logger = getLogger(__name__)
-
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class HAFF(Strategy):
     ttf: TimeFrame
