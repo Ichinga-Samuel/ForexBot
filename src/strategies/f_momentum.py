@@ -24,9 +24,9 @@ class FMomentum(Strategy):
     parameters: dict
     trader: Trader
     tracker: Tracker
-    interval: TimeFrame = TimeFrame.H1
+    interval: TimeFrame = TimeFrame.M30
     parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720, 'trend': 2,
-                  'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 2880, 'sma_length': 9, 'rsi_length': 9}
+                  'closer': ema_closer, "etf": TimeFrame.M30, 'ecc': 2880, 'sma_length': 9, 'rsi_length': 9}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FMomentum'):

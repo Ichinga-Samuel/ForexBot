@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import RMomentum, Momentum, MRMomentum, NMomentum
+from ..strategies import RMomentum, Momentum, MRMomentum, NMomentum, FMomentum, FingerFractal
 from ..closers import monitor
 # from ..traders import SPTrader
 # from ..utils import RAM
@@ -11,7 +11,7 @@ from ..closers import monitor
 
 def build_bot():
     Config(config_dir='configs', filename='deriv_demo_1.json', reload=True, records_dir='records/deriv1/',
-           trailing_stops=True, exit_signals=False, trailing_loss=False, use_ram=True, hedging=True, fixed_closer=True)
+           trailing_stops=True, exit_signals=False, use_ram=True, hedging=True, fixed_closer=True)
 
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_1.log', datefmt='%Y-%m-%d %H:%M:%S')
@@ -21,7 +21,7 @@ def build_bot():
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [RMomentum, Momentum]]
+    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [RMomentum, Momentum, FMomentum, FingerFractal]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

@@ -67,7 +67,8 @@ async def check_hedge(*, main: int, rev: int):
         if main_pos:
             order = config.state.setdefault('losing', {}).setdefault(main_pos.ticket, {})
             hedge_point = order.get('hedge_point', -3)
-            if main_pos.profit >= 0.01:
+            # add this to hedge state
+            if main_pos.profit >= 1:
                 if rev_pos:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} for {main_pos.ticket} at"
@@ -87,6 +88,7 @@ async def check_hedge(*, main: int, rev: int):
                 if rev_pos.profit > 0:
                     order = fixed_closer.setdefault(rev, {})
                     order['close'] = True
+                    # add cut_off adjustment to the hedge state
                     order['cut_off'] = max(rev_pos.profit - 0.5, 0.5)
                     logger.warning(f"Set cut_off for {rev_pos.ticket}:{rev_pos.symbol}:{rev_pos.profit=} cut_off:{order['cut_off']}")
                     winning_order = winning.setdefault(rev, {})

@@ -24,10 +24,10 @@ class NFF(Strategy):
     trader: Trader
     tracker: Tracker
     parameters: dict
-    interval: TimeFrame = TimeFrame.H1
+    interval: TimeFrame = TimeFrame.M30
 
     parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 4000, 'entry_ema': 5}
+                  'closer': ema_closer, "etf": TimeFrame.M30, 'ecc': 4000, 'entry_ema': 5}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'NFF'):

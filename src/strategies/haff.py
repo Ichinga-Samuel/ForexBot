@@ -13,6 +13,7 @@ from ..utils.ram import RAM
 logger = getLogger(__name__)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
 class HAFF(Strategy):
     ttf: TimeFrame
     etf: TimeFrame
@@ -25,10 +26,10 @@ class HAFF(Strategy):
     trader: Trader
     tracker: Tracker
     parameters: dict
-    interval: TimeFrame = TimeFrame.H1
+    interval: TimeFrame = TimeFrame.M30
 
     parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "entry_ema": 5, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': ema_closer, "etf": TimeFrame.M15, 'ecc': 4000}
+                  'closer': ema_closer, "etf": TimeFrame.M30, 'ecc': 4000}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'HAFF'):
@@ -78,11 +79,11 @@ class HAFF(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, entry_time=current, order_type=None)
-
+            candles.ta.ha(append=True)
             candles.ta.ema(length=self.entry_ema, append=True)
             candles.rename(inplace=True, **{f"EMA_{self.entry_ema}": "ema"})
-            candles['cae'] = candles.ta_lib.cross(candles.close, candles.ema, above=True)
-            candles['cbe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)
+            candles['cae'] = candles.ta_lib.cross(candles.HA_close, candles.ema, above=True)
+            candles['cbe'] = candles.ta_lib.cross(candles.HA_close, candles.ema, above=False)
             current = candles[-1]
 
             if self.tracker.bullish and current.cae:

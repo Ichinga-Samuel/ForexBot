@@ -22,7 +22,7 @@ class FingerFractal(Strategy):
     tcc: int
     trader: Trader
     tracker: Tracker
-    interval: TimeFrame = TimeFrame.H1
+    interval: TimeFrame = TimeFrame.M30
     parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
                   'closer': ema_closer}
 
