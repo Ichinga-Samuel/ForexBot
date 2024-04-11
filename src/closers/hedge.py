@@ -41,12 +41,7 @@ async def make_hedge(*, position: TradePosition, symbol: Symbol) -> OrderSendRes
                   type=position.type.opposite, sl=sl, tp=tp, comment=f"Rev{position.ticket}")
     res = await order.send()
     if res.retcode == 10009:
-        loss = calc_loss(sym=symbol, volume=position.volume, open_price=position.price_current,
-                         close_price=sl, order_type=position.type.opposite)
-        profit = calc_profit(sym=symbol, volume=position.volume, open_price=position.price_current,
-                             close_price=tp, order_type=position.type.opposite)
-        # logger.warning(f"Make_Hedge {profit=}:{loss=}")
-        logger.warning(f"Hedged {position.ticket} for {position.symbol} at {position.profit} with {res.order}. Make_Hedge {profit=}:{loss=}")
+        logger.warning(f"Hedged {position.ticket} for {position.symbol} at {position.profit} with {res.order}")
         return res
     else:
         raise OrderError(f"Could not reverse {position.ticket} for {position.symbol} with {res.comment}")
@@ -93,6 +88,7 @@ async def check_hedge(*, main: int, rev: int):
                     order = fixed_closer.setdefault(rev, {})
                     order['close'] = True
                     order['cut_off'] = max(rev_pos.profit - 0.5, 0.5)
+                    logger.warning(f"Set cut_off for {rev_pos.ticket}:{rev_pos.symbol}:{rev_pos.profit=} cut_off:{order['cut_off']}")
                     winning_order = winning.setdefault(rev, {})
                     winning_order['start_trailing'] = True
                 if rev_pos.profit < 0:
