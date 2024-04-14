@@ -31,8 +31,7 @@ class FMomentum(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FMomentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, ram=RAM(risk_to_reward=3),
-                                        trail_profits={'trail_start': 0.375})
+        self.trader = trader or PTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):

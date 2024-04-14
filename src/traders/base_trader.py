@@ -12,6 +12,7 @@ class BaseTrader(Trader):
     order_updates: list[dict]  # take profit levels for multiple trades
     trail_profits: dict
     trail_loss: dict
+    fixed_closer: dict
 
     order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
                    "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
@@ -21,9 +22,9 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
-                 use_ram: bool = None, trail_loss: dict = None, trail_profits: dict = None):
+                 use_ram: bool = None, trail_loss: dict = None, trail_profits: dict = None, fixed_closer: dict = None):
         self.data = {}
-        ram = ram or RAM(risk_to_reward=3, risk=0.01, loss_limit=1)
+        ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.order_updates = []
         self.risk_to_rewards = risk_to_rewards or [1.5, 2, 2.5]
         ram.risk_to_reward = self.risk_to_rewards[-1] if multiple else ram.risk_to_reward
@@ -32,6 +33,7 @@ class BaseTrader(Trader):
         self.track_trades = track_trades
         self.trail_profits = trail_profits or {}
         self.trail_loss = trail_loss or {}
+        self.fixed_closer = fixed_closer or {}
         self.tracker_key = tracker_key or self.__class__.__name__
         super().__init__(symbol=symbol, ram=ram)
         ur = getattr(self.config, 'use_ram', False)
@@ -63,21 +65,23 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            # p_points = int(abs(result.price - self.order.tp) / self.symbol.point)
-            # l_points = int(abs(result.price - self.order.sl) / self.symbol.point)
-            winning = {'current_profit': profit, 'trail_start': 0.375, 'trail': 0.30, 'trailing': False,
-                       'extend_start': 0.8, 'start_trailing': True} | self.trail_profits
-            losing = {'trail_start': 0.8, 'hedge_point': -3, 'sl_limit': 15, 'trail': 0.125} | self.trail_loss
+            winning = {'current_profit': profit, 'trail_start': 9, 'trail': 2, 'trailing': False,
+                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2,
+                       'take_profit': 10} | self.trail_profits
+            losing = {'trail_start': 0.8, 'hedge_point': -3, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
+                      'hedge_cutoff': 1} | self.trail_loss
+            fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state.setdefault('winning', {})[result.order] = winning
             self.config.state.setdefault('losing', {})[result.order] = losing
-            self.config.state.setdefault('fixed_closer', {})[result.order] = {'close': False, 'cut_off': -3}
+            self.config.state.setdefault('fixed_closer', {})[result.order] = fixed_closer
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def check_ram(self):
         open_pos = await self.ram.check_open_positions(symbol=self.symbol.name)
         if open_pos:
-            raise RuntimeError(f"Open positions present for {self.symbol.name}")
+            raise RuntimeError(f"more than {self.ram.open_limit} open positions present for {self.symbol}")
+
         bal = await self.ram.check_balance_level()
         if bal:
             raise RuntimeError("Balance level too low")

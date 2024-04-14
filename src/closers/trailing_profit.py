@@ -12,45 +12,51 @@ async def trail_tp(*, position: TradePosition):
         config = Config()
         order = config.state.setdefault('winning', {}).setdefault(position.ticket, {})
         last_profit = order.setdefault('last_profit', 0)
-        trail = order.setdefault('trail', 0.30)
+        trail = order.setdefault('trail', 2)
         trailing = order.get('trailing', False)
-        trail_start = order.setdefault('trail_start', 0.375)
+        trail_start = order.setdefault('trail_start', 9)
         extend_start = order.setdefault('extend_start', 0.80)
+        take_profit = order.setdefault('take_profit', 10)
+        extend_by = order.setdefault('extend_by', 2)
         start_trailing = order.get('start_trailing', True)
         current_profit = order.setdefault('current_profit',
                                           await position.mt5.order_calc_profit(position.type, position.symbol,
                                                                                position.volume,
                                                                                position.price_open, position.tp))
 
-        if (start_trailing and ((position.profit > (current_profit * trail_start)) or trailing)
-                and position.profit > last_profit):
+        if start_trailing and ((position.profit > trail_start) or trailing) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, sym=symbol, current_profit=current_profit, trail=trail,
-                               extend_start=extend_start)
+                               extend_start=extend_start, take_profit=take_profit, extend_by=extend_by)
 
     except Exception as err:
         logger.error(f"{err} in modify_stop for {position.symbol}:{position.ticket}")
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: float, extra: float = 0.0,
-                       tries: int = 4, trail: float = 0.30, extend_start: float = 0.80):
+                       tries: int = 4, trail: float = 2, extend_start: float = 0.80, extend_by: float = 2,
+                       take_profit: float = 10):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
         position = positions[0]
         full_points = int(abs(position.price_open - position.tp) / sym.point)
-        trail = (2 / position.profit) or trail
+        trail_ = (trail / position.profit)
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        # remaining_points = int(abs(position.price_current - position.tp) / sym.point)
-        extend = 3 / current_profit
-        sl_points = int(trail * captured_points)
+        extend = extend_by / current_profit
+        sl_points = int(trail_ * captured_points)
         stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
         sl_points = max(sl_points, stops_level)
         sl_value = round(sl_points * sym.point, sym.digits)
         tp_points = full_points * extend
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
+
+        fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
+        if position.profit >= take_profit:
+            fixed_closer['close'] = True
+            fixed_closer['cut_off'] = take_profit - 0.5
 
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
