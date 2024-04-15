@@ -23,6 +23,7 @@ def build_bot():
     ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FMomentum, HAFF, NFF]]
     for st in ff_sts:
         st.trader.trail_loss |= {'hedge_point': -6}
+        st.trader.trail_profits |= {'hedge_trail_start': 9}
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()
