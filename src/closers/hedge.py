@@ -83,6 +83,7 @@ async def check_hedge(*, main: int, rev: int):
                 order['close'] = True
                 order['cut_off'] = cut_off
 
+
             # if rev_pos and rev_pos.profit < hedge_point:
             #     await pos.close_by(rev_pos)
             #     if main_pos.profit < 0:
@@ -94,11 +95,13 @@ async def check_hedge(*, main: int, rev: int):
                 if rev_pos.profit > 0:
                     winning_order = winning.setdefault(rev, main_winning)
                     winning_order['start_trailing'] = True
-                    winning_order['trailing'] = True
+                    winning_order['trailing'] = False
                     winning_order['current_profit'] = rev_pos.profit
                     winning_order['last_profit'] = 0
-                    winning_order['trail_start'] = rev_pos.profit - 0.2
-                    winning_order['trail'] = 2
+                    winning_order['trail_start'] = main_winning.get('hedge_trail_start',
+                                                                    main_winning.get('trail_start',
+                                                                                     9 - main_winning.get('trail', 2)))
+                    winning_order['trail'] = 1.5
                     # order = fixed_closer.setdefault(rev, {})
                     # order['close'] = True
                     # add cut_off adjustment to the hedge state
