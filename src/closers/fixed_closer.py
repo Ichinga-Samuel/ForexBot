@@ -16,7 +16,7 @@ async def fixed_closer(*, position: TradePosition):
             fixed.pop(position.ticket) if position.ticket in fixed else ...
             return
         order = fixed[position.ticket]
-        if order.get('close', False) and position.profit < order['cut_off']:
+        if order.get('close', False) and position.profit <= order['cut_off']:
             res = await pos.close_by(position)
             fixed.pop(position.ticket) if position.ticket in fixed else ...
             if res.retcode == 10009:

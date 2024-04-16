@@ -13,17 +13,18 @@ def build_bot():
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
+
     # syms = ['Volatility 25 Index', 'Volatility 50 Index', 'Volatility 10 Index', 'Volatility 75 Index',
     #         'Volatility 100 (1s) Index', 'Volatility 10 (1s) Index', 'Volatility 25 (1s) Index',
     #         'Volatility 50 (1s) Index', 'Volatility 75 (1s) Index']
+
     syms = ['Volatility 10 Index', 'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
-    ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [St(symbol=sym) for sym in ff_syms for St in [FingerFractal, FMomentum, HAFF, NFF]]
-    for st in ff_sts:
-        st.trader.trail_loss |= {'hedge_point': -6}
-        st.trader.trail_profits |= {'hedge_trail_start': 9}
+
+    # ff_syms = [ForexSymbol(name=sym) for sym in syms]
+
+    ff_sts = [FingerFractal(symbol=ForexSymbol(name=sym)) for sym in syms]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()
