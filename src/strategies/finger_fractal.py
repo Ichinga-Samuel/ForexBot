@@ -48,16 +48,17 @@ class FingerFractal(Strategy):
                                             f"EMA_{self.third_ema}": "third", 'STOCHk_14_3_3': 'stochk',
                                             'STOCHd_14_3_3': 'stochd'})
             candles.ta.sma(close='stcohd', length=5, append=True)
+            candles.ta.rename(inplace=True, **{'SMA_5': 'sma'})
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
-            candles['sbs'] = candles.ta_lib.below(candles.sma, candles.stochd)
+            candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
 
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            candles['sas'] = candles.ta_lib.above(candles.sma, candles.stochd)
+            candles['sas'] = candles.ta_lib.above(candles.stochd, candles.sma)
             current = candles[-1]
             if (current.is_bullish() and all([current.fas, current.sat, current.caf])
                 and not (current.stochd >= 70 or current.sbs)):
