@@ -43,21 +43,28 @@ class FingerFractal(Strategy):
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.ema(length=self.third_ema, append=True)
+            candles.ta.stoch(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            f"EMA_{self.third_ema}": "third"})
+                                            f"EMA_{self.third_ema}": "third", 'STOCHk_14_3_3': 'stochk',
+                                            'STOCHd_14_3_3': 'stochd'})
+            candles.ta.sma(close='stcohd', length=5, append=True)
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
+            candles['sbs'] = candles.ta_lib.below(candles.sma, candles.stochd)
 
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
+            candles['sas'] = candles.ta_lib.above(candles.sma, candles.stochd)
             current = candles[-1]
-            if current.is_bullish() and all([current.fas, current.sat, current.caf]):
+            if (current.is_bullish() and all([current.fas, current.sat, current.caf])
+                and not (current.stochd >= 70 or current.sbs)):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif current.is_bearish() and all([current.fbs, current.sbt, current.cbf]):
+            elif (current.is_bearish() and all([current.fbs, current.sbt, current.cbf])
+                  and not (current.stochd <= 30 or current.sas)):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
@@ -80,7 +87,7 @@ class FingerFractal(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
-                    await asyncio.sleep(self.timeout)
+                    # await asyncio.sleep(self.timeout)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")

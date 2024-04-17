@@ -64,14 +64,14 @@ async def check_hedge(*, main: int, rev: int):
                 main_pos = p
             elif p.ticket == rev:
                 rev_pos = p
-        if not main_pos and not rev_pos:
+        if not (main_pos and rev_pos):
             hedges.pop(main) if main in hedges else ...
             return
 
         if main_pos:
             order_ = config.state.setdefault('losing', {}).setdefault(main, {})
             hedge_cutoff = order_.get('hedge_cutoff', 0)
-            cut_off = order_.get('cut_off', 0)
+            cut_off = order_.get('cut_off', -1)
 
             if main_pos.profit >= hedge_cutoff:
                 if rev_pos:
@@ -97,9 +97,10 @@ async def check_hedge(*, main: int, rev: int):
                     close_rev = fixed_closer.setdefault(rev, {})
                     close_rev['close'] = True
                     close_rev['cut_off'] = max(rev_pos.profit - 1.5, 1.5)
+                    hedges.pop(main) if main in hedges else ...
                 if rev_pos.profit < 0:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} 4 {main} at {rev_pos.profit}:")
-            hedges.pop(main) if main in hedges else ...
+                    hedges.pop(main) if main in hedges else ...
     except Exception as exe:
-        logger.error(f'An error occurred in function check_hedge {exe}')
+        logger.error(f'An error occurred in function check_hedge {exe}:{exe.__traceback__.tb_lineno}')
