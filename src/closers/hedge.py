@@ -16,7 +16,7 @@ async def hedge_position(*, position: TradePosition):
         main_order = winning.setdefault(position.ticket, {})
         hedges = config.state.setdefault('hedges', {})
         assert not position.comment.startswith('Rev')
-        hedge_point = order.get('hedge_point', -3)
+        hedge_point = order.get('hedge_point', -3.5)
         if position.profit <= hedge_point:
             sym = Symbol(name=position.symbol)
             await sym.init()
@@ -67,20 +67,21 @@ async def check_hedge(*, main: int, rev: int):
         if not main_pos and not rev_pos:
             hedges.pop(main) if main in hedges else ...
             return
+
         if main_pos:
-            order = config.state.setdefault('losing', {}).setdefault(main_pos.ticket, {})
-            hedge_cutoff = order.get('hedge_cutoff', 0)
-            cut_off = order.get('cut_off', 0)
+            order_ = config.state.setdefault('losing', {}).setdefault(main, {})
+            hedge_cutoff = order_.get('hedge_cutoff', 0)
+            cut_off = order_.get('cut_off', 0)
 
             if main_pos.profit >= hedge_cutoff:
                 if rev_pos:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} for {main_pos.ticket} at"
-                                   f" {rev_pos.profit=}:{main_pos.profit=}")
+                                   f"{rev_pos.profit=}:{main_pos.profit=}")
 
-                order = fixed_closer.setdefault(main, {})
-                order['close'] = True
-                order['cut_off'] = cut_off
+                close_order = fixed_closer.setdefault(main, {})
+                close_order['close'] = True
+                close_order['cut_off'] = cut_off
                 main_order['trail_start'] = abs(rev_pos.profit) + 1.5
                 main_order['trail'] = 1.5
 
@@ -93,8 +94,9 @@ async def check_hedge(*, main: int, rev: int):
                     rev_order['last_profit'] = 0
                     rev_order['trail_start'] = main_order.get('hedge_trail_start', 6)
                     rev_order['trail'] = main_order.get('hedge_trail', 1.5)
-                    rev_order['close'] = True
-                    rev_order['cut_off'] = max(rev_pos.profit - 1.5, 1.5)
+                    close_rev = fixed_closer.setdefault(rev, {})
+                    close_rev['close'] = True
+                    close_rev['cut_off'] = max(rev_pos.profit - 1.5, 1.5)
                 if rev_pos.profit < 0:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} 4 {main} at {rev_pos.profit}:")

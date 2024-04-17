@@ -22,7 +22,7 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
-                 use_ram: bool = None, trail_loss: dict = None, trail_profits: dict = None, fixed_closer: dict = None):
+                 use_ram: bool = True, trail_loss: dict = None, trail_profits: dict = None, fixed_closer: dict = None):
         self.data = {}
         ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.order_updates = []

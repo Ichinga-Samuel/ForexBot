@@ -5,7 +5,7 @@ class RAM(_RAM):
     min_amount: float = 8
     max_amount: float = 8
     loss_limit: int = 1
-    open_limit: int = 4
+    open_limit: int = 1
     balance_level: float = 50
 
     async def get_amount(self) -> float:
