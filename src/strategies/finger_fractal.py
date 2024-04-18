@@ -47,7 +47,7 @@ class FingerFractal(Strategy):
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             f"EMA_{self.third_ema}": "third", 'STOCHk_14_3_3': 'stochk',
                                             'STOCHd_14_3_3': 'stochd'})
-            candles.ta.sma(close='stcohd', length=5, append=True)
+            candles.ta.sma(close='stochd', length=5, append=True)
             candles.rename(inplace=True, **{'SMA_5': 'sma'})
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
