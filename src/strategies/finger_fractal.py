@@ -53,19 +53,19 @@ class FingerFractal(Strategy):
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
-            candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
+            candles['sas'] = candles.ta_lib.above(candles.stochd, candles.sma)
 
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            candles['sas'] = candles.ta_lib.above(candles.stochd, candles.sma)
+            candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
             current = candles[-1]
             if (current.is_bullish() and all([current.fas, current.sat, current.caf])
-                 and not (current.stochd >= 70 or current.sbs)):
+                    and current.stochd <= 80 or current.sas):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
             elif (current.is_bearish() and all([current.fbs, current.sbt, current.cbf])
-                  and not (current.stochd <= 30 or current.sas)):
+                  and current.stochd >= 30 or current.sbs):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
