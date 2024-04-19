@@ -83,11 +83,12 @@ async def check_hedge(*, main: int, rev: int):
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} for {main_pos.ticket} at"
                                    f"{rev_pos.profit=}:{main_pos.profit=}")
 
-                close_order = fixed_closer.setdefault(main, {})
-                close_order['close'] = True
-                close_order['cut_off'] = cut_off
-                main_order['trail_start'] = abs(getattr(rev_pos, 'profit', hedge_point)) + 1.5
-                main_order['trail'] = 1.5
+                    close_order = fixed_closer.setdefault(main, {})
+                    close_order['close'] = True
+                    close_order['cut_off'] = cut_off
+                    main_order['trail_start'] = abs(getattr(rev_pos, 'profit', hedge_point)) + 2
+                    main_order['trail'] = 2
+                    hedges.pop(main) if main in hedges else ...
 
         if not main_pos:
             if rev_pos:
@@ -106,11 +107,9 @@ async def check_hedge(*, main: int, rev: int):
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     hedges.pop(main) if main in hedges else ...
-                elif rev_pos.profit < 0:
+                elif rev_pos.profit <= 0:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} 4 {main} at {rev_pos.profit}:")
-                    hedges.pop(main) if main in hedges else ...
-                else:
                     hedges.pop(main) if main in hedges else ...
             hedges.pop(main) if main in hedges else ...
     except Exception as exe:

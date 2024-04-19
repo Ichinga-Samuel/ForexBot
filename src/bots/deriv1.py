@@ -22,7 +22,7 @@ def build_bot():
 
     # ff_syms = [ForexSymbol(name=sym) for sym in syms]
 
-    ff_sts = [FingerFractal(symbol=ForexSymbol(name=sym)) for sym in syms]
+    ff_sts = [FMomentum(symbol=ForexSymbol(name=sym)) for sym in syms]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

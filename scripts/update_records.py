@@ -1,11 +1,11 @@
 import asyncio
-from aiomql import Records, Account, Config, TradeRecords
+from aiomql import Records, Account, Config # TradeRecords
 
 
 async def update_records():
     """Update all records"""
     async with Account() as acc:
-        rec = TradeRecords()
+        rec = Records()
         await rec.update_json_records()
 
 
