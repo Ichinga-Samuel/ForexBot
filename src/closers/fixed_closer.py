@@ -10,10 +10,11 @@ async def fixed_closer(*, position: TradePosition):
         config = Config()
         fixed = config.state.setdefault('fixed_closer', {})
         pos = Positions()
-        positions = await pos.positions_get(ticket=position.ticket)
+        ticket = position.ticket
+        positions = await pos.positions_get(ticket=ticket)
         position = positions[0] if positions else None
         if not position:
-            fixed.pop(position.ticket) if position.ticket in fixed else ...
+            fixed.pop(ticket) if ticket in fixed else ...
             return
         order = fixed[position.ticket]
         if order.get('close', False) and position.profit <= order['cut_off']:

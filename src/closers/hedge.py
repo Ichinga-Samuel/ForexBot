@@ -24,7 +24,7 @@ async def hedge_position(*, position: TradePosition):
             res = await make_hedge(position=position, symbol=sym)
             hedges[position.ticket] = res.order
             order['hedge_point'] = position.profit
-            closer[res.order] = {'close': True, 'cut_off': position.profit-0.2}
+            closer[res.order] = {'close': False, 'cut_off': position.profit-0.2}
             winning[res.order] = main_order | {'start_trailing': False, 'last_profit': 0}
     except AssertionError as _:
         pass
@@ -99,8 +99,12 @@ async def check_hedge(*, main: int, rev: int):
                     rev_order['trail_start'] = main_order.get('hedge_trail_start', 6)
                     rev_order['trail'] = main_order.get('hedge_trail', 1.5)
                     close_rev = fixed_closer.setdefault(rev, {})
+                    logger.warning(f"Before {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     close_rev['close'] = True
                     close_rev['cut_off'] = max(rev_pos.profit - 1.5, 2.5)
+                    logger.warning(f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit}- cutoff={close_rev['cut_off']}")
+                    close_rev = fixed_closer.setdefault(rev, {})
+                    logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     hedges.pop(main) if main in hedges else ...
                 elif rev_pos.profit < 0:
                     await pos.close_by(rev_pos)
@@ -108,5 +112,6 @@ async def check_hedge(*, main: int, rev: int):
                     hedges.pop(main) if main in hedges else ...
                 else:
                     hedges.pop(main) if main in hedges else ...
+            hedges.pop(main) if main in hedges else ...
     except Exception as exe:
         logger.error(f'An error occurred in function check_hedge {exe}')
