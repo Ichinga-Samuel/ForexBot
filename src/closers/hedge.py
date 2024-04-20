@@ -72,14 +72,14 @@ async def check_hedge(*, main: int, rev: int):
             hedges.pop(main) if main in hedges else ...
             return
 
-        if main_pos:
+        if main_pos is not None:
             order_ = config.state.setdefault('losing', {}).setdefault(main, {})
             hedge_cutoff = order_.get('hedge_cutoff', 0)
             hedge_point = order_.get('hedge_point', -3.5)
             cut_off = order_.get('cut_off', -1)
 
             if main_pos.profit >= hedge_cutoff:
-                if rev_pos:
+                if rev_pos is not None:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.comment} for {main_pos.ticket} at"
                                    f"{rev_pos.profit=}:{main_pos.profit=}")
@@ -92,7 +92,7 @@ async def check_hedge(*, main: int, rev: int):
                     hedges.pop(main) if main in hedges else ...
 
         if main_pos is None:
-            if rev_pos:
+            if rev_pos is not None:
                 if rev_pos.profit > 0:
                     rev_order = winning.setdefault(rev, main_order)
                     rev_order['start_trailing'] = False
