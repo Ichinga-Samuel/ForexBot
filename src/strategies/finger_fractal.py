@@ -60,12 +60,10 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
             current = candles[-1]
-            if (current.is_bullish() and all([current.fas, current.sat, current.caf])
-                    and current.stochd <= 80 or current.sas):
+            if current.is_bullish() and all([current.fas, current.sat, current.caf]) and current.sas:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif (current.is_bearish() and all([current.fbs, current.sbt, current.cbf])
-                  and current.stochd >= 30 or current.sbs):
+            elif current.is_bearish() and all([current.fbs, current.sbt, current.cbf]) and current.sbs:
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

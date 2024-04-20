@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from aiomql import Order, OrderType, TradePosition, Symbol, Positions, Config, OrderSendResult, OrderError
+
 # from ..utils.sym_utils import calc_profit, calc_loss
 
 logger = getLogger(__name__)
@@ -24,7 +25,7 @@ async def hedge_position(*, position: TradePosition):
             res = await make_hedge(position=position, symbol=sym)
             hedges[position.ticket] = res.order
             order['hedge_point'] = position.profit
-            closer[res.order] = {'close': False, 'cut_off': position.profit-0.2}
+            closer[res.order] = {'close': False, 'cut_off': position.profit - 0.2}
             winning[res.order] = main_order | {'start_trailing': False, 'last_profit': 0}
     except AssertionError as _:
         pass
@@ -67,7 +68,7 @@ async def check_hedge(*, main: int, rev: int):
                 main_pos = p
             elif p.ticket == rev:
                 rev_pos = p
-        if not (main_pos and rev_pos):
+        if main_pos is None and rev_pos is None:
             hedges.pop(main) if main in hedges else ...
             return
 
@@ -90,7 +91,7 @@ async def check_hedge(*, main: int, rev: int):
                     main_order['trail'] = 2
                     hedges.pop(main) if main in hedges else ...
 
-        if not main_pos:
+        if main_pos is None:
             if rev_pos:
                 if rev_pos.profit > 0:
                     rev_order = winning.setdefault(rev, main_order)
@@ -102,8 +103,9 @@ async def check_hedge(*, main: int, rev: int):
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"Before {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     close_rev['close'] = True
-                    close_rev['cut_off'] = max(rev_pos.profit - 1, 2.5)
-                    logger.warning(f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit}- cutoff={close_rev['cut_off']}")
+                    close_rev['cut_off'] = max(rev_pos.profit - 1, 0.5)
+                    logger.warning(
+                        f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit}- cutoff={close_rev['cut_off']}")
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     # hedges.pop(main) if main in hedges else ...
