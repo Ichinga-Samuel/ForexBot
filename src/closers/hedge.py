@@ -80,7 +80,7 @@ async def check_hedge(*, main: int, rev: int):
             if main_pos.profit >= hedge_cutoff:
                 if rev_pos:
                     await pos.close_by(rev_pos)
-                    logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} for {main_pos.ticket} at"
+                    logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.comment} for {main_pos.ticket} at"
                                    f"{rev_pos.profit=}:{main_pos.profit=}")
 
                     close_order = fixed_closer.setdefault(main, {})
@@ -97,20 +97,20 @@ async def check_hedge(*, main: int, rev: int):
                     rev_order['start_trailing'] = False
                     rev_order['trailing'] = False
                     rev_order['last_profit'] = 0
-                    rev_order['trail_start'] = main_order.get('hedge_trail_start', 6)
-                    rev_order['trail'] = main_order.get('hedge_trail', 1.5)
+                    rev_order['trail_start'] = main_order.get('hedge_trail_start', 9)
+                    rev_order['trail'] = main_order.get('hedge_trail', 2)
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"Before {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     close_rev['close'] = True
-                    close_rev['cut_off'] = max(rev_pos.profit - 1.5, 2.5)
+                    close_rev['cut_off'] = max(rev_pos.profit - 1, 2.5)
                     logger.warning(f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit}- cutoff={close_rev['cut_off']}")
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
-                    hedges.pop(main) if main in hedges else ...
+                    # hedges.pop(main) if main in hedges else ...
                 elif rev_pos.profit <= 0:
                     await pos.close_by(rev_pos)
-                    logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.ticket} 4 {main} at {rev_pos.profit}:")
-                    hedges.pop(main) if main in hedges else ...
+                    logger.warning(f"Closed {rev_pos.comment}:{rev_pos.symbol} for {main} at {rev_pos.profit}:")
+                    # hedges.pop(main) if main in hedges else ...
             hedges.pop(main) if main in hedges else ...
     except Exception as exe:
         logger.error(f'An error occurred in function check_hedge {exe}')

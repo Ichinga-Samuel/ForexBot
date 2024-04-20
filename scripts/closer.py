@@ -37,6 +37,9 @@ async def place_multiple_random_orders():
             poss = await pos.positions_get()
             await asyncio.gather(*[pos.close_by(position) for position in poss if position.profit > 0],
                                  return_exceptions=True)
+            poss = await pos.positions_get()
+            await asyncio.gather(*[pos.close_by(position) for position in poss if position.profit < 0],
+                                 return_exceptions=True)
             await asyncio.sleep(10)
             await pos.close_all()
 

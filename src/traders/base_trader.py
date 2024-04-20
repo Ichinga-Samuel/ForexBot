@@ -67,7 +67,7 @@ class BaseTrader(Trader):
         try:
             winning = {'current_profit': profit, 'trail_start': 9, 'trail': 2, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2,
-                       'take_profit': 10, 'hedge_trail_start': 6, 'hedge_trail': 1.5} | self.trail_profits
+                       'take_profit': 12, 'hedge_trail_start': 9, 'hedge_trail': 2} | self.trail_profits
             losing = {'trail_start': 0.8, 'hedge_point': -3.5, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
                       'hedge_cutoff': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
