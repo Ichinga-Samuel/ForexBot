@@ -9,7 +9,7 @@ from ..closers import monitor
 
 def build_bot():
     Config(config_dir='configs', filename='deriv_demo.json', reload=True, records_dir='records/deriv/',
-           fixed_closer=True, hedging=True, use_ram=True, trailing_stops=True, trailing_loss=False, exit_signals=False)
+           fixed_closer=True, hedging=True, use_ram=True, trailing_stops=True, trailing_loss=False, exit_signals=True)
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()

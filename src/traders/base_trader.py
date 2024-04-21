@@ -65,10 +65,10 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            winning = {'current_profit': profit, 'trail_start': 9, 'trail': 2, 'trailing': False,
+            winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2,
-                       'take_profit': 12, 'hedge_trail_start': 9, 'hedge_trail': 2} | self.trail_profits
-            losing = {'trail_start': 0.8, 'hedge_point': -3.5, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
+                       'take_profit': 12, 'hedge_trail_start': 10, 'hedge_trail': 3} | self.trail_profits
+            losing = {'trail_start': 0.8, 'hedge_point': -5.5, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
                       'hedge_cutoff': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state.setdefault('winning', {})[result.order] = winning
@@ -78,7 +78,7 @@ class BaseTrader(Trader):
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def check_ram(self):
-        open_pos = await self.ram.check_open_positions(symbol=self.symbol.name)
+        open_pos = await self.ram.check_open_positions()
         if open_pos:
             raise RuntimeError(f"more than {self.ram.open_limit} open positions present for {self.symbol}")
 
@@ -86,9 +86,13 @@ class BaseTrader(Trader):
         if bal:
             raise RuntimeError("Balance level too low")
 
-        pos = await self.ram.check_losing_positions(symbol=self.symbol.name)
+        los_pos = await self.ram.check_losing_positions()
+        if los_pos:
+            raise RuntimeError(f"More than {self.ram.loss_limit} loosing positions present at the same time")
+
+        pos = await self.ram.check_symbol_positions(symbol=self.symbol.name)
         if pos:
-            raise RuntimeError(f"More than {self.ram.loss_limit} losing positions")
+            raise RuntimeError(f"More than {self.ram.open_limit} open positions present at the same time")
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type

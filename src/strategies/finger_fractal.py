@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 # from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
-from ..closers.ema_closer import ema_closer
+from ..closers.stoch_closer import stoch_closer
 from ..traders.p_trader import PTrader
 from ..utils.ram import RAM
 
@@ -24,8 +24,8 @@ class FingerFractal(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M30
     timeout: int = 28800
-    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': ema_closer}
+    parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H4, "tcc": 720,
+                  'closer': stoch_closer}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -43,27 +43,26 @@ class FingerFractal(Strategy):
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.ema(length=self.third_ema, append=True)
-            candles.ta.stoch(append=True)
+            # candles.ta.stoch(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            f"EMA_{self.third_ema}": "third", 'STOCHk_14_3_3': 'stochk',
-                                            'STOCHd_14_3_3': 'stochd'})
-            candles.ta.sma(close='stochd', length=5, append=True)
-            candles.rename(inplace=True, **{'SMA_5': 'sma'})
+                                            f"EMA_{self.third_ema}": "third"})
+            # candles.ta.sma(close='stochd', length=5, append=True)
+            # candles.rename(inplace=True, **{'SMA_5': 'sma'})
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
-            candles['sas'] = candles.ta_lib.above(candles.stochd, candles.sma)
+            # candles['sas'] = candles.ta_lib.above(candles.stochd, candles.sma)
 
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
+            # candles['sbs'] = candles.ta_lib.below(candles.stochd, candles.sma)
             current = candles[-1]
-            if current.is_bullish() and all([current.fas, current.sat, current.caf]) and current.sas:
+            if current.is_bullish() and all([current.fas, current.sat, current.caf]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif current.is_bearish() and all([current.fbs, current.sbt, current.cbf]) and current.sbs:
+            elif current.is_bearish() and all([current.fbs, current.sbt, current.cbf]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

@@ -26,6 +26,9 @@ class PTrader(BaseTrader):
 
     async def place_trade(self, *, order_type: OrderType, sl: float = 0, parameters: dict = None):
         try:
+            if self.use_ram:
+                await self.check_ram()
+
             self.parameters |= parameters or {}
             await self.create_order(order_type=order_type)
             if not await self.check_order():
