@@ -13,7 +13,7 @@ from .hedge import check_hedge, hedge_position
 logger = getLogger(__name__)
 
 
-async def monitor(*, tf: int = 31, key: str = 'trades'):
+async def monitor(*, tf: int = 21, key: str = 'trades'):
     print('Trade Monitoring started')
     pos = Positions()
     while True:
@@ -42,7 +42,8 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             es = getattr(config, 'exit_signals', False)
             if es:
                 data = config.state.get(key, {})
-                open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data]
+                open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data
+                               and p.ticket not in hedged]
                 closers = [trade.close() for trade in open_trades]
                 tasks.extend(closers)
 

@@ -13,7 +13,7 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
         hedges = config.state.setdefault('hedges', {})
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H2)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H1)
         exit_period = parameters.get('exit_period', 21)
         candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.stoch(append=True)
@@ -30,7 +30,7 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
         if sxs.iloc[-1]:
             positions = await pos.positions_get(ticket=position.ticket)
             position = positions[0] if positions else None
-            if not position:
+            if position is None:
                 return
             if position.profit < 0:
                 res = await pos.close_by(position)
@@ -41,7 +41,7 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
                         hedges.pop(position.ticket)
                         positions = await pos.positions_get(ticket=rev)
                         rev_pos = positions[0] if positions else None
-                        if rev_pos:
+                        if rev_pos is not None:
                             if rev_pos.profit < 0:
                                 await pos.close_by(rev_pos)
                                 logger.warning(f"Closed hedge {rev} for {position.ticket}")
