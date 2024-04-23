@@ -42,8 +42,8 @@ async def monitor(*, tf: int = 21, key: str = 'trades'):
             es = getattr(config, 'exit_signals', False)
             if es:
                 data = config.state.get(key, {})
-                open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data
-                               and p.ticket not in hedged]
+                open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data]
+                               # and p.ticket not in hedged]
                 closers = [trade.close() for trade in open_trades]
                 tasks.extend(closers)
 
