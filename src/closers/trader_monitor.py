@@ -13,7 +13,7 @@ from .hedge import check_hedge, hedge_position
 logger = getLogger(__name__)
 
 
-async def monitor(*, tf: int = 21, key: str = 'trades'):
+async def monitor(*, tf: int = 15, key: str = 'trades'):
     print('Trade Monitoring started')
     pos = Positions()
     while True:
