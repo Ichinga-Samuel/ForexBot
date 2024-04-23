@@ -23,7 +23,7 @@ class FingerFractal(Strategy):
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M30
-    timeout: int = 14400
+    timeout: int = 7200
     parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H4, "tcc": 720,
                   'closer': stoch_closer}
 

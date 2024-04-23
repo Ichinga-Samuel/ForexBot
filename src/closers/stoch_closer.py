@@ -50,7 +50,7 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
                             elif hedge_point < rev_pos.profit <= 0:
                                 fixed_closer[rev.ticket] = {'cut_off': hedge_point, 'close': True}
                             elif rev_pos.profit > 0:
-                                fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 1, 1), 'close': True}
+                                fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 1, 0), 'close': True}
                 else:
                     logger.error(f"Unable to close trade with stoch_closer {res.comment}")
             else:
