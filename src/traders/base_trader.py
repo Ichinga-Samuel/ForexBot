@@ -4,6 +4,7 @@ from functools import cache
 from aiomql import OrderType, Trader, ForexSymbol, Tick, OrderSendResult, VolumeError
 from ..utils.ram import RAM
 from ..telebots import TelegramBot
+from ..utils.sym_utils import calc_loss
 logger = getLogger(__name__)
 
 
@@ -65,8 +66,9 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
+            # loss = calc_loss(sym=self.symbol, open_price=self.order.price, symbol=self.symbol, order=result.order)
             winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
-                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 0.5,
+                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 1,
                        'take_profit': 12, 'hedge_trail_start': 10, 'hedge_trail': 3} | self.trail_profits
             losing = {'trail_start': 0.8, 'hedge_point': -5.5, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
                       'hedge_cutoff': 0} | self.trail_loss
@@ -80,11 +82,11 @@ class BaseTrader(Trader):
     async def check_ram(self):
         open_pos = await self.ram.check_open_positions()
         if open_pos:
-            raise RuntimeError(f"more than {self.ram.open_limit} open positions present for {self.symbol}")
+            raise RuntimeError(f"more than {self.ram.open_limit} open positions present at the same time")
 
-        bal = await self.ram.check_balance_level()
-        if bal:
-            raise RuntimeError("Balance level too low")
+        # bal = await self.ram.check_balance_level()
+        # if bal:
+        #     raise RuntimeError("Balance level too low")
 
         los_pos = await self.ram.check_losing_positions()
         if los_pos:
@@ -92,7 +94,8 @@ class BaseTrader(Trader):
 
         pos = await self.ram.check_symbol_positions(symbol=self.symbol.name)
         if pos:
-            raise RuntimeError(f"More than {self.ram.open_limit} open positions present at the same time")
+            raise RuntimeError(f"More than {self.ram.open_limit} open positions for {self.symbol}"
+                               f" present at the same time")
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type

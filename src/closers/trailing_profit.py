@@ -56,7 +56,7 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
         fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
         if position.profit >= take_profit:
             fixed_closer['close'] = True
-            fixed_closer['cut_off'] = take_profit
+            fixed_closer['cut_off'] = take_profit - 1
 
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value

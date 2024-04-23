@@ -11,10 +11,11 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
         config = Config()
         fixed_closer = config.state.setdefault('fixed_closer', {})
         hedges = config.state.setdefault('hedges', {})
+        order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
         sym = Symbol(name=position.symbol)
         await sym.init()
         exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H1)
-        exit_period = parameters.get('exit_period', 21)
+        exit_period = parameters.get('exit_period', 8)
         candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.stoch(append=True)
         candles.rename(inplace=True, **{'STOCHk_14_3_3': 'stochk', 'STOCHd_14_3_3': 'stochd'})
@@ -42,10 +43,13 @@ async def stoch_closer(*, position: TradePosition, parameters: dict):
                         positions = await pos.positions_get(ticket=rev)
                         rev_pos = positions[0] if positions else None
                         if rev_pos is not None:
-                            if rev_pos.profit < 0:
+                            hedge_point = order.get('hedge_point', 0)
+                            if rev_pos.profit <= hedge_point:
                                 await pos.close_by(rev_pos)
                                 logger.warning(f"Closed hedge {rev} for {position.ticket}")
-                            else:
+                            elif hedge_point < rev_pos.profit <= 0:
+                                fixed_closer[rev.ticket] = {'cut_off': hedge_point, 'close': True}
+                            elif rev_pos.profit > 0:
                                 fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 1, 1), 'close': True}
                 else:
                     logger.error(f"Unable to close trade with stoch_closer {res.comment}")

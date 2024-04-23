@@ -105,7 +105,7 @@ async def check_hedge(*, main: int, rev: int):
                     close_rev['close'] = True
                     close_rev['cut_off'] = max(rev_pos.profit - 1, 1)
                     logger.warning(
-                        f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit}- cutoff={close_rev['cut_off']}")
+                        f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit} - cutoff={close_rev['cut_off']}")
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
                     # hedges.pop(main) if main in hedges else ...

@@ -23,7 +23,7 @@ class FingerFractal(Strategy):
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M30
-    timeout: int = 28800
+    timeout: int = 14400
     parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H4, "tcc": 720,
                   'closer': stoch_closer}
 
@@ -85,7 +85,7 @@ class FingerFractal(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
-                    # await asyncio.sleep(self.timeout)
+                    await asyncio.sleep(self.timeout)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
