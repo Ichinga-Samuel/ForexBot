@@ -108,11 +108,9 @@ async def check_hedge(*, main: int, rev: int):
                         f"{rev_pos.symbol}:{rev_pos.comment} for {rev_pos.profit} - cutoff={close_rev['cut_off']}")
                     close_rev = fixed_closer.setdefault(rev, {})
                     logger.warning(f"After {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
-                    # hedges.pop(main) if main in hedges else ...
                 elif rev_pos.profit <= 0:
                     await pos.close_by(rev_pos)
                     logger.warning(f"Closed {rev_pos.comment}:{rev_pos.symbol} for {main} at {rev_pos.profit}:")
-                    # hedges.pop(main) if main in hedges else ...
             hedges.pop(main) if main in hedges else ...
     except Exception as exe:
         logger.error(f'An error occurred in function check_hedge {exe}')

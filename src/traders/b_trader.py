@@ -12,16 +12,16 @@ class BTrader(BaseTrader):
         try:
             await self.symbol.info()
             tick = await self.symbol.info_tick()
-            self.ram.max_amount = 6
-            self.ram.min_amount = 6
+            self.ram.max_amount = 6.5
+            self.ram.min_amount = 6.5
             self.trail_profits = {'trail_start': 6, 'trail': 2, 'trailing': False, 'extend_start': 0.8,
-                                  'start_trailing': True, 'extend_by': 2, 'take_profit': 9}
+                                  'start_trailing': True, 'extend_by': 2, 'take_profit': 7,
+                                  'trails': {15: 13, 10: 9, 6: 4, 5: 3.5}}
             self.trail_loss = {'hedge_point': -3.0}
             amount = await self.ram.get_amount()
-            logger.warning(f"{amount=}")
-            points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min*4)
+            points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min*3)
             comment = self.parameters.get('name', self.__class__.__name__)
-            self.order.set_attributes(volume=(self.symbol.volume_min*4), type=order_type, comment=comment)
+            self.order.set_attributes(volume=(self.symbol.volume_min*3), type=order_type, comment=comment)
             if self.multiple:
                 self.set_multiple_stop_levels(points=points, tick=tick)
             else:

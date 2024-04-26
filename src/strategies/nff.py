@@ -2,32 +2,34 @@ from logging import getLogger
 import asyncio
 
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
-from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
 from ..closers.ema_closer import ema_closer
 from ..traders.p_trader import PTrader
-from ..utils.ram import RAM
 
 logger = getLogger(__name__)
 
 
 class NFF(Strategy):
-    ttf: TimeFrame
+    ftf: TimeFrame
+    stf: TimeFrame
     etf: TimeFrame
     first_ema: int
     second_ema: int
     third_ema: int
+    fourth_ema: int
     entry_ema: int
-    tcc: int
+    fcc: int
+    scc: int
     ecc: int
     trader: Trader
     tracker: Tracker
     parameters: dict
-    interval: TimeFrame = TimeFrame.M30
+    interval: TimeFrame = TimeFrame.H1
 
-    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': ema_closer, "etf": TimeFrame.M30, 'ecc': 4000, 'entry_ema': 5}
+    parameters = {"third_ema": 21, "first_ema": 55, "second_ema": 21, "fourth_ema": 8, "ftf": TimeFrame.H4, "fcc": 720,
+                  "scc": 2880, "closer": ema_closer, "etf": TimeFrame.M15, "ecc": 5000,
+                  "entry_ema": 5, "stf": TimeFrame.H1}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'NFF'):
@@ -37,31 +39,82 @@ class NFF(Strategy):
 
     async def check_trend(self):
         try:
-            candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
-            if not ((current := candles[-1].time) >= self.tracker.trend_time):
+            fcandles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+            if not ((current := fcandles[-1].time) >= self.tracker.ftf_time):
                 self.tracker.update(new=False, order_type=None)
                 return
-            self.tracker.update(new=True, trend_time=current, order_type=None)
-            candles.ta.ema(length=self.first_ema, append=True)
-            candles.ta.ema(length=self.second_ema, append=True)
-            candles.ta.ema(length=self.third_ema, append=True)
-            candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            f"EMA_{self.third_ema}": "third"})
+            self.tracker.update(new=True, ftf_time=current, order_type=None)
+            fcandles.ta.ema(length=self.first_ema, append=True)
+            fcandles.ta.ema(length=self.second_ema, append=True)
+            fcandles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second"})
 
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
-            candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
-            candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
+            fcandles['cas'] = fcandles.ta_lib.above(fcandles.close, fcandles.second)
+            fcandles['saf'] = fcandles.ta_lib.above(fcandles.second, fcandles.first)
 
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
-            candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
-            candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
-            current = candles[-1]
+            fcandles['cbs'] = fcandles.ta_lib.below(fcandles.close, fcandles.second)
+            fcandles['sbf'] = fcandles.ta_lib.below(fcandles.second, fcandles.first)
+            current = fcandles[-1]
 
-            if current.is_bullish() and all([current.fas, current.sat, current.caf]):
-                self.tracker.update(trend="bullish")
+            if current.is_bullish() and all([current.cas, current.sas]):
+                scandles = await self.symbol.copy_rates_from_pos(timeframe=self.stf, count=self.scc)
+                if not ((current := scandles[-1].time) >= self.tracker.stf_time):
+                    self.tracker.update(new=False, order_type=None)
+                    return
+                self.tracker.update(new=True, stf_time=current, order_type=None)
+                scandles.ta.ema(length=self.third_ema, append=True)
+                scandles.ta.ema(length=self.fourth_ema, append=True)
+                scandles.rename(inplace=True, **{f"EMA_{self.third_ema}": "third", f"EMA_{self.fourth_ema}": "fourth"})
+                scandles['caf'] = scandles.ta_lib.above(scandles.close, scandles.fourth)
+                scandles['fat'] = scandles.ta_lib.above(scandles.fourth, scandles.third)
+                current = scandles[-1]
 
-            elif current.is_bearish() and all([current.fbs, current.sbt, current.cbf]):
-                self.tracker.update(trend="bearish")
+                if current.is_bullish() and all([current.caf, current.fat]):
+                    ecandles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
+                    if not ((current := ecandles[-1].time) >= self.tracker.etf_time):
+                        self.tracker.update(new=False, order_type=None)
+                        return
+                    self.tracker.update(new=True, etf_time=current, order_type=None)
+                    ecandles.ta.ema(length=self.entry_ema, append=True)
+                    ecandles.rename(inplace=True, **{f"EMA_{self.entry_ema}": "entry"})
+                    ecandles['cae'] = ecandles.ta_lib.cross(ecandles.close, ecandles.entry, above=True)
+                    current = ecandles[-1]
+                    if current.is_bullish() and current.cae:
+                        self.tracker.update(trend="bullish", snooze=self.stf.time, order_type=OrderType.BUY)
+                    else:
+                        self.tracker.update(snooze=self.etf.time, order_type=None)
+                else:
+                    self.tracker.update(snooze=self.stf.time, order_type=None)
+
+            elif current.is_bearish() and all([current.cbs, current.sbf]):
+                scandles = await self.symbol.copy_rates_from_pos(timeframe=self.stf, count=self.scc)
+                if not ((current := scandles[-1].time) >= self.tracker.stf_time):
+                    self.tracker.update(new=False, order_type=None)
+                    return
+                self.tracker.update(new=True, stf_time=current, order_type=None)
+                scandles.ta.ema(length=self.third_ema, append=True)
+                scandles.ta.ema(length=self.fourth_ema, append=True)
+                scandles.rename(inplace=True, **{f"EMA_{self.third_ema}": "third", f"EMA_{self.fourth_ema}": "fourth"})
+                scandles['cbf'] = scandles.ta_lib.below(scandles.close, scandles.fourth)
+                scandles['fbt'] = scandles.ta_lib.below(scandles.fourth, scandles.third)
+                current = scandles[-1]
+                if current.is_bearish() and all([current.cbf, current.fbt]):
+                    ecandles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
+                    if not ((current := ecandles[-1].time) >= self.tracker.etf_time):
+                        self.tracker.update(new=False, order_type=None)
+                        return
+                    self.tracker.update(new=True, etf_time=current, order_type=None)
+                    ecandles.ta.ema(length=self.entry_ema, append=True)
+                    ecandles.rename(inplace=True, **{f"EMA_{self.entry_ema}": "entry"})
+                    ecandles['cbe'] = ecandles.ta_lib.cross(ecandles.close, ecandles.entry, above=False)
+                    current = ecandles[-1]
+                    if current.is_bearish() and current.cbe:
+                        self.tracker.update(trend="bearish", snooze=self.stf.time, order_type=OrderType.SELL)
+                    else:
+                        self.tracker.update(snooze=self.etf.time, order_type=None)
+                        return
+                else:
+                    self.tracker.update(snooze=self.stf.time, order_type=None)
+
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:

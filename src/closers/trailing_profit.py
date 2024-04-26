@@ -16,7 +16,7 @@ async def trail_tp(*, position: TradePosition):
         trailing = order.get('trailing', False)
         trail_start = order.setdefault('trail_start', 9)
         extend_start = order.setdefault('extend_start', 0.80)
-        take_profit = order.setdefault('take_profit', 10)
+        # take_profit = order.setdefault('take_profit', 10)
         extend_by = order.setdefault('extend_by', 2)
         start_trailing = order.get('start_trailing', True)
         current_profit = order.setdefault('current_profit',
@@ -28,15 +28,14 @@ async def trail_tp(*, position: TradePosition):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, sym=symbol, current_profit=current_profit, trail=trail,
-                               extend_start=extend_start, take_profit=take_profit, extend_by=extend_by)
+                               extend_start=extend_start, extend_by=extend_by)
 
     except Exception as err:
         logger.error(f"{err} in modify_stop for {position.symbol}:{position.ticket}")
 
 
 async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: float, extra: float = 0.0,
-                       tries: int = 4, trail: float = 2, extend_start: float = 0.80, extend_by: float = 2,
-                       take_profit: float = 10):
+                       tries: int = 4, trail: float = 2, extend_start: float = 0.80, extend_by: float = 2):
     try:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
@@ -52,11 +51,15 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
         tp_points = full_points * extend
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
-
         fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
+        trails = config.state['winning'][position.ticket]['trails']
+        logger.warning(f"{trails=} {position.ticket}")
+        take_profit = sorted(trails.keys())[0]
+        adjust = trails[take_profit]
         if position.profit >= take_profit:
             fixed_closer['close'] = True
-            fixed_closer['cut_off'] = take_profit - 1
+            fixed_closer['cut_off'] = adjust
+            trails.pop(take_profit)
 
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value

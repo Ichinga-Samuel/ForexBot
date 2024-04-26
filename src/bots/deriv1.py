@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import RMomentum, Momentum, MRMomentum, NMomentum, FMomentum, FingerFractal
+from ..strategies import RMomentum, Momentum, MRMomentum, NMomentum, FMomentum, FingerFractal, NFF
 from ..closers import monitor
 from ..traders import BTrader
 # from ..utils import RAM
@@ -19,7 +19,7 @@ def build_bot():
     syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD', 'LTCUSD', 'AVAUSD']
 
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [FingerFractal(symbol=sym, trader=BTrader(symbol=sym)) for sym in ff_syms]
+    ff_sts = [ST(symbol=sym, trader=BTrader(symbol=sym)) for sym in ff_syms for ST in [FingerFractal, NFF]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

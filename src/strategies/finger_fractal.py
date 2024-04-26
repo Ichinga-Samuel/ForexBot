@@ -1,7 +1,7 @@
 from logging import getLogger
 import asyncio
 
-from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
+from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader, FingerTrap
 # from aiomql.utils import find_bearish_fractal, find_bullish_fractal
 
 from ..utils.tracker import Tracker
