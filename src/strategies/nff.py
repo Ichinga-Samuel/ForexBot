@@ -39,7 +39,7 @@ class NFF(Strategy):
 
     async def check_trend(self):
         try:
-            fcandles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+            fcandles = await self.symbol.copy_rates_from_pos(timeframe=self.htf, count=self.tcc)
             if not ((current := fcandles[-1].time) >= self.tracker.ftf_time):
                 self.tracker.update(new=False, order_type=None)
                 return
@@ -121,35 +121,8 @@ class NFF(Strategy):
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.interval.time, order_type=None)
 
-    async def confirm_trend(self):
-        try:
-            candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
-            if not ((current := candles[-1].time) > self.tracker.entry_time):
-                self.tracker.update(new=False, order_type=None)
-                return
-            self.tracker.update(new=True, entry_time=current, order_type=None)
-
-            candles.ta.ema(length=self.entry_ema, append=True)
-            candles.rename(inplace=True, **{f"EMA_{self.entry_ema}": "ema"})
-            candles['cae'] = candles.ta_lib.cross(candles.close, candles.ema, above=True)
-            candles['cbe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)
-            current = candles[-1]
-
-            if self.tracker.bullish and current.cae:
-                self.tracker.update(order_type=OrderType.BUY, snooze=self.ttf.time)
-
-            elif self.tracker.bearish and current.cbe:
-                self.tracker.update(order_type=OrderType.SELL, snooze=self.ttf.time)
-            else:
-                self.tracker.update(snooze=self.etf.time, order_type=None)
-        except Exception as exe:
-            logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.confirm_trend")
-            self.tracker.update(snooze=self.etf.time, order_type=None)
-
     async def watch_market(self):
         await self.check_trend()
-        if not self.tracker.ranging:
-            await self.confirm_trend()
 
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
