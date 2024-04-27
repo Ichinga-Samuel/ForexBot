@@ -54,12 +54,15 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
         fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
         trails = config.state['winning'][position.ticket]['trails']
         logger.warning(f"{trails=} {position.ticket}")
-        take_profit = sorted(trails.keys())[0]
-        adjust = trails[take_profit]
-        if position.profit >= take_profit:
-            fixed_closer['close'] = True
-            fixed_closer['cut_off'] = adjust
-            trails.pop(take_profit)
+
+        keys = sorted(trails.keys())
+        if len(keys):
+            take_profit = sorted(trails.keys())[0]
+            adjust = trails[take_profit]
+            if position.profit >= take_profit:
+                fixed_closer['close'] = True
+                fixed_closer['cut_off'] = adjust
+                trails.pop(take_profit)
 
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value

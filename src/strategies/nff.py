@@ -39,7 +39,7 @@ class NFF(Strategy):
 
     async def check_trend(self):
         try:
-            fcandles = await self.symbol.copy_rates_from_pos(timeframe=self.htf, count=self.tcc)
+            fcandles = await self.symbol.copy_rates_from_pos(timeframe=self.ftf, count=self.fcc)
             if not ((current := fcandles[-1].time) >= self.tracker.ftf_time):
                 self.tracker.update(new=False, order_type=None)
                 return

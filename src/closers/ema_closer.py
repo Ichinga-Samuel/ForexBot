@@ -43,7 +43,7 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
                             if rev_pos.profit <= 0:
                                 await pos.close_by(rev_pos)
                                 logger.warning(f"Closed hedge {rev} for {position.ticket}")
-                            fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 0.5, 0.5), 'close': True}
+                            fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 1, 1), 'close': True}
                 else:
                     logger.error(f"Unable to close trade in ema_closer {res.comment}")
             else:
