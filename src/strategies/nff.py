@@ -55,7 +55,7 @@ class NFF(Strategy):
             fcandles['sbf'] = fcandles.ta_lib.below(fcandles.second, fcandles.first)
             current = fcandles[-1]
 
-            if current.is_bullish() and all([current.cas, current.sas]):
+            if current.is_bullish() and all([current.cas, current.saf]):
                 scandles = await self.symbol.copy_rates_from_pos(timeframe=self.stf, count=self.scc)
                 if not ((current := scandles[-1].time) >= self.tracker.stf_time):
                     self.tracker.update(new=False, order_type=None)
