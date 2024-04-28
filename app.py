@@ -1,6 +1,6 @@
-from src.bots import deriv1, admiral, admiral1, deriv, test_bot
+from src.bots import crypto, derived, derived_2
 from aiomql import Bot
 
 
 if __name__ == '__main__':
-    Bot.run_bots(bots={deriv1: {}, deriv: {}})
+    Bot.run_bots(bots={derived: {}, derived_2: {}, crypto: {}})

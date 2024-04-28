@@ -52,9 +52,8 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
         fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
-        trails = config.state['winning'][position.ticket]['trails']
-        logger.warning(f"{trails=} {position.ticket}")
 
+        trails = config.state['winning'][position.ticket]['trails']
         keys = sorted(trails.keys())
         if len(keys):
             take_profit = sorted(trails.keys())[0]
@@ -89,10 +88,7 @@ async def modify_stops(*, position: TradePosition, sym: Symbol, current_profit: 
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 config.state['winning'][position.ticket]['current_profit'] = new_profit
-                logger.warning(f"Increased TP for {position.symbol}:{position.ticket} {current_profit} {new_profit=}"
-                               f"{res.profit=}")
-            else:
-                logger.warning(f"Trailing Stops for {position.symbol}:{position.ticket} {position.profit=}")
+
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, sym=sym, current_profit=current_profit, trail=trail,
                                extra=(extra + 0.01), tries=tries - 1, extend_start=extend_start)

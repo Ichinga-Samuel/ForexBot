@@ -1,5 +1,3 @@
-from .deriv import build_bot as deriv
-from .admiral import build_bot as admiral
-from .admiral1 import build_bot as admiral1
-from .deriv1 import build_bot as deriv1
-from .test_bot import build_bot as test_bot
+from .deriv_derived_2 import build_bot as derived_2
+from .deriv_derived import build_bot as derived
+from .deriv_crypto import build_bot as crypto

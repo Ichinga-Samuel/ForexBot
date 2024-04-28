@@ -7,3 +7,4 @@ from .trailing_loss import trail_sl
 from .fixed_closer import fixed_closer
 from .trader_monitor import monitor
 from .hedge import check_hedge, hedge_position
+from .adx_closer import adx_closer

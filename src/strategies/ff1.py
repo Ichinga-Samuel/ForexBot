@@ -4,13 +4,13 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..closers.adx_closer import adx_closer
+from ..closers.stoch_closer import stoch_closer
 from ..traders.p_trader import PTrader
 
 logger = getLogger(__name__)
 
 
-class FingerFractal(Strategy):
+class FingerADX(Strategy):
     ttf: TimeFrame
     etf: TimeFrame
     first_ema: int
@@ -21,16 +21,16 @@ class FingerFractal(Strategy):
     tcc: int
     trader: Trader
     tracker: Tracker
-    interval: TimeFrame = TimeFrame.M30
+    interval: TimeFrame = TimeFrame.H1
     timeout: int = 7200
-    parameters = {"first_ema": 8, "second_ema": 13, "third_ema": 21, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': adx_closer, 'price_sma': 50}
+    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
+                  'closer': stoch_closer, "price_sma": 50}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerFractal'):
+                 name: str = 'FingerADX'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or PTrader(symbol=self.symbol)
-        self.tracker: Tracker = Tracker(snooze=self.ttf.time)
+        self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
         try:
@@ -44,27 +44,29 @@ class FingerFractal(Strategy):
             candles.ta.ema(length=self.third_ema, append=True)
             candles.ta.sma(close='close', length=self.price_sma, append=True)
             candles.ta.adx(append=True, lensig=50)
+
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            f"EMA_{self.third_ema}": "third", f"SMA_{self.price_sma}": "sma",
-                                            "ADX_50": "adx"})
+                                            f"EMA_{self.third_ema}": "third", f"ADX_50": "adx",
+                                            f"SMA_{self.price_sma}": "sma"})
             candles.ta.sma(close='adx', length=13, append=True)
             candles.rename(inplace=True, **{'SMA_13': 'adx_sma'})
-            candles['aas'] = candles.ta_lib.above(candles.adx, candles.adx_sma)
 
             candles['cas'] = candles.ta_lib.above(candles.close, candles.sma)
-            candles['cxs'] = candles.ta_lib.cross(candles.close, candles.first)
+            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
+            candles['aas'] = candles.ta_lib.above(candles.adx, candles.adx_sma)
 
             candles['cbs'] = candles.ta_lib.below(candles.close, candles.sma)
-            candles['cxbs'] = candles.ta_lib.cross(candles.close, candles.first, above=False)
+            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
+
             current = candles[-1]
-            if current.is_bullish() and all([current.cas, current.cxs, current.fas, current.sat, current.aas]):
+            if current.is_bullish() and all([current.cas, current.caf, current.fas, current.sat, current.aas]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif current.is_bearish() and all([current.cbs, current.cxbs, current.fbs, current.sbt, current.aas]):
+            elif current.is_bearish() and all([current.cbs, current.cbf, current.fbs, current.sbt, current.aas]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
