@@ -13,9 +13,9 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         hedges = config.state.setdefault('hedges', {})
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.M15)
-        exit_ema = parameters.get('exit_ema', 8)
-        candles = await sym.copy_rates_from_pos(count=4000, timeframe=exit_timeframe)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.M5)
+        exit_ema = parameters.get('exit_ema', 5)
+        candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.ema(length=exit_ema, append=True)
         candles.rename(**{f"EMA_{exit_ema}": "ema"})
 
@@ -47,6 +47,6 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
                 else:
                     logger.error(f"Unable to close trade in ema_closer {res.comment}")
             else:
-                fixed_closer[position.ticket] = {'cut_off': max(position.profit - 1, 1), 'close': True}
+                fixed_closer[position.ticket] = {'cut_off': max(position.profit - 0.5, 0.5), 'close': True}
     except Exception as exe:
         logger.error(f'An error occurred in function ema_closer {exe}')

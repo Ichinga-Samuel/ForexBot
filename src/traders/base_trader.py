@@ -66,13 +66,13 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            # loss = calc_loss(sym=self.symbol, open_price=self.order.price, symbol=self.symbol, order=result.order)
-            winning = {'current_profit': profit, 'trail_start': 15, 'trail': 3, 'trailing': False,
+            winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 1,
-                       'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3,
+                       'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': False,
                        'trails': {13: 10, 10: 7, 7: 4}} | self.trail_profits
-            losing = {'trail_start': 0.8, 'hedge_point': -6.5, 'sl_limit': 15, 'trail': 0.125, 'cut_off': -1,
-                      'hedge_cutoff': 0} | self.trail_loss
+
+            losing = {'trail_start': 0.8, 'hedge_point': -5.5, 'sl_limit': 50, 'trail': 2, 'cut_off': -1,
+                      'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state.setdefault('winning', {})[result.order] = winning
             self.config.state.setdefault('losing', {})[result.order] = losing

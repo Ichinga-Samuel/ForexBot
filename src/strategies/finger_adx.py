@@ -23,7 +23,7 @@ class FingerADX(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.H1
     timeout: int = 7200
-    parameters = {"first_ema": 5, "second_ema": 8, "third_ema": 13, "ttf": TimeFrame.H4, "tcc": 720,
+    parameters = {"first_ema": 2, "second_ema": 5, "third_ema": 8, "ttf": TimeFrame.H4, "tcc": 720,
                   'closer': stoch_closer, "price_sma": 50}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
@@ -50,23 +50,31 @@ class FingerADX(Strategy):
                                             f"SMA_{self.price_sma}": "sma"})
             candles.ta.sma(close='adx', length=13, append=True)
             candles.rename(inplace=True, **{'SMA_13': 'adx_sma'})
+            candles.ta.stoch(append=True)
+            candles.rename(inplace=True, **{'STOCHd_14_3_3': 'stoch'})
+            candles.sma(close='stoch', length=5, append=True)
+            candles.rename(inplace=True, **{'SMA_5': 'stoch_sma'})
 
+            candles['sas'] = candles.ta_lib.above(candles.stoch, candles.stoch_sma)
             candles['cas'] = candles.ta_lib.above(candles.close, candles.sma)
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
             candles['sat'] = candles.ta_lib.above(candles.second, candles.third)
             candles['aas'] = candles.ta_lib.above(candles.adx, candles.adx_sma)
 
+            candles['sbs'] = candles.ta_lib.below(candles.stoch, candles.stoch_sma)
             candles['cbs'] = candles.ta_lib.below(candles.close, candles.sma)
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
 
             current = candles[-1]
-            if current.is_bullish() and all([current.cas, current.caf, current.fas, current.sat, current.aas]):
+            if current.is_bullish() and all([current.cas, current.caf, current.fas, current.sat, current.aas,
+                                             current.sas]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif current.is_bearish() and all([current.cbs, current.cbf, current.fbs, current.sbt, current.aas]):
+            elif current.is_bearish() and all([current.cbs, current.cbf, current.fbs, current.sbt, current.aas,
+                                               current.sbs]):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

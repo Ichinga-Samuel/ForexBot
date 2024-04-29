@@ -8,4 +8,4 @@ from .n_momentum import NMomentum
 from .f_momentum import FMomentum
 from .haff import HAFF
 from .nff import NFF
-from .ff1 import FingerADX
+from .finger_adx import FingerADX

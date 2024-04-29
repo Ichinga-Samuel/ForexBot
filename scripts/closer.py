@@ -1,8 +1,6 @@
 import asyncio
 from random import randint
 from aiomql import ForexSymbol, Order, Account, Positions
-from src.traders import PTrader
-import math
 
 
 async def place_multiple_random_orders():
@@ -15,11 +13,10 @@ async def place_multiple_random_orders():
         pos = Positions()
         await pos.close_all()
 
-        while account.equity > 50:
+        while account.equity > 100:
             await account.refresh()
             for sym in syms:
                 try:
-                    # trader = PTrader(symbol=sym)
                     order_type = randint(0, 1)
                     stl = sym.trade_stops_level * 2
                     price, sl, tp = await stop_levels(sym, stl, order_type)
@@ -27,7 +24,7 @@ async def place_multiple_random_orders():
                     orders.append(order)
                 except Exception as err:
                     print(f"{err}. Symbol: {sym.name}")
-            # orders *=
+
             await asyncio.gather(*[order.send() for order in orders], return_exceptions=True)
             await asyncio.sleep(3)
             poss = await pos.positions_get()

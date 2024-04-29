@@ -14,17 +14,17 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H2)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H4)
         exit_period = parameters.get('exit_period', 13)
         candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.adx(append=True, lensig=50)
         candles.rename(**{'ADX_50': 'adx'})
         candles.ta.sma(close='adx', length=exit_period, append=True)
         candles.rename(**{f'SMA_{exit_period}': 'sma'})
-
         sxs = candles.ta_lib.cross(candles.adx, candles.sma, above=False)
+        sbx = candles.ta_lib.below(candles.adx, candles.sma)
 
-        if sxs.iloc[-1]:
+        if sxs.iloc[-1] and sbx.iloc[-1]:
             positions = await pos.positions_get(ticket=position.ticket)
             position = positions[0] if positions else None
             if position is None:
