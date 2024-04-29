@@ -75,7 +75,7 @@ async def check_hedge(*, main: int, rev: int):
         if main_pos is not None:
             order_ = config.state.setdefault('losing', {}).setdefault(main, {})
             hedge_cutoff = order_.get('hedge_cutoff', 0)
-            hedge_point = order_.get('hedge_point', -5.5)
+            hedge_point = order_.get('hedge_point', -6.5)
             cut_off = order_.get('cut_off', -1)
 
             if main_pos.profit >= hedge_cutoff:

@@ -13,9 +13,9 @@ class PTrader(BaseTrader):
             await self.symbol.info()
             tick = await self.symbol.info_tick()
             amount = await self.ram.get_amount()
-            points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min*2)
+            points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
             comment = self.parameters.get('name', self.__class__.__name__)
-            self.order.set_attributes(volume=self.symbol.volume_min*2, type=order_type, comment=comment)
+            self.order.set_attributes(volume=self.symbol.volume_min, type=order_type, comment=comment)
             if self.multiple:
                 self.set_multiple_stop_levels(points=points, tick=tick)
             else:
