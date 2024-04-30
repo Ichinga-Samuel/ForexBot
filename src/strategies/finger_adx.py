@@ -52,7 +52,7 @@ class FingerADX(Strategy):
             candles.rename(inplace=True, **{'SMA_13': 'adx_sma'})
             candles.ta.stoch(append=True)
             candles.rename(inplace=True, **{'STOCHd_14_3_3': 'stoch'})
-            candles.sma(close='stoch', length=5, append=True)
+            candles.ta.sma(close='stoch', length=5, append=True)
             candles.rename(inplace=True, **{'SMA_5': 'stoch_sma'})
 
             candles['sas'] = candles.ta_lib.above(candles.stoch, candles.stoch_sma)

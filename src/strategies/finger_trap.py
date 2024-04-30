@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Tracker, ForexSymbol, TimeFrame, OrderType, Sessions, Strategy, Candles, Trader
 
-from ..traders.p_trader import PTrader
+from ..traders.b_trader import BTrader
 from ..closers.ema_closer import ema_closer
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class FingerTrap(Strategy):
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol)
+        self.trader = trader or BTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.interval.time)  # 2
 
     async def check_trend(self):

@@ -9,11 +9,11 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
     try:
         pos = Positions()
         config = Config()
-        fixed_closer = config.state.setdefault('fixed_closer', {})
-        hedges = config.state.setdefault('hedges', {})
+        fixed_closer = config.state['fixed_closer']
+        hedges = config.state['hedges']
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.M5)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.M15)
         exit_ema = parameters.get('exit_ema', 5)
         candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.ema(length=exit_ema, append=True)

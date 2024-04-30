@@ -10,11 +10,11 @@ logger = getLogger(__name__)
 async def trail_tp(*, position: TradePosition):
     try:
         config = Config()
-        order = config.state.setdefault('winning', {}).setdefault(position.ticket, {})
-        last_profit = order.get('last_profit', 0)
-        trailing = order.get('trailing', False)
-        trail_start = order.get('trail_start')
-        start_trailing = order.get('start_trailing', True)
+        order = config.state['winning'][position.ticket]
+        last_profit = order['last_profit']
+        trailing = order['trailing']
+        trail_start = order['trail_start']
+        start_trailing = order['start_trailing']
 
         if start_trailing and ((position.profit > trail_start) or trailing) and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
@@ -32,14 +32,12 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         position = positions[0]
         sym = Symbol(name=position.symbol)
         await sym.init()
-        current_profit = order.setdefault('current_profit',
-                                          await position.mt5.order_calc_profit(position.type, position.symbol,
-                                                                               position.volume,
-                                                                               position.price_open, position.tp))
+        current_profit = order['current_profit']
+
         full_points = int(abs(position.price_open - position.tp) / sym.point)
-        trail = order.get('trail')
+        trail = order['trail']
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        extend_by = order.get('extend_by', 2)
+        extend_by = order['extend_by']
         extend = extend_by / current_profit
         sl_points = int(trail * captured_points)
         stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
@@ -48,10 +46,10 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         tp_points = full_points * extend
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
-        fixed_closer = config.state.setdefault('fixed_closer', {}).setdefault(position.ticket, {})
+        fixed_closer = config.state['fixed_closer'][position.ticket]
 
-        if order.get('use_trails', False):
-            trails = config.state['winning'][position.ticket]['trails']
+        if order['use_trails']:
+            trails = order['trails']
             keys = sorted(trails.keys())
             if len(keys):
                 take_profit = sorted(trails.keys())[0]
@@ -61,8 +59,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                     fixed_closer['cut_off'] = adjust
                     trails.pop(take_profit)
 
-        extend_start = order.get('extend_start')
-
+        extend_start = order['extend_start']
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
             assert sl > max(position.sl, position.price_open)
@@ -82,12 +79,12 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
 
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            config.state['winning'][position.ticket]['last_profit'] = position.profit
-            config.state['winning'][position.ticket]['trailing'] = True
+            order['last_profit'] = position.profit
+            order['trailing'] = True
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
-                config.state['winning'][position.ticket]['current_profit'] = new_profit
+                order['current_profit'] = new_profit
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)

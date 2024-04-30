@@ -54,12 +54,12 @@ class BaseTrader(Trader):
                 return
             key = key or self.tracker_key
             if not self.multiple:
-                self.config.state.setdefault(key, {})[result.order] = result.get_dict(
+                self.config.state['tracked_trades'][result.order] = result.get_dict(
                     exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name} | self.data
                 return
 
             for res in result:
-                self.config.state.setdefault(key, {})[res.order] = res.get_dict(
+                self.config.state['tracked_trades'][result.order] = res.get_dict(
                     exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name} | self.data
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_trade")
@@ -69,14 +69,14 @@ class BaseTrader(Trader):
             winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 1,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': False,
-                       'trails': {13: 10, 10: 7, 7: 4}} | self.trail_profits
+                       'trails': {13: 10, 10: 7, 7: 4}, 'last_profit': 0} | self.trail_profits
 
             losing = {'trail_start': 0.8, 'hedge_point': -5.5, 'sl_limit': 50, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
-            self.config.state.setdefault('winning', {})[result.order] = winning
-            self.config.state.setdefault('losing', {})[result.order] = losing
-            self.config.state.setdefault('fixed_closer', {})[result.order] = fixed_closer
+            self.config.state['winning'][result.order] = winning
+            self.config.state['losing'][result.order] = losing
+            self.config.state['fixed_closer'][result.order] = fixed_closer
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 

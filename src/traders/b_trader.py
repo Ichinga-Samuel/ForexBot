@@ -31,14 +31,14 @@ class BTrader(BaseTrader):
         try:
             winning = {'current_profit': profit, 'trail_start': 1.5, 'trail': 0.25, 'trailing': False,
                        'extend_start': 0.75, 'start_trailing': True, 'extend_by': 0.5, 'use_trails': True,
-                       'trails': {1: 0.5, 1.25: 0.75, 3: 2, 4: 2.5}} | self.trail_profits
+                       'trails': {1: 0.5, 1.25: 0.75, 3: 2, 4: 2.5}, 'last_profit': 0} | self.trail_profits
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.5, 'trailing': True,
                       'last_profit': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
-            self.config.state.setdefault('winning', {})[result.order] = winning
-            self.config.state.setdefault('losing', {})[result.order] = losing
-            self.config.state.setdefault('fixed_closer', {})[result.order] = fixed_closer
+            self.config.state['winning'][result.order] = winning
+            self.config.state['losing'][result.order] = losing
+            self.config.state['fixed_closer'][result.order] = fixed_closer
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 

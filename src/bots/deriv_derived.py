@@ -8,8 +8,13 @@ from ..closers import monitor
 
 
 def build_bot():
-    Config(config_dir='configs', filename='deriv_derived.json', reload=True, records_dir='records/deriv_derived/',
+    config = Config(config_dir='configs', filename='deriv_derived.json', reload=True, records_dir='records/deriv_derived/',
            fixed_closer=True, hedging=False, use_ram=True, trailing_stops=True, trailing_loss=True, exit_signals=True)
+    config.state['winning'] = {}
+    config.state['losing'] = {}
+    config.state['fixed_closer'] = {}
+    config.state['hedges'] = {}
+    config.state['tracked_trades'] = {}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv_derived.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()

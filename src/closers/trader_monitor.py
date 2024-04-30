@@ -20,7 +20,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
         try:
             positions = await pos.positions_get()
             config = Config()
-            hedged = config.state.get('hedges', {})
+            hedged = config.state['hedges']
             main = list(hedged.keys())
             rev = list(hedged.values())
             hedged_orders = main + rev
@@ -41,7 +41,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use exit signals
             es = getattr(config, 'exit_signals', False)
             if es:
-                data = config.state.get(key, {})
+                data = config.state['tracked_trades']
                 open_trades = [OpenTrade(position=p, parameters=data[p.ticket]) for p in positions if p.ticket in data
                                and p.ticket not in hedged]
                 closers = [trade.close() for trade in open_trades]
