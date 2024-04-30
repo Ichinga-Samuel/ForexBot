@@ -46,7 +46,6 @@ class BTrader(BaseTrader):
         try:
             if self.use_ram:
                 await self.check_ram()
-
             self.parameters |= parameters or {}
             await self.create_order(order_type=order_type)
             if not await self.check_order():
