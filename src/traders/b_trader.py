@@ -16,6 +16,7 @@ class BTrader(BaseTrader):
             self.ram.min_amount = 2.5
 
             amount = await self.ram.get_amount()
+            logger.warning(f'{amount=}')
             points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
             comment = self.parameters.get('name', self.__class__.__name__)
             self.order.set_attributes(volume=self.symbol.volume_min, type=order_type, comment=comment)
@@ -35,6 +36,7 @@ class BTrader(BaseTrader):
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.5, 'trailing': True,
                       'last_profit': 0} | self.trail_loss
+            logger.warning(f'{profit=}')
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
             self.config.state['losing'][result.order] = losing

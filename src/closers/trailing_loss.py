@@ -17,6 +17,7 @@ async def trail_sl(*, position: TradePosition):
         await sym.init()
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
+        logger.warning(f'{loss=}')
         trail_loss = round(trail_start * loss, 2)
         trailing = order['trailing']
         if trailing and position.profit < last_profit and position.profit <= trail_loss:
@@ -32,6 +33,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, order: dict, extra:
         position = positions[0]
         loss = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
                                                     position.price_open, position.sl)
+        logger.warning(f'async {loss=}')
         trail = order['trail']
         trail = trail / abs(loss)
         full_points = int(abs(position.price_open - position.sl) / sym.point)

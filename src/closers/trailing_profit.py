@@ -52,12 +52,14 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
             trails = order['trails']
             keys = sorted(trails.keys())
             if len(keys):
-                take_profit = sorted(trails.keys())[0]
+                take_profit = keys[0]
                 adjust = trails[take_profit]
                 if position.profit >= take_profit:
                     fixed_closer['close'] = True
                     fixed_closer['cut_off'] = adjust
                     trails.pop(take_profit)
+                    if len(trails) == 0:
+                        order['use_trails'] = False
 
         extend_start = order['extend_start']
         if position.type == OrderType.BUY:
@@ -85,6 +87,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 order['current_profit'] = new_profit
+            logger.warning(f'{position.profit=} trail profit')
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)
