@@ -9,8 +9,11 @@ from ..traders import BTrader
 
 
 def build_bot():
-    config = Config(config_dir='configs', filename='deriv_crypto.json', reload=True, records_dir='records/deriv_crypto/',
-                    trailing_stops=True, exit_signals=True, use_ram=True, hedging=False, fixed_closer=True, trailing_loss=True)
+    config = Config(config_dir='configs', filename='deriv_crypto.json', reload=True,
+                    records_dir='records/deriv_crypto/',
+                    trailing_stops=True, exit_signals=True, use_ram=True, hedging=False, fixed_closer=True,
+                    trailing_loss=False, use_telegram=False)
+
     config.state['winning'] = {}
     config.state['losing'] = {}
     config.state['fixed_closer'] = {}

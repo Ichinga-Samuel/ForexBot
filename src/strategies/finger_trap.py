@@ -16,13 +16,13 @@ class FingerTrap(Strategy):
     entry_ema: int
     ecc: int
     tcc: int
-    interval: TimeFrame = TimeFrame.M15
+    interval: TimeFrame = TimeFrame.M3
     entry_interval: TimeFrame = TimeFrame.M1
     trader: Trader
     tracker: Tracker
 
-    parameters = {"fast_ema": 5, "slow_ema": 21, "etf": TimeFrame.M5, 'closer': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440}  # 1
+    parameters = {"fast_ema": 5, "slow_ema": 13, "etf": TimeFrame.M5, 'closer': ema_closer,
+                  "ttf": TimeFrame.M15, "entry_ema": 5, "tcc": 1344, "ecc": 4032}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):

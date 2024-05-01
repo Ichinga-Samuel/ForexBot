@@ -68,10 +68,10 @@ class BaseTrader(Trader):
         try:
             winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 1,
-                       'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': False,
-                       'trails': {13: 10, 10: 7, 7: 4}, 'last_profit': 0} | self.trail_profits
+                       'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
+                       'trails': {12: 10, 8: 7, 6: 4}, 'last_profit': 0} | self.trail_profits
 
-            losing = {'trail_start': 0.8, 'hedge_point': -5.5, 'sl_limit': 50, 'trail': 2, 'cut_off': -1,
+            losing = {'trail_start': 0.8, 'hedge_point': -4, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.trail_loss
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
@@ -133,7 +133,7 @@ class BaseTrader(Trader):
 
     async def notify(self, msg: str = ''):
         try:
-            if self.use_telegram or getattr(self.config, 'use_telegram', False):
+            if self.use_telegram and getattr(self.config, 'use_telegram', False):
                 self.config.task_queue.add_task(self.telebot.notify, msg=msg)
         except Exception as err:
             logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}.notify")

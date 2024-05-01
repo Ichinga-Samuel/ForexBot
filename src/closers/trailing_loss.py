@@ -17,7 +17,6 @@ async def trail_sl(*, position: TradePosition):
         await sym.init()
         loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
                          order_type=position.type)
-        logger.warning(f'{loss=}')
         trail_loss = round(trail_start * loss, 2)
         trailing = order['trailing']
         if trailing and position.profit < last_profit and position.profit <= trail_loss:
@@ -31,9 +30,8 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, order: dict, extra:
         config = Config()
         positions = await Positions().positions_get(ticket=position.ticket)
         position = positions[0]
-        loss = await position.mt5.order_calc_profit(position.type, position.symbol, position.volume,
-                                                    position.price_open, position.sl)
-        logger.warning(f'async {loss=}')
+        loss = calc_loss(sym=sym, open_price=position.price_open, close_price=position.sl, volume=position.volume,
+                         order_type=position.type)
         trail = order['trail']
         trail = trail / abs(loss)
         full_points = int(abs(position.price_open - position.sl) / sym.point)
@@ -58,7 +56,7 @@ async def modify_sl(*, position: TradePosition, sym: Symbol, order: dict, extra:
         res = await trade_order.send()
         if res.retcode == 10009:
             order['last_profit'] = position.profit
-            logger.error(f"Trailing stop loss for {position.symbol}:{position.ticket} successful")
+            logger.info(f"Trailing stop loss for {position.symbol}:{position.ticket} successful. New loss is {loss}")
         elif res.retcode == 10016 and tries > 0:
             await modify_sl(position=position, sym=sym, order=order, extra=extra + 0.01, tries=tries - 1)
         else:

@@ -21,11 +21,13 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
 
         if position.type == OrderType.BUY:
             cxe = candles.ta_lib.cross(candles.close, candles.ema, above=False)
+            cpe = candles.ta_lib.below(candles.close, candles.ema)
         elif position.type == OrderType.SELL:
             cxe = candles.ta_lib.cross(candles.close, candles.ema, above=True)
+            cpe = candles.ta_lib.above(candles.close, candles.ema)
         else:
             return
-        if cxe.iloc[-1]:
+        if cxe.iloc[-1] or cpe.iloc[-1]:
             positions = await pos.positions_get(ticket=position.ticket)
             position = positions[0] if positions else None
             if not position:

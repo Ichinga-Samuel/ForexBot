@@ -8,8 +8,9 @@ from ..closers import monitor
 
 
 def build_bot():
-    config = Config(config_dir='configs', filename='deriv_derived.json', reload=True, records_dir='records/deriv_derived/',
-           fixed_closer=True, hedging=False, use_ram=True, trailing_stops=True, trailing_loss=True, exit_signals=True)
+    config = Config(config_dir='configs', filename='deriv_derived.json', reload=True,
+                    records_dir='records/deriv_derived/', fixed_closer=True, hedging=True, use_ram=True,
+                    trailing_stops=True, trailing_loss=False, exit_signals=True, use_telegram=True)
     config.state['winning'] = {}
     config.state['losing'] = {}
     config.state['fixed_closer'] = {}

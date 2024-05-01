@@ -10,19 +10,21 @@ async def hedge_position(*, position: TradePosition):
         position = await Positions().positions_get(ticket=position.ticket)
         position = position[0]
         config = Config()
-        order = config.state.setdefault('losing', {}).setdefault(position.ticket, {})
-        winning = config.state.setdefault('winning', {})
-        main_order = winning.setdefault(position.ticket, {})
-        hedges = config.state.setdefault('hedges', {})
+        order = config.state['losing'][position.ticket]
+        winning = config.state['winning']
+        fixed_closer = config.state['fixed_closer']
+        main_order = winning[position.ticket]
+        hedges = config.state['hedges']
         assert not position.comment.startswith('Rev')
-        hedge_point = order.get('hedge_point')
+        hedge_point = order['hedge_point']
         if position.profit <= hedge_point:
             sym = Symbol(name=position.symbol)
             await sym.init()
             res = await make_hedge(position=position, symbol=sym)
             hedges[position.ticket] = res.order
             order['hedge_point'] = position.profit
-            winning[res.order] = main_order | {'start_trailing': False, 'last_profit': 0}
+            fixed_closer[res.order] = {'close': False, 'cut_off': -1}
+            winning[res.order] = {**main_order} | {'start_trailing': False, 'last_profit': 0}
     except AssertionError as _:
         pass
     except Exception as exe:
@@ -52,10 +54,10 @@ async def make_hedge(*, position: TradePosition, symbol: Symbol) -> OrderSendRes
 async def check_hedge(*, main: int, rev: int):
     try:
         config = Config()
-        hedges = config.state.setdefault('hedges', {})
-        fixed_closer = config.state.setdefault('fixed_closer', {})
-        winning = config.state.setdefault('winning', {})
-        main_order = winning.setdefault(main, {})
+        hedges = config.state['hedges']
+        fixed_closer = config.state['fixed_closer']
+        winning = config.state['winning']
+        main_order = winning[main]
         pos = Positions()
         poss = await pos.positions_get()
         main_pos, rev_pos = None, None
@@ -69,9 +71,9 @@ async def check_hedge(*, main: int, rev: int):
             return
 
         if main_pos is not None:
-            order_ = config.state.setdefault('losing', {}).setdefault(main, {})
-            hedge_cutoff = order_.get('hedge_cutoff', 0)
-            cut_off = order_.get('cut_off', -1)
+            order_ = config.state['losing'][main]
+            hedge_cutoff = order_['hedge_cutoff']
+            cut_off = order_['cut_off']
 
             if main_pos.profit >= hedge_cutoff:
                 if rev_pos is not None:
@@ -85,17 +87,12 @@ async def check_hedge(*, main: int, rev: int):
                     hedges.pop(main) if main in hedges else ...
 
         if main_pos is None:
-            adjust = main_order.get('adjust')
             if rev_pos is not None:
                 if rev_pos.profit > 0:
-                    rev_order = winning.setdefault(rev, main_order)
+                    adjust = main_order['adjust']
+                    rev_order = winning[rev]
                     rev_order['start_trailing'] = True
-                    rev_order['trailing'] = False
-                    rev_order['last_profit'] = 0
-                    rev_order['trail_start'] = main_order.get('hedge_trail_start')
-                    rev_order['trail'] = main_order.get('hedge_trail')
-                    close_rev = fixed_closer.setdefault(rev, {})
-                    logger.warning(f"Before {rev_pos.symbol}:{rev_pos.comment} {close_rev}")
+                    close_rev = fixed_closer[rev]
                     close_rev['close'] = True
                     close_rev['cut_off'] = max(rev_pos.profit - adjust, adjust)
                 elif rev_pos.profit <= 0:
