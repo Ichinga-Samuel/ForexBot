@@ -21,7 +21,7 @@ class FingerTrap(Strategy):
     trader: Trader
     tracker: Tracker
 
-    parameters = {"fast_ema": 8, "slow_ema": 21, "etf": TimeFrame.M5, 'closer': ema_closer,
+    parameters = {"fast_ema": 5, "slow_ema": 21, "etf": TimeFrame.M5, 'closer': ema_closer,
                   "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,

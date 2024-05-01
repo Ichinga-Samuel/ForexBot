@@ -14,7 +14,7 @@ async def ema_closer(*, position: TradePosition, parameters: dict):
         sym = Symbol(name=position.symbol)
         await sym.init()
         exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H1)
-        exit_ema = parameters.get('exit_ema', 8)
+        exit_ema = parameters.get('exit_ema', 5)
         candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
         candles.ta.ema(length=exit_ema, append=True)
         candles.rename(**{f"EMA_{exit_ema}": "ema"})
