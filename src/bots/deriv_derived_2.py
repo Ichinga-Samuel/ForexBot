@@ -3,13 +3,14 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerTrap
+from ..strategies import FingerTrap, FingerFractal
 from ..closers import monitor
 
 
 def build_bot():
-    config = Config(config_dir='configs', filename='deriv_derived_2.json', reload=True, records_dir='records/deriv_derived_2/',
-           fixed_closer=True, hedging=False, use_ram=True, trailing_stops=True, trailing_loss=False,
+    config = Config(config_dir='configs', filename='deriv_derived_2.json', reload=True,
+                    records_dir='records/deriv_derived_2/',
+                    fixed_closer=False, hedging=False, use_ram=True, trailing_stops=True, trailing_loss=False,
                     exit_signals=True, use_telegram=False)
     config.state['winning'] = {}
     config.state['losing'] = {}
@@ -24,7 +25,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
-    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FingerTrap]]
+    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FingerFractal]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

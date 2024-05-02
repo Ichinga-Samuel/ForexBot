@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerFractal, FMomentum, HAFF, NFF, FingerADX
+from ..strategies import FingerFractal, FMomentum, HAFF, NFF, FingerADX, FingerTrap
 from ..closers import monitor
 
 

@@ -8,7 +8,7 @@ from ..closers.ema_closer import ema_closer
 logger = logging.getLogger(__name__)
 
 
-class FingerTrap(Strategy):
+class EMAADX(Strategy):
     ttf: TimeFrame
     etf: TimeFrame
     fast_ema: int
@@ -22,10 +22,10 @@ class FingerTrap(Strategy):
     tracker: Tracker
 
     parameters = {"fast_ema": 5, "slow_ema": 13, "etf": TimeFrame.M5, 'closer': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 672, "ecc": 4032}  # 1
+                  "ttf": TimeFrame.M15, "entry_ema": 5, "tcc": 672, "ecc": 4032}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
-                 sessions: Sessions = None, name: str = 'FingerTrap'):
+                 sessions: Sessions = None, name: str = 'EMAADX'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or BTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.interval.time)  # 2
@@ -37,9 +37,11 @@ class FingerTrap(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
+            candles.ta.adx(length=14, append=True)
             candles.ta.ema(length=self.slow_ema, append=True, fillna=0)
             candles.ta.ema(length=self.fast_ema, append=True, fillna=0)
-            candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow"})  # 5
+            candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast",
+                                            f"EMA_{self.slow_ema}": "slow", "ADX_14": 'adx'})  # 5
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.fast)
             candles['fas'] = candles.ta_lib.above(candles.fast, candles.slow)
@@ -89,7 +91,7 @@ class FingerTrap(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            # await self.sleep(self.interval.time)
+            await self.sleep(self.interval.time)
             while True:
                 await sess.check()
                 try:

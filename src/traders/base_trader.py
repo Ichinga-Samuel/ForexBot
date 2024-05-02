@@ -22,7 +22,7 @@ class BaseTrader(Trader):
                    "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
-                 use_telegram: bool = False, track_trades: bool = True, tracker_key: str = 'trades',
+                 use_telegram: bool = True, track_trades: bool = True, tracker_key: str = 'trades',
                  use_ram: bool = True, trail_loss: dict = None, trail_profits: dict = None, fixed_closer: dict = None):
         self.data = {}
         ram = ram or RAM(risk_to_reward=3, risk=0.01)

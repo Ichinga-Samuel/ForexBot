@@ -20,7 +20,7 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         candles.ta.adx(append=True, lensig=50)
         candles.rename(**{'ADX_50': 'adx'})
         candles.ta.sma(close='adx', length=exit_period, append=True)
-        candles.ta.rsi(close='SMA_13', length=5)
+        candles.ta.rsi(close='SMA_13', length=5, append=True)
         candles.rename(**{f'SMA_13': 'sma', 'RSI_5': 'rsi'})
         candles['sxs'] = candles.ta_lib.cross(candles.adx, candles.sma, above=False)
         candles['sbx'] = candles.ta_lib.below(candles.adx, candles.sma)
