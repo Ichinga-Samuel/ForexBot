@@ -21,14 +21,14 @@ class FingerFractal(Strategy):
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
-    timeout: int = 7200
+    timeout: TimeFrame = TimeFrame.H1
     parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H4, "tcc": 720}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or BTrader(symbol=self.symbol, track_trades=False)
-        self.tracker: Tracker = Tracker(snooze=self.ttf.time)
+        self.tracker: Tracker = Tracker(snooze=self.timeout.time)
 
     async def check_trend(self):
         try:
@@ -57,11 +57,11 @@ class FingerFractal(Strategy):
 
             if (current.is_bullish() and prev.dmp < current.dmp > current.dmn and current.adx >= 25 and
                 all([current.cas, current.fas, current.sat])):
-                self.tracker.update(snooze=TimeFrame.H1.time, order_type=OrderType.BUY)
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
 
             elif (current.is_bearish() and prev.dmn < current.dmn > current.dmp and
                   all([current.cbs, current.fbs, current.sbt])):
-                self.tracker.update(snooze=TimeFrame.H1.time, order_type=OrderType.SELL)
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
@@ -71,7 +71,7 @@ class FingerFractal(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            # await self.sleep(self.tracker.snooze)
+            await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:
@@ -83,7 +83,7 @@ class FingerFractal(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
-                    await asyncio.sleep(self.timeout)
+                    # await asyncio.sleep(self.timeout)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
