@@ -22,7 +22,7 @@ class FingerFractal(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
     timeout: int = 7200
-    parameters = {"first_ema": 20, "second_ema": 50, "third_ema": 100, "ttf": TimeFrame.H4, "tcc": 720}
+    parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H4, "tcc": 720}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):

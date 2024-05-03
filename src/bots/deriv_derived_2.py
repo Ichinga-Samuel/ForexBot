@@ -10,7 +10,7 @@ from ..closers import monitor
 def build_bot():
     config = Config(config_dir='configs', filename='deriv_derived_2.json', reload=True,
                     records_dir='records/deriv_derived_2/',
-                    fixed_closer=False, hedging=False, use_ram=True, trailing_stops=True, trailing_loss=False,
+                    fixed_closer=True, hedging=True, use_ram=True, trailing_stops=True, trailing_loss=False,
                     exit_signals=True, use_telegram=False)
     config.state['winning'] = {}
     config.state['losing'] = {}

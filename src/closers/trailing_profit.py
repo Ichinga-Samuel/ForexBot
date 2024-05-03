@@ -87,12 +87,11 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 order['current_profit'] = new_profit
-            logger.warning(f'{position.profit=} trail profit')
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
-            logger.error(f"Trailing profits failed due to {res.comment} for {position.symbol}:{position.ticket}")
+            logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
     except AssertionError as _:
         pass
     except Exception as err:
