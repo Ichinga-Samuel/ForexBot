@@ -78,7 +78,7 @@ class FingerADX(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
-                    await asyncio.sleep(self.timeout)
+                    # await asyncio.sleep(self.timeout)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")

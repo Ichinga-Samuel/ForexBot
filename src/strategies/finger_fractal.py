@@ -28,7 +28,7 @@ class FingerFractal(Strategy):
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or BTrader(symbol=self.symbol, track_trades=False)
-        self.tracker: Tracker = Tracker(snooze=self.timeout.time)
+        self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
         try:
