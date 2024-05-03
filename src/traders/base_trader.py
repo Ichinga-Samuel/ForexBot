@@ -66,10 +66,10 @@ class BaseTrader(Trader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            winning = {'current_profit': profit, 'trail_start': 10, 'trail': 3, 'trailing': False,
-                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 2, 'adjust': 1,
+            winning = {'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
+                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
-                       'trails': {12: 10, 8: 7, 6: 4}, 'last_profit': 0} | self.trail_profits
+                       'trails': {10: 8, 16: 14, 22: 20}, 'last_profit': 0} | self.trail_profits
 
             losing = {'trail_start': 0.8, 'hedge_point': -4, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.trail_loss

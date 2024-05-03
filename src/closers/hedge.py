@@ -1,3 +1,4 @@
+from copy import deepcopy
 from logging import getLogger
 
 from aiomql import Order, OrderType, TradePosition, Symbol, Positions, Config, OrderSendResult, OrderError
@@ -24,7 +25,7 @@ async def hedge_position(*, position: TradePosition):
             hedges[position.ticket] = res.order
             order['hedge_point'] = position.profit
             fixed_closer[res.order] = {'close': False, 'cut_off': -1}
-            winning[res.order] = {**main_order} | {'start_trailing': False, 'last_profit': 0}
+            winning[res.order] = deepcopy(main_order) | {'start_trailing': False, 'last_profit': 0}
     except AssertionError as _:
         pass
     except Exception as exe:
