@@ -14,6 +14,7 @@ class BaseTrader(Trader):
     winning: dict
     losing: dict
     fixed_closer: dict
+    open_trades: list[int]
 
     order_format = "symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}\n" \
                    "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} " \
@@ -34,6 +35,7 @@ class BaseTrader(Trader):
         self.winning = winning or {}
         self.losing = losing or {}
         self.fixed_closer = fixed_closer or {}
+        self.open_trades = []
         super().__init__(symbol=symbol, ram=ram)
         ur = getattr(self.config, 'use_ram', False)
         self.use_ram = use_ram if use_ram is not None else ur
@@ -72,7 +74,7 @@ class BaseTrader(Trader):
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
                        'trails': {10: 8, 16: 14, 22: 20}, 'last_profit': 0} | self.winning
 
-            losing = {'trail_start': 0.8, 'hedge_point': -4, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
+            losing = {'trail_start': 0.8, 'hedge_point': -10, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
@@ -82,22 +84,26 @@ class BaseTrader(Trader):
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def check_ram(self):
-        open_pos = await self.ram.check_open_positions()
-        if open_pos:
-            raise RuntimeError(f"more than {self.ram.open_limit} open positions present at the same time")
+        # open_pos = await self.ram.check_open_positions()
+        # if open_pos:
+        #     raise RuntimeError(f"more than {self.ram.open_limit} open positions present at the same time")
 
         # bal = await self.ram.check_balance_level()
         # if bal:
         #     raise RuntimeError("Balance level too low")
 
-        los_pos = await self.ram.check_losing_positions()
-        if los_pos:
-            raise RuntimeError(f"More than {self.ram.loss_limit} loosing positions present at the same time")
-
-        pos = await self.ram.check_symbol_positions(symbol=self.symbol.name)
-        if pos:
-            raise RuntimeError(f"More than {self.ram.open_limit} open positions for {self.symbol}"
+        # los_pos = await self.ram.check_losing_positions()
+        # if los_pos:
+        #     raise RuntimeError(f"More than {self.ram.loss_limit} loosing positions present at the same time")
+        positions = await self.ram.get_open_positions(symbol=self.symbol.name)
+        self.open_trades = [position.ticket for position in positions if position.ticket in self.open_trades]
+        if len(self.open_trades) >= self.ram.symbol_limit:
+            raise RuntimeError(f"More than {self.ram.symbol_limit} open positions for {self.symbol}"
                                f" present at the same time")
+        # pos = await self.ram.check_symbol_positions(symbol=self.symbol.name)
+        # if pos:
+        #     raise RuntimeError(f"More than {self.ram.open_limit} open positions for {self.symbol}"
+        #                        f" present at the same time")
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type
@@ -162,6 +168,7 @@ class BaseTrader(Trader):
                 profit = await self.order.calc_profit()
                 self.save_profit(res, profit)
                 await self.notify(msg=f"Placed Trade for {self.symbol}")
+                self.open_trades.append(res.order)
         else:
             res = await self.send_multiple_orders()
             self.save_trade(res)

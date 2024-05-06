@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..closers.ema_closer import ema_closer
-from ..traders.p_trader import PTrader
+from ..traders.s_trader import STrader
 from ..utils.ram import RAM
 
 logger = getLogger(__name__)
@@ -31,7 +31,7 @@ class RMomentum(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'RMomentum'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol)
+        self.trader = trader or STrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time, sl=0)
 
     async def check_trend(self):

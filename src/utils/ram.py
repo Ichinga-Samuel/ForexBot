@@ -1,18 +1,24 @@
-from aiomql import RAM as _RAM, Positions
+from aiomql import RAM as _RAM, Positions, TradePosition
 
 
 class RAM(_RAM):
-    min_amount: float = 12
-    max_amount: float = 12
+    min_amount: float = 13
+    max_amount: float = 13
     loss_limit: int = 5
     symbol_limit: int = 1
     open_limit: int = 10
     balance_level: float = 50
+    positions: list[TradePosition]
 
     async def get_amount(self) -> float:
         await self.account.refresh()
         amount = self.account.margin_free * self.risk
         return max(self.min_amount, min(self.max_amount, amount))
+
+    async def get_open_positions(self, symbol='') -> list[TradePosition]:
+        pos = await Positions(symbol=symbol).positions_get()
+        self.positions = pos
+        return pos
 
     async def check_losing_positions(self, symbol='') -> bool:
         """Check if the number of losing positions is greater than or equal the loss limit."""

@@ -11,6 +11,7 @@ logger = getLogger(__name__)
 
 
 class FingerFractal(Strategy):
+    htf: TimeFrame
     ttf: TimeFrame
     etf: TimeFrame
     first_ema: int
@@ -18,12 +19,13 @@ class FingerFractal(Strategy):
     third_ema: int
     parameters: dict
     tcc: int
+    hcc: int
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H4
-    parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H4, "tcc": 720,
-                  'closer': adx_closer}
+    parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
+                  'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -34,10 +36,24 @@ class FingerFractal(Strategy):
     async def check_trend(self):
         try:
             candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
+            c_candles = await self.symbol.copy_rates_from_pos(timeframe=self.htf, count=self.hcc)
             if not ((current := candles[-1].time) >= self.tracker.trend_time):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
+            c_candles.ta.ema(length=self.third_ema, append=True)
+            c_candles.rename(inplace=True, **{f"EMA_{self.third_ema}": "ema"})
+            c_candles['cas'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
+            c_candles['cbs'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
+            trend = c_candles[-1: -3]
+            if all(trend.cas):
+                self.tracker.update(trend="bullish")
+            elif all(trend.cbs):
+                self.tracker.update(trend="bearish")
+            else:
+                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
+                return
+
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.ema(length=self.third_ema, append=True)
@@ -55,15 +71,15 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
             prev = candles[-2]
-            h1c = await self.symbol.copy_rates_from_pos(timeframe=TimeFrame.H1, count=3)
-            higher_high = h1c[-1].close > h1c[-2].close
-            lower_low = h1c[-1].close < h1c[-2].close
+            h1c = await self.symbol.copy_rates_from_pos(timeframe=TimeFrame.M30, count=3)
+            higher_high = h1c[-1].high > h1c[-2].high
+            lower_low = h1c[-1].low < h1c[-2].low
 
-            if (prev.dmp < current.dmp > current.dmn and current.adx >= 25 and higher_high and
+            if self.tracker.bullish and (prev.dmp < current.dmp > current.dmn and current.adx >= 25 and higher_high and
                 all([current.cas, current.fas, current.sat])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
 
-            elif (prev.dmn < current.dmn > current.dmp and current.adx >= 25 and lower_low and
+            elif self.tracker.bearish and (prev.dmn < current.dmn > current.dmp and current.adx >= 25 and lower_low and
                   all([current.cbs, current.fbs, current.sbt])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
             else:

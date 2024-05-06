@@ -7,7 +7,7 @@ from .base_trader import BaseTrader
 logger = getLogger(__name__)
 
 
-class BTrader(BaseTrader):
+class STrader(BaseTrader):
     async def create_order(self, *, order_type: OrderType, sl: float = 0):
         try:
             await self.symbol.info()
@@ -29,13 +29,13 @@ class BTrader(BaseTrader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            winning = ({'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
+            winning = ({'current_profit': profit, 'trail_start': 3.5, 'trail': 1, 'trailing': False,
                         'extend_start': 0.75, 'start_trailing': True, 'extend_by': 4, 'use_trails': True,
-                        'trails': {12: 8, 4: 1, 7: 3, 5: 2}, 'last_profit': 0, 'adjust': 3}
+                        'trails': {12: 8, 4: 1, 7: 3, 5: 2, 6: 3.5}, 'last_profit': 0, 'adjust': 3}
                        | self.winning)
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.75, 'trailing': True,
-                      'last_profit': 0, 'hedge_point': -5, 'cut_off': -2,
+                      'last_profit': 0, 'hedge_point': -15, 'cut_off': -2,
                       'hedge_cutoff': 0} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning

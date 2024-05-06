@@ -16,7 +16,7 @@ async def trail_tp(*, position: TradePosition):
         trail_start = order['trail_start']
         start_trailing = order['start_trailing']
 
-        if start_trailing and ((position.profit > trail_start) or trailing) and position.profit > last_profit:
+        if start_trailing and position.profit > trail_start and position.profit > last_profit:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, order=order)
