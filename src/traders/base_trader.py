@@ -11,19 +11,18 @@ logger = getLogger(__name__)
 class BaseTrader(Trader):
     risk_to_rewards: list[float]  # risk to reward ratios for multiple trades
     order_updates: list[dict]  # take profit levels for multiple trades
-    trail_profits: dict
-    trail_loss: dict
+    winning: dict
+    losing: dict
     fixed_closer: dict
 
-    order_format = "symbol: {symbol}\norder_type: {order_type}\npoints: {points}\namount: {amount}\n" \
-                   "volume: {volume}\nrisk_to_reward: {risk_to_reward}\nstrategy: {strategy}\n" \
+    order_format = "symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}\n" \
                    "hint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} " \
                    "seconds from now. No reply will be considered as 'cancel'\n" \
                    "NB: For order_type; 0 = 'buy' and 1 = 'sell' see docs for more info"
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
-                 use_telegram: bool = True, track_trades: bool = True, tracker_key: str = 'trades',
-                 use_ram: bool = True, trail_loss: dict = None, trail_profits: dict = None, fixed_closer: dict = None):
+                 use_telegram: bool = True, track_trades: bool = True, use_ram: bool = True, winning: dict = None,
+                 losing: dict = None, fixed_closer: dict = None):
         self.data = {}
         ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.order_updates = []
@@ -32,10 +31,9 @@ class BaseTrader(Trader):
         self.multiple = multiple
         self.use_telegram = use_telegram
         self.track_trades = track_trades
-        self.trail_profits = trail_profits or {}
-        self.trail_loss = trail_loss or {}
+        self.winning = winning or {}
+        self.losing = losing or {}
         self.fixed_closer = fixed_closer or {}
-        self.tracker_key = tracker_key or self.__class__.__name__
         super().__init__(symbol=symbol, ram=ram)
         ur = getattr(self.config, 'use_ram', False)
         self.use_ram = use_ram if use_ram is not None else ur
@@ -43,16 +41,19 @@ class BaseTrader(Trader):
     @property
     @cache
     def telebot(self):
-        token = self.config.telegram_bot_token
-        chat_id = self.config.telegram_chat_id
-        confirmation_timeout = self.config.confirmation_timeout
-        return TelegramBot(token=token, chat_id=chat_id, confirmation_timeout=confirmation_timeout)
+        token = getattr(self.config, 'telegram_bot_token', None)
+        chat_id = getattr(self.config, 'telegram_chat_id', None)
+        confirmation_timeout = getattr(self.config, 'confirmation_timeout', 90)
+        return TelegramBot(token=token, chat_id=chat_id, confirmation_timeout=confirmation_timeout,
+                           order_format=self.order_format)
 
-    def save_trade(self, result: OrderSendResult | list[OrderSendResult], key: str = ''):
+    # async def track_history(self):
+    #     history =
+
+    def save_trade(self, result: OrderSendResult | list[OrderSendResult]):
         try:
             if not self.track_trades:
                 return
-            key = key or self.tracker_key
             if not self.multiple:
                 self.config.state['tracked_trades'][result.order] = result.get_dict(
                     exclude={'retcode_external', 'retcode', 'request_id'}) | {'symbol': self.symbol.name} | self.data
@@ -67,12 +68,12 @@ class BaseTrader(Trader):
     def save_profit(self, result: OrderSendResult, profit):
         try:
             winning = {'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
-                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
+                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
-                       'trails': {10: 8, 16: 14, 22: 20}, 'last_profit': 0} | self.trail_profits
+                       'trails': {10: 8, 16: 14, 22: 20}, 'last_profit': 0} | self.winning
 
             losing = {'trail_start': 0.8, 'hedge_point': -4, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
-                      'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.trail_loss
+                      'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
             self.config.state['losing'][result.order] = losing
@@ -138,8 +139,23 @@ class BaseTrader(Trader):
         except Exception as err:
             logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}.notify")
 
+    async def confirm_order(self, *, order: dict = None, order_format: str = '') -> bool:
+        try:
+            if self.use_telegram and getattr(self.config, 'use_telegram', False):
+                order = order or self.order.get_dict(include={'symbol', 'type', 'sl', 'volume', 'tp'})
+                ok = await self.telebot.order_confirmation(order=order, order_format=order_format)
+                return ok
+            else:
+                return True
+        except Exception as err:
+            logger.error(f"{err} for {self.order.symbol} in {self.__class__.__name__}.confirm_order")
+            return True
+
     async def send_order(self) -> OrderSendResult | list[OrderSendResult]:
         if not self.multiple:
+            ok = await self.confirm_order()
+            if not ok:
+                raise RuntimeError("Order not confirmed")
             res = await super().send_order()
             if res.retcode == 10009:
                 self.save_trade(res)

@@ -22,7 +22,8 @@ class FingerFractal(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H4
-    parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H4, "tcc": 720}
+    parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H4, "tcc": 720,
+                  'closer': adx_closer}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -54,12 +55,15 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
             prev = candles[-2]
+            h1c = await self.symbol.copy_rates_from_pos(timeframe=TimeFrame.H1, count=3)
+            higher_high = h1c[-1].close > h1c[-2].close
+            lower_low = h1c[-1].close < h1c[-2].close
 
-            if (current.is_bullish() and prev.dmp < current.dmp > current.dmn and current.adx >= 30 and
+            if (prev.dmp < current.dmp > current.dmn and current.adx >= 25 and higher_high and
                 all([current.cas, current.fas, current.sat])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
 
-            elif (current.is_bearish() and prev.dmn < current.dmn > current.dmp and current.adx >= 30 and
+            elif (prev.dmn < current.dmn > current.dmp and current.adx >= 25 and lower_low and
                   all([current.cbs, current.fbs, current.sbt])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
             else:

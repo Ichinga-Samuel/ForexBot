@@ -29,8 +29,8 @@ class TelegramBot:
                 if key in ('pips', 'volume', 'risk_to_reward', 'order_type', 'amount', 'points'):
                     trade_order[key] = float(order[key]) if key != 'order_type' else int(order[key])
             return trade_order
-        except Exception as e:
-            raise RuntimeError(f'Could not extract order from your response: {msg}')
+        except Exception as exe:
+            raise RuntimeError(f'Could not extract order from your response: {msg} due to {exe}')
 
     async def get_updates(self, tries=3):
         if tries == 0:
@@ -65,3 +65,29 @@ class TelegramBot:
             raise RuntimeError('Order cancelled')
 
         return self.extract_order(reply, order)
+
+    async def order_confirmation(self, *, order: dict, order_format: str = '', tries=3) -> bool:
+        try:
+            order_format = order_format or self.order_format
+            order_msg = order_format.format(timeout=self.confirmation_timeout, **order)
+            reply = 'cancel'
+            while tries > 0:
+                msg = await self.bot.send_message(chat_id=self.chat_id, text=order_msg)
+                msg_id = msg.message_id
+                await asyncio.sleep(self.confirmation_timeout)
+                updates = await self.get_updates()
+                for update in updates[::-1]:
+                    if reply_to_message := getattr(update.message, 'reply_to_message'):
+                        if msg_id == reply_to_message.message_id:
+                            reply = update.message.text
+                            break
+                if reply.lower() == 'ok':
+                    return True
+                else:
+                    tries -= 1
+
+            if reply.lower() == 'cancel':
+                return False
+        except Exception as exe:
+            logger.error(f"Could not confirm order due to {exe}")
+            return False
