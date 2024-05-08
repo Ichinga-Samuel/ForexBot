@@ -18,14 +18,14 @@ class RA(Strategy):
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M1
-    timeout: TimeFrame = TimeFrame.H2
+    timeout: TimeFrame = TimeFrame.H1
     parameters = {"ema": 50, "ttf": TimeFrame.M5, "tcc": 4320}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'RA'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or STrader(symbol=self.symbol, track_trades=False)
-        self.tracker: Tracker = Tracker(snooze=3600)
+        self.tracker: Tracker = Tracker(snooze=self.timeout.time)
 
     async def confirm_trend(self):
         try:
