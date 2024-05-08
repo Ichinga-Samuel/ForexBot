@@ -14,7 +14,7 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         order = config.state['losing'][position.ticket]
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H4)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H1)
         exit_period = parameters.get('exit_period', 10)
         candles = await sym.copy_rates_from_pos(count=180, timeframe=exit_timeframe)
         candles.ta.adx(append=True)
@@ -22,12 +22,12 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         candles.rename(**{"ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn", f"EMA_{exit_period}": "ema"})
         candles['nxp'] = candles.ta_lib.cross(candles.dmp, candles.dmn, above=False)
         candles['pxn'] = candles.ta_lib.cross(candles.dmn, candles.dmp)
-        candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)
-        candles['exc'] = candles.ta_lib.cross(candles.close, candles.ema)
+        candles['cxe'] = candles.ta_lib.below(candles.close, candles.ema)
+        candles['exc'] = candles.ta_lib.above(candles.close, candles.ema)
         current = candles[-1]
-        if position.type == OrderType.BUY and (current.nxp or current.cxe):
+        if position.type == OrderType.BUY and (current.nxp and current.cxe):
             close = True
-        elif position.type == OrderType.SELL and (current.pxn or current.exc):
+        elif position.type == OrderType.SELL and (current.pxn and current.exc):
             close = True
         else:
             close = False

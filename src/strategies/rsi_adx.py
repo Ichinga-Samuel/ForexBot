@@ -12,22 +12,20 @@ logger = getLogger(__name__)
 
 class RA(Strategy):
     ttf: TimeFrame
-    htf: TimeFrame
     ema: int
     parameters: dict
     tcc: int
-    hcc: int
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M1
-    timeout: TimeFrame = TimeFrame.H1
-    parameters = {"ema": 50, "ttf": TimeFrame.M5, "tcc": 4320, "htf": TimeFrame.H1, "hcc": 360}
+    timeout: TimeFrame = TimeFrame.H2
+    parameters = {"ema": 50, "ttf": TimeFrame.M5, "tcc": 4320}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'RA'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         self.trader = trader or STrader(symbol=self.symbol, track_trades=False)
-        self.tracker: Tracker = Tracker(snooze=self.htf.time)
+        self.tracker: Tracker = Tracker(snooze=3600)
 
     async def confirm_trend(self):
         try:
@@ -55,12 +53,13 @@ class RA(Strategy):
 
             else:
                 self.tracker.update(snooze=self.ttf.time, order_type=None)
+                return
 
-            if self.tracker.bullish and current.high > prev.high and current.is_bullish():
-                self.tracker.update(order_type=OrderType.BUY, snooze=self.ttf.time)
+            if self.tracker.bullish and current.high > prev.high and current.is_bullish() and current.rsi > prev.rsi:
+                self.tracker.update(order_type=OrderType.BUY, snooze=self.timeout.time)
 
-            elif self.tracker.bearish and current.low < prev.low and current.is_bearish():
-                self.tracker.update(order_type=OrderType.SELL, snooze=self.ttf.time)
+            elif self.tracker.bearish and current.low < prev.low and current.rsi < prev.rsi and current.is_bearish():
+                self.tracker.update(order_type=OrderType.SELL, snooze=self.timeout.time)
             else:
                 self.tracker.update(snooze=self.interval.time, order_type=None)
         except Exception as exe:

@@ -12,7 +12,6 @@ async def trail_tp(*, position: TradePosition):
         config = Config()
         order = config.state['winning'][position.ticket]
         last_profit = order['last_profit']
-        trailing = order['trailing']
         trail_start = order['trail_start']
         start_trailing = order['start_trailing']
 
@@ -33,7 +32,6 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         sym = Symbol(name=position.symbol)
         await sym.init()
         current_profit = order['current_profit']
-
         full_points = int(abs(position.price_open - position.tp) / sym.point)
         trail = order['trail']
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
@@ -64,7 +62,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         extend_start = order['extend_start']
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
-            assert sl > max(position.sl, position.price_open)
+            assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} less than new sl={sl} in long"
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp + tp_value
                 change_tp = True
@@ -72,7 +70,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                 tp = position.tp
         else:
             sl = position.price_current + sl_value
-            assert sl < min(position.sl, position.price_open)
+            assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in short"
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp - tp_value
                 change_tp = True
@@ -92,8 +90,8 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
             await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
-    except AssertionError as _:
-        pass
+    except AssertionError as err:
+        logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
     except Exception as err:
         logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}")
 

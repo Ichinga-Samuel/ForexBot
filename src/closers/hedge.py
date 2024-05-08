@@ -21,7 +21,7 @@ async def hedge_position(*, position: TradePosition):
         if position.profit <= hedge_point:
             sym = Symbol(name=position.symbol)
             await sym.init()
-            res = await make_hedge(position=position, symbol=sym)
+            res = await make_hedge(position=position, symbol=sym, order=order)
             hedges[position.ticket] = res.order
             order['hedge_point'] = position.profit
             fixed_closer[res.order] = {'close': False, 'cut_off': -1}
@@ -32,7 +32,7 @@ async def hedge_position(*, position: TradePosition):
         logger.error(f'An error occurred in function hedge {exe}')
 
 
-async def make_hedge(*, position: TradePosition, symbol: Symbol) -> OrderSendResult:
+async def make_hedge(*, position: TradePosition, symbol: Symbol, order: dict) -> OrderSendResult:
     osl = abs(position.sl - position.price_open)
     otp = abs(position.tp - position.price_open)
     diff = abs(position.price_open - position.price_current)
@@ -42,7 +42,7 @@ async def make_hedge(*, position: TradePosition, symbol: Symbol) -> OrderSendRes
     else:
         sl = position.price_open - osl
         tp = round(position.price_open + otp, symbol.digits)
-    order = Order(symbol=position.symbol, price=position.price_current, volume=position.volume,
+    order = Order(symbol=position.symbol, price=position.price_current, volume=position.volume * order['mul_vol'],
                   type=position.type.opposite, sl=sl, tp=tp, comment=f"Rev{position.ticket}")
     res = await order.send()
     if res.retcode == 10009:
@@ -82,9 +82,10 @@ async def check_hedge(*, main: int, rev: int):
                     logger.warning(f"Closed {rev_pos.symbol}:{rev_pos.comment} for {main_pos.ticket} at"
                                    f"{rev_pos.profit=}:{main_pos.profit=}")
 
-                    close_order = fixed_closer.setdefault(main, {})
+                    close_order = fixed_closer[main]
                     close_order['close'] = True
                     close_order['cut_off'] = cut_off
+                    main_order['trails'].update(main_order['rentry_trails'])
                     hedges.pop(main) if main in hedges else ...
 
         if main_pos is None:
