@@ -12,8 +12,8 @@ class STrader(BaseTrader):
         try:
             await self.symbol.info()
             tick = await self.symbol.info_tick()
-            self.ram.max_amount = 10
-            self.ram.min_amount = 10
+            self.ram.max_amount = 4
+            self.ram.min_amount = 4
 
             amount = await self.ram.get_amount()
             points = self.symbol.compute_points(amount=amount, volume=self.symbol.volume_min)
@@ -31,11 +31,11 @@ class STrader(BaseTrader):
         try:
             winning = ({'current_profit': profit, 'trail_start': 3.5, 'trail': 1, 'trailing': False,
                         'extend_start': 0.75, 'start_trailing': True, 'extend_by': 4, 'use_trails': True,
-                        'trails': {12: 8, 4: 1, 7: 3, 5: 2, 6: 3.5}, 'last_profit': 0, 'adjust': 3}
+                        'trails': {12: 8, 4: 1, 7: 3, 5: 2, 6: 3.5, 3: 1.5, 2: 1}, 'last_profit': 0, 'adjust': 3}
                        | self.winning)
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.75, 'trailing': True,
-                      'last_profit': 0, 'hedge_point': -15, 'cut_off': -2,
+                      'last_profit': 0, 'hedge_point': -4, 'cut_off': 0.5,
                       'hedge_cutoff': 0} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning

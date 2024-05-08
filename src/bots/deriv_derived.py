@@ -25,7 +25,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
-    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FingerADX, RA]]
+    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FingerADX]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

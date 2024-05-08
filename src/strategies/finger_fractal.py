@@ -30,7 +30,7 @@ class FingerFractal(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or BTrader(symbol=self.symbol, track_trades=False)
+        self.trader = trader or BTrader(symbol=self.symbol, track_trades=True)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -45,7 +45,7 @@ class FingerFractal(Strategy):
             c_candles.rename(inplace=True, **{f"EMA_{self.third_ema}": "ema"})
             c_candles['cas'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
             c_candles['cbs'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
-            trend = c_candles[-1: -3]
+            trend = c_candles[-1: -2]
             if all(trend.cas):
                 self.tracker.update(trend="bullish")
             elif all(trend.cbs):

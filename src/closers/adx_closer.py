@@ -14,8 +14,8 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         order = config.state['losing'][position.ticket]
         sym = Symbol(name=position.symbol)
         await sym.init()
-        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.M15)
-        exit_period = parameters.get('exit_period', 8)
+        exit_timeframe = parameters.get('exit_timeframe', TimeFrame.H4)
+        exit_period = parameters.get('exit_period', 10)
         candles = await sym.copy_rates_from_pos(count=180, timeframe=exit_timeframe)
         candles.ta.adx(append=True)
         candles.ta.ema(length=exit_period, append=True)
@@ -25,9 +25,9 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
         candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)
         candles['exc'] = candles.ta_lib.cross(candles.close, candles.ema)
         current = candles[-1]
-        if position.type == OrderType.BUY and (current.nxp and current.cxe):
+        if position.type == OrderType.BUY and (current.nxp or current.cxe):
             close = True
-        elif position.type == OrderType.SELL and (current.pxn and current.exc):
+        elif position.type == OrderType.SELL and (current.pxn or current.exc):
             close = True
         else:
             close = False
@@ -47,12 +47,12 @@ async def adx_closer(*, position: TradePosition, parameters: dict):
                         rev_pos = positions[0] if positions else None
                         if rev_pos is not None:
                             if rev_pos.profit <= 0:
-                                fixed_closer[rev.ticket] = {'cut_off': position.profit - 1.5, 'close': True}
+                                await pos.close_by(rev_pos)
                             else:
                                 fixed_closer[rev.ticket] = {'cut_off': max(position.profit - 1.5, 0), 'close': True}
                 else:
                     logger.error(f"Unable to close trade with adx_closer {res.comment}")
             else:
-                fixed_closer[position.ticket] = {'cut_off': max(position.profit - 1, 1), 'close': True}
+                fixed_closer[position.ticket] = {'cut_off': max(position.profit - 2, 1), 'close': True}
     except Exception as exe:
         logger.error(f'An error occurred in function adx_closer {exe}')
