@@ -29,10 +29,10 @@ class STrader(BaseTrader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            winning = ({'current_profit': profit, 'trail_start': 4.5, 'trail': 1.5, 'trailing': False,
+            winning = ({'current_profit': profit, 'trail_start': 6, 'trail': 2.5, 'trailing': False,
                         'extend_start': 0.75, 'start_trailing': True, 'extend_by': 4, 'use_trails': True,
-                        'trails': {12: 8, 4: 2, 7: 4, 5: 2.5, 6: 3.5, 3: 1.5, 2: 1, 8: 5},
-                        'rentry_trails': {3: 1.5, 4: 2}, 'last_profit': 0,
+                        'trails': {12: 8, 4: 1.5, 7: 4, 5: 2.5, 6: 3, 3: 1},
+                        'rentry_trails': {3: 1, 4: 1.5}, 'last_profit': 0,
                         'adjust': 1} | self.winning)
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.75, 'trailing': True,

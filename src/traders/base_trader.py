@@ -72,7 +72,7 @@ class BaseTrader(Trader):
             winning = {'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
-                       'trails': {10: 8, 16: 14, 22: 20}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
+                       'trails': {10: 8, 16: 14, 22: 18}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
 
             losing = {'trail_start': 0.8, 'hedge_point': -10, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0, 'mul_vol': 1, 'link_up': False} | self.losing

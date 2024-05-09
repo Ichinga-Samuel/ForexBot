@@ -11,11 +11,9 @@ async def trail_tp(*, position: TradePosition):
     try:
         config = Config()
         order = config.state['winning'][position.ticket]
-        last_profit = order['last_profit']
-        trail_start = order['trail_start']
         start_trailing = order['start_trailing']
 
-        if start_trailing and position.profit > trail_start and position.profit > last_profit:
+        if start_trailing:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(position=position, order=order)
@@ -31,21 +29,8 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         position = positions[0]
         sym = Symbol(name=position.symbol)
         await sym.init()
-        current_profit = order['current_profit']
-        full_points = int(abs(position.price_open - position.tp) / sym.point)
-        trail = order['trail']
-        captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        extend_by = order['extend_by']
-        extend = extend_by / current_profit
-        sl_points = int(trail * captured_points)
-        stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
-        sl_points = max(sl_points, stops_level)
-        sl_value = round(sl_points * sym.point, sym.digits)
-        tp_points = full_points * extend
-        tp_value = round(tp_points * sym.point, sym.digits)
-        change_tp = False
-        fixed_closer = config.state['fixed_closer'][position.ticket]
 
+        fixed_closer = config.state['fixed_closer'][position.ticket]
         if order['use_trails']:
             trails = order['trails']
             keys = sorted(trails.keys())
@@ -58,6 +43,26 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                     trails.pop(take_profit)
                     if len(trails) == 0:
                         order['use_trails'] = False
+
+        last_profit = order['last_profit']
+        trail_start = order['trail_start']
+        if position.profit < trail_start and position.profit < last_profit:
+            return
+
+        current_profit = order['current_profit']
+        full_points = int(abs(position.price_open - position.tp) / sym.point)
+        trail = order['trail']
+        trail = trail / current_profit
+        captured_points = int(abs(position.price_open - position.price_current) / sym.point)
+        extend_by = order['extend_by']
+        extend = extend_by / current_profit
+        sl_points = int(trail * captured_points)
+        stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
+        sl_points = max(sl_points, stops_level)
+        sl_value = round(sl_points * sym.point, sym.digits)
+        tp_points = full_points * extend
+        tp_value = round(tp_points * sym.point, sym.digits)
+        change_tp = False
 
         extend_start = order['extend_start']
         if position.type == OrderType.BUY:
