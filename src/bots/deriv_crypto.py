@@ -3,9 +3,8 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerTrap, FingerFractal, RA
+from ..strategies import FingerFractal, RA
 from ..closers import monitor
-from ..traders import BTrader
 
 
 def build_bot():
@@ -24,7 +23,7 @@ def build_bot():
     bot = Bot()
     syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD', 'BNBUSD', 'XRPUSD']
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [ST(symbol=sym, trader=BTrader(symbol=sym)) for sym in ff_syms for ST in [FingerFractal, RA]]
+    ff_sts = [ST(symbol=sym) for sym in ff_syms for ST in [FingerFractal, RA]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

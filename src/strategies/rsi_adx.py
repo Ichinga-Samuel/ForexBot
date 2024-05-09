@@ -55,10 +55,10 @@ class RA(Strategy):
                 self.tracker.update(snooze=self.ttf.time, order_type=None)
                 return
 
-            if self.tracker.bullish and current.high > prev.high and current.is_bullish() and current.rsi > prev.rsi:
+            if self.tracker.bullish and current.high > prev.high and current.is_bullish():
                 self.tracker.update(order_type=OrderType.BUY, snooze=self.timeout.time)
 
-            elif self.tracker.bearish and current.low < prev.low and current.rsi < prev.rsi and current.is_bearish():
+            elif self.tracker.bearish and current.low < prev.low and current.is_bearish():
                 self.tracker.update(order_type=OrderType.SELL, snooze=self.timeout.time)
             else:
                 self.tracker.update(snooze=self.interval.time, order_type=None)

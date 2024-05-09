@@ -31,7 +31,7 @@ class BTrader(BaseTrader):
         try:
             winning = ({'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
                         'extend_start': 0.75, 'start_trailing': True, 'extend_by': 4, 'use_trails': True,
-                        'trails': {12: 8, 4: 1, 7: 3, 5: 2}, 'rentry_trails': {2: 1, 3: 1.5, 4: 2.5, 5: 3.5},
+                        'trails': {12: 8, 4: 1, 7: 3, 5: 2}, 'rentry_trails': {3: 1.5, 4: 2},
                         'last_profit': 0, 'adjust': 3}
                        | self.winning)
 
