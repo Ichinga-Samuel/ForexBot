@@ -42,13 +42,14 @@ class FingerFractal(Strategy):
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
             c_candles.ta.ema(length=self.third_ema, append=True)
-            c_candles.rename(inplace=True, **{f"EMA_{self.third_ema}": "ema"})
+            c_candles.ta.adx(append=True)
+            c_candles.rename(inplace=True, **{f"EMA_{self.third_ema}": "ema", "ADX_14": "adx"})
             c_candles['cas'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
             c_candles['cbs'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
-            trend = c_candles[-1: -2]
-            if all(trend.cas):
+            c_current = c_candles[-1]
+            if c_current.cas and c_current.adx >= 25:
                 self.tracker.update(trend="bullish")
-            elif all(trend.cbs):
+            elif c_current.cbs and c_current.adx >= 25:
                 self.tracker.update(trend="bearish")
             else:
                 self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
