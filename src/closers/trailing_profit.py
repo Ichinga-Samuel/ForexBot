@@ -46,7 +46,10 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
 
         last_profit = order['last_profit']
         trail_start = order['trail_start']
-        if position.profit < trail_start and position.profit < last_profit:
+        if position.profit < trail_start:
+            return
+
+        if position.profit <= last_profit:
             return
 
         current_profit = order['current_profit']
@@ -67,10 +70,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         extend_start = order['extend_start']
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
-            try:
-                assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in long"
-            except AssertionError as err:
-                logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
+            assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in long"
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp + tp_value
                 change_tp = True
@@ -78,10 +78,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                 tp = position.tp
         else:
             sl = position.price_current + sl_value
-            try:
-                assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} <than new sl={sl} in short"
-            except AssertionError as err:
-                logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
+            assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} <than new {sl=} in short"
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp - tp_value
                 change_tp = True
@@ -92,7 +89,8 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         if res.retcode == 10009:
             order['last_profit'] = position.profit
             order['trailing'] = True
-            logger.warning(f"Trailing profits for {position.symbol}:{position.ticket} to {sl=} {tp=}")
+            logger.warning(f"Changed Stop Levels for {position.symbol}:{position.ticket} from"
+                           f" {position.sl}:{position.tp} to {sl=}{tp=}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)

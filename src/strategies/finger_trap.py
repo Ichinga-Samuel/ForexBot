@@ -21,8 +21,8 @@ class FingerTrap(Strategy):
     trader: Trader
     tracker: Tracker
 
-    parameters = {"fast_ema": 5, "slow_ema": 13, "etf": TimeFrame.M5, 'closer': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 672, "ecc": 4032}  # 1
+    parameters = {"fast_ema": 8, "slow_ema": 21, "etf": TimeFrame.M5, 'closer': ema_closer,
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 4032}  # 1
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
@@ -39,7 +39,9 @@ class FingerTrap(Strategy):
             self.tracker.update(new=True, trend_time=current, order_type=None)
             candles.ta.ema(length=self.slow_ema, append=True, fillna=0)
             candles.ta.ema(length=self.fast_ema, append=True, fillna=0)
-            candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow"})  # 5
+            candles.ta.adx(append=True)
+            candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow",
+                                            "ADX_14": "adx"})  # 5
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.fast)
             candles['fas'] = candles.ta_lib.above(candles.fast, candles.slow)
@@ -47,8 +49,7 @@ class FingerTrap(Strategy):
             candles['fbs'] = candles.ta_lib.below(candles.fast, candles.slow)
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.fast)  # 6
             current = candles[-1]
-
-            if current.is_bullish() and current.fas and current.caf:
+            if current.is_bullish() and current.fas and current.caf and current.adx > 25:
                 self.tracker.update(trend="bullish")
             elif current.is_bearish() and current.fbs and current.cbf:
                 self.tracker.update(trend="bearish")  # 7

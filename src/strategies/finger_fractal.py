@@ -72,9 +72,8 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
             prev = candles[-2]
-            h1c = await self.symbol.copy_rates_from_pos(timeframe=TimeFrame.M30, count=3)
-            higher_high = h1c[-1].high > h1c[-2].high
-            lower_low = h1c[-1].low < h1c[-2].low
+            higher_high = candles[-1].high > candles[-2].high
+            lower_low = candles[-1].low < candles[-2].low
 
             if self.tracker.bullish and (prev.dmp < current.dmp > current.dmn and current.adx >= 25 and higher_high and
                 all([current.cas, current.fas, current.sat])):
