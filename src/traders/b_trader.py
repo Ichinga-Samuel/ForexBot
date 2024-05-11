@@ -36,7 +36,7 @@ class BTrader(BaseTrader):
                        | self.winning)
 
             losing = {'trail_start': 0.75, 'sl_limit': 5, 'trail': 0.75, 'trailing': True,
-                      'last_profit': 0, 'hedge_point': -7, 'cut_off': -1, 'mul_vol': 2, 'link_up': True,
+                      'last_profit': 0, 'hedge_point': -7.5, 'cut_off': -1, 'mul_vol': 2, 'link_up': True,
                       'hedge_cutoff': 0} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
