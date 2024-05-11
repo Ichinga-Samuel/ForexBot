@@ -20,7 +20,7 @@ class FingerADX(Strategy):
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
-    timeout: int = 7200
+    timeout: int = TimeFrame.H2
     parameters = {"first_ema": 2, "second_ema": 3, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,

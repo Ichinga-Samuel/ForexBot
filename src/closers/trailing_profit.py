@@ -67,7 +67,10 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         extend_start = order['extend_start']
         if position.type == OrderType.BUY:
             sl = position.price_current - sl_value
-            assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} less than new sl={sl} in long"
+            try:
+                assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in long"
+            except AssertionError as err:
+                logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp + tp_value
                 change_tp = True
@@ -75,7 +78,10 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
                 tp = position.tp
         else:
             sl = position.price_current + sl_value
-            assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in short"
+            try:
+                assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} <than new sl={sl} in short"
+            except AssertionError as err:
+                logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
             if position.profit >= (extend_start * current_profit):
                 tp = position.tp - tp_value
                 change_tp = True
@@ -86,6 +92,7 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         if res.retcode == 10009:
             order['last_profit'] = position.profit
             order['trailing'] = True
+            logger.warning(f"Trailing profits for {position.symbol}:{position.ticket} to {sl=} {tp=}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
