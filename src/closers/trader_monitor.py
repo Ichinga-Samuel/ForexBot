@@ -7,7 +7,7 @@ from ..utils.sleep import sleep
 from .fixed_closer import fixed_closer
 from .trailing_profit import trail_tp
 from .trailing_loss import trail_sl
-from .atr_trailer import trailing_sl
+from .atr_trailer import atr_trailer
 from .closer import OpenTrade
 from .hedge import check_hedge, hedge_position
 
@@ -76,7 +76,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use atr_trailer
             atr = getattr(config, 'atr_trailer', False)
             if atr:
-                atr = [trailing_sl(position=position) for position in positions
+                atr = [atr_trailer(position=position) for position in positions
                        if position.ticket in atr_trailer]
                 tasks.extend(atr)
 
