@@ -9,7 +9,7 @@ class Fractal:
     second_right: Candle
 
 
-def find_bearish_fractals(candles: Candles, count: int = 2) -> list[Fractal]:
+def find_bearish_fractals(candles: Candles, count: int = None) -> list[Fractal]:
     fractals = []
     for i in range(len(candles) - 3, 1, -1):
         if candles[i].high > max(candles[i - 1].high, candles[i + 1].high, candles[i - 2].high, candles[i + 2].high):
@@ -20,11 +20,12 @@ def find_bearish_fractals(candles: Candles, count: int = 2) -> list[Fractal]:
             fractal.second_left = candles[i - 2]
             fractal.second_right = candles[i + 2]
             fractals.append(fractal)
-        if len(fractals) == count:
+        if count and len(fractals) == count:
             return fractals
+    return fractals
 
 
-def find_bullish_fractals(candles: Candles, count: int = 2) -> list[Fractal]:
+def find_bullish_fractals(candles: Candles, count: int = None) -> list[Fractal]:
     fractals = []
     for i in range(len(candles) - 3, 1, -1):
         if candles[i].low < min(candles[i - 1].low, candles[i + 1].low, candles[i - 2].low, candles[i + 2].low):
@@ -35,5 +36,6 @@ def find_bullish_fractals(candles: Candles, count: int = 2) -> list[Fractal]:
             fractal.second_left = candles[i - 2]
             fractal.second_right = candles[i + 2]
             fractals.append(fractal)
-        if len(fractals) == count:
+        if count and len(fractals) == count:
             return fractals
+    return fractals

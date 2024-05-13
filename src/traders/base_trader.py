@@ -49,9 +49,6 @@ class BaseTrader(Trader):
         return TelegramBot(token=token, chat_id=chat_id, confirmation_timeout=confirmation_timeout,
                            order_format=self.order_format)
 
-    # async def track_history(self):
-    #     history =
-
     def save_trade(self, result: OrderSendResult | list[OrderSendResult]):
         try:
             if not self.track_trades:
@@ -70,12 +67,12 @@ class BaseTrader(Trader):
     def save_profit(self, result: OrderSendResult, profit):
         try:
             winning = {'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
-                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1,
+                       'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
-                       'trails': {10: 8, 16: 14, 22: 18}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
+                       'trails': {12: 8, 16: 14, 22: 18}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
 
             losing = {'trail_start': 0.8, 'hedge_point': -10, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
-                      'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0, 'mul_vol': 1, 'link_up': False} | self.losing
+                      'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0, 'mul_vol': 2, 'link_up': False} | self.losing
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
             self.config.state['losing'][result.order] = losing

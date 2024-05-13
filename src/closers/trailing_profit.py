@@ -31,18 +31,23 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         await sym.init()
 
         fixed_closer = config.state['fixed_closer'][position.ticket]
-        if order['use_trails']:
-            trails = order['trails']
-            keys = sorted(trails.keys())
-            if len(keys):
-                take_profit = keys[0]
-                adjust = trails[take_profit]
-                if position.profit >= take_profit:
-                    fixed_closer['close'] = True
-                    fixed_closer['cut_off'] = adjust
-                    trails.pop(take_profit)
-                    if len(trails) == 0:
-                        order['use_trails'] = False
+        try:
+            if order['use_trails']:
+                trails = order['trails']
+                keys = trails.keys()
+                if len(keys):
+                    keys = sorted(keys)
+                    take_profit = keys[0]
+                    adjust = trails[take_profit]
+                    if position.profit >= take_profit:
+                        fixed_closer['close'] = True
+                        fixed_closer['cut_off'] = adjust
+                        trails.pop(take_profit)
+                        if len(trails.keys()) == 0:
+                            order['use_trails'] = False
+        except Exception as err:
+            logger.error(f"Error in use_trails due to {err} for {position.symbol}:{position.ticket}")
+            order['use_trails'] = False
 
         last_profit = order['last_profit']
         trail_start = order['trail_start']

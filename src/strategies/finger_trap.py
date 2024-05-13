@@ -17,7 +17,7 @@ class FingerTrap(Strategy):
     ecc: int
     tcc: int
     interval: TimeFrame = TimeFrame.M3
-    entry_interval: TimeFrame = TimeFrame.M1
+    entry_interval: TimeFrame = TimeFrame.M2
     trader: Trader
     tracker: Tracker
 

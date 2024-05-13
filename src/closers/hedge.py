@@ -13,10 +13,11 @@ async def hedge_position(*, position: TradePosition):
         config = Config()
         order = config.state['losing'][position.ticket]
         winning = config.state['winning']
+        no_hedge = config.state['no_hedge']
         fixed_closer = config.state['fixed_closer']
         main_order = winning[position.ticket]
         hedges = config.state['hedges']
-        assert not position.comment.startswith('Rev')
+        assert (not position.comment.startswith('Rev') or position.ticket not in no_hedge)
         hedge_point = order['hedge_point']
         if position.profit <= hedge_point:
             sym = Symbol(name=position.symbol)

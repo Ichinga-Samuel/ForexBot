@@ -25,7 +25,8 @@ class FingerFractal(Strategy):
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"first_ema": 10, "second_ema": 21, "third_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
-                  'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180}
+                  'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
+                  "adx": 14}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerFractal'):
@@ -41,9 +42,9 @@ class FingerFractal(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
-            c_candles.ta.ema(length=self.third_ema, append=True)
+            c_candles.ta.ema(length=self.first_ema, append=True)
             c_candles.ta.adx(append=True)
-            c_candles.rename(inplace=True, **{f"EMA_{self.third_ema}": "ema", "ADX_14": "adx"})
+            c_candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "ema", "ADX_14": "adx"})
             c_candles['cas'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
             c_candles['cbs'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
             c_current = c_candles[-1]
@@ -72,14 +73,15 @@ class FingerFractal(Strategy):
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
             current = candles[-1]
             prev = candles[-2]
-            higher_high = candles[-1].high > candles[-2].high
-            lower_low = candles[-1].low < candles[-2].low
 
-            if self.tracker.bullish and (prev.dmp < current.dmp > current.dmn and current.adx >= 25 and higher_high and
+            higher_high = current.high > prev.high
+            lower_low = current.low < prev.low
+
+            if self.tracker.bullish and (current.dmp > current.dmn and current.adx >= 25 and higher_high and
                 all([current.cas, current.fas, current.sat])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
 
-            elif self.tracker.bearish and (prev.dmn < current.dmn > current.dmp and current.adx >= 25 and lower_low and
+            elif self.tracker.bearish and (current.dmn > current.dmp and current.adx >= 25 and lower_low and
                   all([current.cbs, current.fbs, current.sbt])):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
             else:

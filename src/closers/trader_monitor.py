@@ -7,6 +7,7 @@ from ..utils.sleep import sleep
 from .fixed_closer import fixed_closer
 from .trailing_profit import trail_tp
 from .trailing_loss import trail_sl
+from .atr_trailer import trailing_sl
 from .closer import OpenTrade
 from .hedge import check_hedge, hedge_position
 
@@ -20,6 +21,11 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
         try:
             positions = await pos.positions_get()
             config = Config()
+            winning = config.state.get('winning', {})
+            loosing = config.state.get('losing', {})
+            no_hedge = config.state.get('no_hedge', [])
+            atr_trailer = config.state.get('atr_trailer', {})
+
             hedged = config.state['hedges']
             main = list(hedged.keys())
             rev = list(hedged.values())
@@ -30,7 +36,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             hedging = getattr(config, 'hedging', False)
             if hedging:
                 hedge = [hedge_position(position=position) for position in positions if position.profit < 0 and
-                         position.ticket not in hedged_orders]
+                         position.ticket not in hedged_orders and position.ticket not in no_hedge]
                 check_hedges = [check_hedge(main=main, rev=rev) for main, rev in hedged.items()]
                 hedge_tasks = check_hedges + hedge
                 await asyncio.gather(*hedge_tasks, return_exceptions=True)
@@ -50,7 +56,8 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use trailing stop loss
             tsl = getattr(config, 'trailing_loss', False)
             if tsl:
-                tsl = [trail_sl(position=position) for position in positions if position.profit < 0]
+                tsl = [trail_sl(position=position) for position in positions if position.profit < 0 and
+                       position.ticket in loosing]
                 tasks.extend(tsl)
 
             # use fixed_closer
@@ -62,8 +69,16 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             # use trailing stops
             tts = getattr(config, 'trailing_stops', False)
             if tts:
-                tts = [trail_tp(position=position) for position in positions if position.profit > 0]
+                tts = [trail_tp(position=position) for position in positions if position.profit > 0 and
+                       position.ticket in winning]
                 tasks.extend(tts)
+
+            # use atr_trailer
+            atr = getattr(config, 'atr_trailer', False)
+            if atr:
+                atr = [trailing_sl(position=position) for position in positions
+                       if position.ticket in atr_trailer]
+                tasks.extend(atr)
 
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)

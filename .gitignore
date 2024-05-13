@@ -8,3 +8,6 @@ logs/
 r_records/
 old_records/
 main/
+src/utils/support_resistance/
+notebooks/
+src/utils/double_bottoms.py
