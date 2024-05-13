@@ -8,4 +8,4 @@ from .fixed_closer import fixed_closer
 from .trader_monitor import monitor
 from .hedge import check_hedge, hedge_position
 from .adx_closer import adx_closer
-from .atr_trailer import trailing_sl
+from .atr_trailer import atr_trailer
