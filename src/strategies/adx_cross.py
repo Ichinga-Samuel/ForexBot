@@ -15,14 +15,16 @@ class ADXScalper(Strategy):
     etf: TimeFrame
     parameters: dict
     atr_multiplier: int
+    atr_factor: int
     adx_cutoff: int
+    atr_length: int
     adx: int
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M2
     timeout: TimeFrame = TimeFrame.M15
     parameters = {"closer": adx_closer, "etf": TimeFrame.M5, "adx": 3, "exit_timeframe": TimeFrame.M5, "ecc": 864,
-                  "atr_multiplier": 1.5, "adx_cutoff": 30}
+                  "atr_multiplier": 1.5, "adx_cutoff": 30, "atr_factor": 1, "atr_length": 24}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXScalper'):
@@ -41,7 +43,7 @@ class ADXScalper(Strategy):
             candles.ta.adx(length=self.adx, append=True)
             candles.ta.atr(append=True)
             candles.rename(inplace=True, **{f"ADX_{self.adx}": "adx", f"DMP_{self.adx}": "dmp",
-                                            f"DMN_{self.adx}": "dmn", "ATRr_14": "atr"})
+                                            f"DMN_{self.adx}": "dmn", f"ATRr_{self.atr_length}": "atr"})
             candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
             candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp)
             current = candles[-1]
@@ -50,11 +52,11 @@ class ADXScalper(Strategy):
             bearish = prev.is_bearish() or prev2.is_bearish()
             bullish = prev.is_bullish() or prev2.is_bullish()
             if current.adx >= self.adx_cutoff and current.pxn and current.is_bullish() and bearish:
-                sl = min(current.low, prev.low, prev2.low) - (current.atr * self.atr_multiplier)
+                sl = current.low - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl)
 
             elif current.adx >= self.adx_cutoff and current.nxp and current.is_bearish() and bullish:
-                sl = max(current.high, prev.high, prev2.high) + (current.atr * self.atr_multiplier)
+                sl = current.high + (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
