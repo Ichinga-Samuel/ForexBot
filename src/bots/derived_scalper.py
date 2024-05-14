@@ -8,8 +8,8 @@ from ..closers import monitor
 
 
 def build_bot():
-    config = Config(config_dir='configs', filename='deriv_derived_2.json', reload=True,
-                    records_dir='records/deriv_derived_2/',
+    config = Config(config_dir='configs', filename='derived_scalper.json', reload=True,
+                    records_dir='records/derived_scalper/',
                     fixed_closer=True, hedging=True, use_ram=True, trailing_stops=True, trailing_loss=False,
                     exit_signals=True, use_telegram=False, atr_trailer=True)
     config.load_config()
@@ -20,7 +20,7 @@ def build_bot():
     config.state['tracked_trades'] = {}
     config.state['no_hedge'] = []
     config.state['atr_trailer'] = {}
-    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv_derived_2.log',
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/derived_scalper.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
 
@@ -28,7 +28,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
-    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FingerFractal]]
+    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [ADXScalper]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

@@ -24,7 +24,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             winning = config.state.get('winning', {})
             loosing = config.state.get('losing', {})
             no_hedge = config.state.get('no_hedge', [])
-            atr_trailer = config.state.get('atr_trailer', {})
+            atr_trailing = config.state.get('atr_trailer', {})
 
             hedged = config.state['hedges']
             main = list(hedged.keys())
@@ -77,7 +77,7 @@ async def monitor(*, tf: int = 31, key: str = 'trades'):
             atr = getattr(config, 'atr_trailer', False)
             if atr:
                 atr = [atr_trailer(position=position) for position in positions
-                       if position.ticket in atr_trailer]
+                       if position.ticket in atr_trailing]
                 tasks.extend(atr)
 
             await asyncio.gather(*tasks, return_exceptions=True)

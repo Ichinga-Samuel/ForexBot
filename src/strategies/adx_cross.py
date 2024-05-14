@@ -4,7 +4,6 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-# from ..utils.support_resistance.zeta_zetra.main import find_levels
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
 
@@ -24,7 +23,7 @@ class ADXScalper(Strategy):
     interval: TimeFrame = TimeFrame.M2
     timeout: TimeFrame = TimeFrame.M15
     parameters = {"closer": adx_closer, "etf": TimeFrame.M5, "adx": 3, "exit_timeframe": TimeFrame.M5, "ecc": 864,
-                  "atr_multiplier": 1.5, "adx_cutoff": 30, "atr_factor": 1, "atr_length": 24}
+                  "atr_multiplier": 2, "adx_cutoff": 30, "atr_factor": 1.5, "atr_length": 24}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXScalper'):
@@ -41,7 +40,7 @@ class ADXScalper(Strategy):
             self.tracker.update(new=True, entry_time=current, order_type=None)
 
             candles.ta.adx(length=self.adx, append=True)
-            candles.ta.atr(append=True)
+            candles.ta.atr(append=True, length=self.atr_length)
             candles.rename(inplace=True, **{f"ADX_{self.adx}": "adx", f"DMP_{self.adx}": "dmp",
                                             f"DMN_{self.adx}": "dmn", f"ATRr_{self.atr_length}": "atr"})
             candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
@@ -49,13 +48,17 @@ class ADXScalper(Strategy):
             current = candles[-1]
             prev = candles[-2]
             prev2 = candles[-3]
-            bearish = prev.is_bearish() or prev2.is_bearish()
-            bullish = prev.is_bullish() or prev2.is_bullish()
-            if current.adx >= self.adx_cutoff and current.pxn and current.is_bullish() and bearish:
+            flat_bottom = prev.is_bullish() and prev2.is_bearish()
+            flat_top = prev.is_bearish() and prev2.is_bullish()
+            low_diff = abs(prev.low - prev2.low) / min(prev.low, prev2.low) <= 0.05
+            high_diff = abs(prev.high - prev2.high) / min(prev.high, prev2.high) <= 0.05
+            flat_bottom = flat_bottom and low_diff
+            flat_top = flat_top and high_diff
+            if current.adx >= self.adx_cutoff and current.pxn and current.is_bullish() and flat_bottom:
                 sl = current.low - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl)
 
-            elif current.adx >= self.adx_cutoff and current.nxp and current.is_bearish() and bullish:
+            elif current.adx >= self.adx_cutoff and current.nxp and current.is_bearish() and flat_top:
                 sl = current.high + (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl)
             else:

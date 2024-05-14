@@ -11,7 +11,7 @@ class SPTrader(BaseTrader):
 
     def save_profit(self, result: OrderSendResult, profit):
         try:
-            trailer = {"params": self.parameters, "prev_profit": 0, "expected_profit": profit, "extend_profit": 0.75}
+            trailer = {"params": self.parameters, "prev_profit": 0, "expected_profit": profit, "extend_profit": 0.80}
             fixed_closer = {'close': False, 'cut_off': -1, 'close_adjust': 0.5} | self.fixed_closer
             self.config.state['atr_trailer'][result.order] = trailer
             self.config.state['fixed_closer'][result.order] = fixed_closer
@@ -20,9 +20,9 @@ class SPTrader(BaseTrader):
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.save_profit")
 
     async def create_order(self, *, order_type: OrderType, sl: float):
-        self.ram.max_amount = 5
-        self.ram.min_amount = 2.5
-        self.ram.risk_to_reward = 1.5
+        self.ram.max_amount = 2
+        self.ram.min_amount = 1
+        self.ram.risk_to_reward = 0.6
         amount = await self.ram.get_amount()
         await self.symbol.info()
         tick = await self.symbol.info_tick()

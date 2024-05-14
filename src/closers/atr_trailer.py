@@ -27,10 +27,10 @@ async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0
         await symbol.init()
         etf = params['etf']
         ecc = params['ecc']
-        atr = params['atr']
+        atr = params['atr_length']
         atr_factor = params['atr_factor']
         candles = await symbol.copy_rates_from_pos(timeframe=etf, count=ecc)
-        candles.ta.atr(append=True)
+        candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
         current = candles[-1]
         tick = await symbol.info_tick()
