@@ -24,7 +24,7 @@ class FingerFractal(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H4
-    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
+    parameters = {"first_ema": 8, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
                   'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
                   "adx": 14}
 
@@ -71,8 +71,8 @@ class FingerFractal(Strategy):
             current = candles[-1]
             prev = candles[-2]
 
-            higher_high = current.high > prev.high
-            lower_low = current.low < prev.low
+            higher_high = current.high > prev.high or (current.low > prev.low)
+            lower_low = current.low < prev.low or (current.high < prev.high)
 
             if self.tracker.bullish and (current.dmp > current.dmn and current.adx >= 25 and higher_high and
                                          all([current.cas, current.fas])):
