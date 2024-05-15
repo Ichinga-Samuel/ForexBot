@@ -55,10 +55,13 @@ class FingerADX(Strategy):
             prev = candles[-2]
             higher_high = current.high > prev.high
             lower_low = current.low < prev.low
-            if current.is_bullish() and current.adx >= 25 and all([current.cas, current.caf, current.fas]) and higher_high:
+
+            if (current.is_bullish() and current.adx >= 25 and all([current.cas, current.caf, current.fas])
+                and higher_high):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY)
 
-            elif current.is_bearish() and current.adx >= 25 and all([current.cbs, current.cbf, current.fbs]) and lower_low:
+            elif (current.is_bearish() and current.adx >= 25 and all([current.cbs, current.cbf, current.fbs])
+                  and lower_low):
                 self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..closers.adx_closer import adx_closer
-from ..traders.s_trader import STrader
+from ..traders.point_trader import PointTrader
 
 logger = getLogger(__name__)
 
@@ -24,7 +24,7 @@ class RA(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'RA'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or STrader(symbol=self.symbol, track_trades=False)
+        self.trader = trader or PointTrader(symbol=self.symbol, track_trades=False)
         self.tracker: Tracker = Tracker(snooze=self.timeout.time)
 
     async def confirm_trend(self):

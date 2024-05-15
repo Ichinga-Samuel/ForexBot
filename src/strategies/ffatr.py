@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..closers.adx_closer import adx_closer
-from ..traders.b_trader import BTrader
+from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 
@@ -16,6 +16,7 @@ class FFATR(Strategy):
     etf: TimeFrame
     atr_multiplier: int
     atr_factor: int
+    atr_length: int
     first_ema: int
     second_ema: int
     trend_ema: int
@@ -28,7 +29,7 @@ class FFATR(Strategy):
     timeout: TimeFrame = TimeFrame.H4
     parameters = {"first_ema": 8, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
                   'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
-                  "adx": 14, "atr_multiplier": 3, "atr_factor": 2}
+                  "adx": 14, "atr_multiplier": 3, "atr_factor": 1.5, "atr_length": 14, "etf": TimeFrame.M30}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
@@ -63,7 +64,8 @@ class FFATR(Strategy):
             candles.ta.atr(append=True)
             candles.ta.adx(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn", "ATRr_14": "atr"})
+                                            "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
+                                            f"ATRr_{self.atr_length}": "atr"})
 
             candles['cas'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
@@ -79,6 +81,7 @@ class FFATR(Strategy):
 
             if self.tracker.bullish and (current.dmp > current.dmn and current.adx >= 25 and higher_high and
                                          all([current.cas, current.fas])):
+
                 sl = current.low - (self.atr_multiplier * current.atr)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl)
 
@@ -106,7 +109,8 @@ class FFATR(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters,
+                                                  sl=self.tracker.sl)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")

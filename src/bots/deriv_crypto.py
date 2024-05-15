@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FingerFractal, RA, ADXScalper
+from ..strategies import ADXScalper, ADXScalper2, ADXATR, ADXCrossing
 from ..closers import monitor
 
 
@@ -26,7 +26,7 @@ def build_bot():
     syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD', 'BNBUSD', 'XRPUSD', "EURUSD", "GBPUSD", "AUDUSD",
             "NZDUSD", "USDJPY", "USDCHF", "USDCAD"]
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [ST(symbol=sym) for sym in ff_syms for ST in [FingerFractal, ADXScalper]]
+    ff_sts = [ST(symbol=sym) for sym in ff_syms for ST in [ADXScalper2, ADXScalper, ADXCrossing, ADXATR]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

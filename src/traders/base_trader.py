@@ -23,7 +23,8 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None, risk_to_rewards: list[float] = None, multiple=False,
                  use_telegram: bool = True, track_trades: bool = True, use_ram: bool = True, winning: dict = None,
-                 losing: dict = None, fixed_closer: dict = None):
+                 losing: dict = None, fixed_closer: dict = None, hedge_trade: bool = False, track_winning: bool = True,
+                 track_losing: bool = True, use_check_points: bool = True, extend_profit: bool = True):
         self.data = {}
         ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.order_updates = []
@@ -34,8 +35,13 @@ class BaseTrader(Trader):
         self.track_trades = track_trades
         self.winning = winning or {}
         self.losing = losing or {}
+        self.track_winning = track_winning
+        self.track_losing = track_losing
+        self.use_check_points = use_check_points
+        self.extend_profit = extend_profit
         self.fixed_closer = fixed_closer or {}
         self.open_trades = []
+        self.hedge_trade = hedge_trade
         super().__init__(symbol=symbol, ram=ram)
         ur = getattr(self.config, 'use_ram', False)
         self.use_ram = use_ram if use_ram is not None else ur
@@ -69,10 +75,11 @@ class BaseTrader(Trader):
             winning = {'current_profit': profit, 'trail_start': 16, 'trail': 4, 'trailing': False,
                        'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
                        'take_profit': 10, 'hedge_trail_start': 10, 'hedge_trail': 3, 'use_trails': True,
-                       'trails': {12: 8, 16: 14, 22: 18}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
+                       'trails': {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1}, 'last_profit': 0, 'rentry_trails': {}} | self.winning
 
             losing = {'trail_start': 0.8, 'hedge_point': -10, 'sl_limit': 15, 'trail': 2, 'cut_off': -1,
                       'hedge_cutoff': 0, 'trailing': True, 'last_profit': 0, 'mul_vol': 2, 'link_up': False} | self.losing
+
             fixed_closer = {'close': False, 'cut_off': -1} | self.fixed_closer
             self.config.state['winning'][result.order] = winning
             self.config.state['losing'][result.order] = losing

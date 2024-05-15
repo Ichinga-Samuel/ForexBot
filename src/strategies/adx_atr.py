@@ -4,83 +4,78 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..closers.adx_closer import adx_closer
-from ..traders.b_trader import BTrader
+from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 
 
-class FingerFractal(Strategy):
-    htf: TimeFrame
+class ADXATR(Strategy):
     ttf: TimeFrame
     etf: TimeFrame
     first_ema: int
     second_ema: int
-    trend_ema: int
+    price_sma: int
     parameters: dict
     tcc: int
-    hcc: int
+    ecc: int
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M15
-    timeout: TimeFrame = TimeFrame.H4
-    parameters = {"first_ema": 8, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
-                  'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
-                  "adx": 14}
+    timeout: int = TimeFrame.H2
+    atr_multiplier: float
+    adx_cutoff: int
+    atr_factor: float
+    atr_length: int
+    parameters = {"first_ema": 2, "second_ema": 3, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50,
+                  "atr_multiplier": 2.5, "adx_cutoff": 25, "atr_factor": 1.5, "atr_length": 14, "ecc": 720,
+                  "etf": TimeFrame.H1}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
-                 name: str = 'FingerFractal'):
+                 name: str = 'ADXATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or BTrader(symbol=self.symbol, track_trades=True)
-        self.tracker: Tracker = Tracker(snooze=self.ttf.time)
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=False)
+        self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
         try:
             candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
-            c_candles = await self.symbol.copy_rates_from_pos(timeframe=self.htf, count=self.hcc)
             if not ((current := candles[-1].time) >= self.tracker.trend_time):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
-            c_candles.ta.ema(length=self.trend_ema, append=True)
-            c_candles.ta.adx(append=True)
-            c_candles.rename(inplace=True, **{f"EMA_{self.trend_ema}": "ema", "ADX_14": "adx"})
-            c_candles['cas'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
-            c_candles['cbs'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
-            c_current = c_candles[-1]
-            if c_current.cas and c_current.adx >= 25:
-                self.tracker.update(trend="bullish")
-            elif c_current.cbs and c_current.adx >= 25:
-                self.tracker.update(trend="bearish")
-            else:
-                self.tracker.update(trend="ranging", snooze=self.ttf.time, order_type=None)
-                return
-
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
+            candles.ta.sma(close='close', length=self.price_sma, append=True)
             candles.ta.adx(append=True)
+            candles.ta.atr(append=True, length=self.atr_length)
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
-                                            "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})
+                                            f"ADX_14": "adx", f"SMA_{self.price_sma}": "sma",
+                                            f"ATRr_{self.atr_length}": "atr", "DMP_14": "dmp", "DMN_14": "dmn"})
 
-            candles['cas'] = candles.ta_lib.above(candles.close, candles.first)
+            candles['cas'] = candles.ta_lib.above(candles.close, candles.sma)
+            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
+            candles['pan'] = candles.ta_lib.above(candles.dmp, candles.dmn)
 
-            candles['cbs'] = candles.ta_lib.below(candles.close, candles.first)
+            candles['cbs'] = candles.ta_lib.below(candles.close, candles.sma)
+            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
+            candles['nap'] = candles.ta_lib.above(candles.dmn, candles.dmp)
 
             current = candles[-1]
             prev = candles[-2]
-
             higher_high = (current.high > prev.high) or (current.low > prev.low)
             lower_low = (current.low < prev.low) or (current.high < prev.high)
 
-            if self.tracker.bullish and (current.dmp > current.dmn and current.adx >= 25 and higher_high and
-                                         all([current.cas, current.fas])):
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
+            if (current.is_bullish() and current.pan and current.adx >= 25
+                and all([current.cas, current.caf, current.fas]) and higher_high):
+                sl = current.low - (current.atr * self.atr_multiplier)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
 
-            elif self.tracker.bearish and (current.dmn > current.dmp and current.adx >= 25 and lower_low and
-                                           all([current.cbs, current.fbs])):
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
+            elif (current.is_bearish() and current.nap and current.adx >= 25
+                  and all([current.cbs, current.cbf, current.fbs]) and lower_low):
+                sl = current.high + (current.atr * self.atr_multiplier)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
@@ -101,7 +96,8 @@ class FingerFractal(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
+                                                  parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
