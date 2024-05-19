@@ -9,6 +9,7 @@ logger = getLogger(__name__)
 
 async def trail_tp(*, position: TradePosition, order: OpenOrder):
     try:
+        print('Using Trailing Take Profit')
         params = order.track_profit_params
         start_trailing = params['start_trailing']
         if start_trailing and position.profit >= params['trail_start']:
@@ -79,12 +80,12 @@ async def modify_stops(*, position: TradePosition, params: dict, extra: float = 
         if res.retcode == 10009:
             params['previous_profit'] = position.profit
             params['trailing'] = True
-            logger.info(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
+            logger.error(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 params['expected_profit'] = new_profit
-                logger.info(f"Extended take profit target for {position.symbol}:{position.ticket} to {new_profit}")
+                logger.error(f"Extended take profit target for {position.symbol}:{position.ticket} to {new_profit}")
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, params=params, extra=(extra + 0.01), tries=tries - 1)

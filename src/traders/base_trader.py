@@ -18,10 +18,13 @@ class BaseTrader(Trader):
     track_profit_params = {'trail_start': 15, 'trail': 4, 'trailing': False,
                            'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
                            'previous_profit': 0}
-    track_loss_params = {'trail_start': 0.8, 'sl_limit': 15, 'trail': 2, 'trailing': True,
+
+    track_loss_params = {'trail_start': 0.5, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
+
     check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': True,
                            "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1}, 'adjust': 1.5}
+
     hedger_params = {'hedge_point': 0.58, 'hedge_cutoff': 0, 'hedge_vol': 1, 'adjust': 1.5}
     open_trades: list[int]
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}

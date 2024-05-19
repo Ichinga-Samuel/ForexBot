@@ -10,6 +10,7 @@ logger = getLogger(__name__)
 
 async def atr_trailer(*, position: TradePosition, order: OpenOrder):
     try:
+        print('Using Atr Trailer')
         params = order.track_profit_params
         previous_profit = params['previous_profit']
         expected_profit = params['expected_profit']
@@ -83,11 +84,12 @@ async def modify_stops(*, position: TradePosition, order: OpenOrder, extra: floa
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
             params['previous_profit'] = position.profit
-            logger.info(f"Changed sl for {position.symbol}:{position.ticket} to {sl} and tp to {tp}")
+            logger.error(f"Changed sl for {position.symbol}:{position.ticket} to {sl} and tp to {tp}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 order['expected_profit'] = new_profit
+                logger.error(f"Changed expected profit to {new_profit} for {position.symbol}:{position.ticket}")
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)

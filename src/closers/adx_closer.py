@@ -9,6 +9,7 @@ logger = getLogger(__name__)
 
 async def adx_closer(*, position: TradePosition, order: OpenOrder):
     try:
+        print('Using Adx Closer')
         pos = Positions()
         sym = Symbol(name=position.symbol)
         await sym.init()
@@ -30,14 +31,14 @@ async def adx_closer(*, position: TradePosition, order: OpenOrder):
         else:
             close = False
         if close:
-            positions = await pos.positions_get(ticket=position.ticket)
-            position = positions[0] if positions else None
+            position = await pos.position_get(ticket=position.ticket)
             if position is None:
                 return
             if position.profit < 0:
                 res = await pos.close_by(position)
                 if res.retcode == 10009:
                     logger.warning(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
+                    position.config.state['order_tracker'].pop(position.ticket, None)
                 else:
                     logger.error(f"Unable to close trade with adx_closer {res.comment}")
             else:

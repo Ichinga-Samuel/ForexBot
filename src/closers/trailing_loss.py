@@ -10,6 +10,7 @@ logger = getLogger(__name__)
 
 async def trail_sl(*, position: TradePosition, order: OpenOrder):
     try:
+        print('Using Trailing Stop Loss')
         params = order.track_loss_params
         trail_start = params['trail_start']
         previous_profit = params['previous_profit']

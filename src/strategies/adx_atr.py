@@ -29,15 +29,16 @@ class ADXATR(Strategy):
     atr_factor: float
     atr_length: int
     parameters = {"first_ema": 2, "second_ema": 5, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50,
-                  "atr_multiplier": 2, "adx_cutoff": 25, "atr_factor": 1, "atr_length": 14, "ecc": 720,
+                  "atr_multiplier": 1.5, "adx_cutoff": 25, "atr_factor": 0.5, "atr_length": 14, "ecc": 720,
                   "etf": TimeFrame.H1, "excc": 720, "exit_function": adx_closer, "exit_timeframe": TimeFrame.H1
                   }
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=3, risk=0.1)
-        self.trader = trader or SPTrader(symbol=self.symbol, use_exit_signal=True, ram=ram)
+        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=1.5, risk=0.1)
+        self.trader = trader or SPTrader(symbol=self.symbol, use_exit_signal=True, ram=ram, track_loss=True,
+                                         hedge_order=True, hedger_params={"hedge_point": 0.75})
         self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
@@ -74,12 +75,14 @@ class ADXATR(Strategy):
             if (current.is_bullish() and current.pan and current.adx >= 25
                 and all([current.cas, current.caf, current.fas]) and higher_high):
                 sl = current.low - (current.atr * self.atr_multiplier)
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl)
+                tp = current.close + (current.atr * self.atr_multiplier * self.trader.ram.risk_to_reward)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
             elif (current.is_bearish() and current.nap and current.adx >= 25
                   and all([current.cbs, current.cbf, current.fbs]) and lower_low):
                 sl = current.high + (current.atr * self.atr_multiplier)
-                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl)
+                tp = current.close - (current.atr * self.atr_multiplier * self.trader.ram.risk_to_reward)
+                self.tracker.update(snooze=self.ttf.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
@@ -101,7 +104,7 @@ class ADXATR(Strategy):
                         await self.sleep(self.tracker.snooze)
                         continue
                     await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
-                                                  parameters=self.parameters)
+                                                  tp=self.tracker.tp, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")

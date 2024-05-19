@@ -56,7 +56,7 @@ async def make_hedge(*, position: TradePosition, hedge_params: dict) -> OrderSen
 
 async def track_hedge(*, position: TradePosition, order: OpenOrder):
     try:
-        orders = position.config.state['tracked_orders']
+        orders = position.config.state['order_tracker']
         hedge_order = order.hedged_order
         pos = Positions()
         main_ticket, hedge_ticket = position.ticket, hedge_order.ticket

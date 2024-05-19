@@ -13,29 +13,27 @@ class SPTrader(BaseTrader):
         cp = kwargs.pop('check_profit_params', {})
         tp = kwargs.pop('track_profit_params', {})
         check_profit_params = {'use_check_points': False} | cp
-        track_profit_params = {'trail_start': 0.7, 'trail': 2, 'trailing': True, 'extend_start': 0.8} | tp
+        track_profit_params = {'trail_start': 0.3, 'trail': 2, 'trailing': True, 'extend_start': 0.8} | tp
         super().__init__(symbol=symbol, ram=ram, hedge_order=hedge_order, profit_tracker=profit_tracker,
-                         check_profit_params=check_profit_params, track_profit_params=track_profit_params, **kwargs)
+                         check_profit_params=check_profit_params, track_profit_params=track_profit_params,
+                         **kwargs)
 
-    async def create_order(self, *, order_type: OrderType, sl: float):
+    async def create_order(self, *, order_type: OrderType, sl: float, tp: float):
         amount = await self.ram.get_amount()
         await self.symbol.info()
         tick = await self.symbol.info_tick()
-        price_diff = tick.ask - sl if order_type == OrderType.BUY else sl - tick.bid
-        points = price_diff / self.symbol.point
-        min_points = self.symbol.trade_stops_level + self.symbol.spread
-        if points < min_points:
-            # points = min_points
-            logger.warning(f"Points adjusted to {points} for {self.symbol} for strategy {self.parameters.get('name')}")
-        await self.create_order_points(order_type=order_type, points=points, amount=amount, use_limits=True,
-                                       round_down=False, adjust=False)
+        price = tick.ask if order_type == OrderType.BUY else tick.bid
+        volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=False,
+                                                         use_limits=True)
+        self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
+                                  comment=self.parameters.get('name', self.__class__.__name__))
 
-    async def place_trade(self, *, order_type: OrderType, sl,  parameters: dict = None):
+    async def place_trade(self, *, order_type: OrderType, sl: float, tp: float, parameters: dict = None):
         try:
             self.parameters |= parameters or {}
             if self.use_ram:
                 await self.check_ram()
-            await self.create_order(order_type=order_type, sl=sl)
+            await self.create_order(order_type=order_type, sl=sl, tp=tp)
             if not await self.check_order():
                 return
             await self.send_order()

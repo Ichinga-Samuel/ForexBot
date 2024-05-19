@@ -25,7 +25,7 @@ class ADXCrossing(Strategy):
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30, "ecc": 864,
-                  "atr_multiplier": 1, "adx_cutoff": 25, "atr_factor": 0.5, "atr_length": 14, "excc": 864}
+                  "atr_multiplier": 1.5, "adx_cutoff": 25, "atr_factor": 0.5, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
@@ -58,16 +58,16 @@ class ADXCrossing(Strategy):
                 return
             second = candles[-2]
             first = candles[-3]
-            fb = flat_bottom(first=first, second=second) or flat_bottom(first=second, second=current)
-            ft = flat_top(first=first, second=second) or flat_top(first=second, second=current)
 
-            if self.tracker.bullish and fb:
-                sl = current.low - (current.atr * self.atr_multiplier)
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl)
+            if self.tracker.bullish and flat_bottom(first=first, second=second):
+                sl = min(second.low, first.low)
+                tp = current.close + (current.atr * self.atr_multiplier)
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
-            elif self.tracker.bearish and ft:
-                sl = current.high + (current.atr * self.atr_multiplier)
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl)
+            elif self.tracker.bearish and flat_top(first=first, second=second):
+                sl = max(second.high, first.high)
+                tp = current.close - (current.atr * self.atr_multiplier)
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
@@ -88,8 +88,8 @@ class ADXCrossing(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters,
-                                                  sl=self.tracker.sl)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
+                                                  tp=self.tracker.tp, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
