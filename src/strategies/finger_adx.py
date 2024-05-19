@@ -26,7 +26,7 @@ class FingerADX(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerADX'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol, track_trades=False)
+        self.trader = trader or PTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
@@ -72,7 +72,7 @@ class FingerADX(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

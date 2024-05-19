@@ -5,6 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..utils.ram import RAM
+from ..utils.flat_top_bottom import flat_bottom, flat_top
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
 
@@ -14,23 +15,23 @@ logger = getLogger(__name__)
 class ADXCrossing(Strategy):
     etf: TimeFrame
     parameters: dict
-    atr_multiplier: int
-    atr_factor: int
+    atr_multiplier: float
+    atr_factor: float
     adx_cutoff: int
     atr_length: int
     adx: int
     trader: Trader
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M5
-    timeout: TimeFrame = TimeFrame.H1
-    parameters = {"closer": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30, "ecc": 864,
-                  "atr_multiplier": 2.5, "adx_cutoff": 25, "atr_factor": 1.5, "atr_length": 14}
+    timeout: TimeFrame = TimeFrame.H2
+    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30, "ecc": 864,
+                  "atr_multiplier": 1, "adx_cutoff": 25, "atr_factor": 0.5, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=6, max_amount=6, risk_to_reward=1/3)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True)
+        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=3, risk=0.1)
+        self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
     async def check_trend(self):
@@ -48,20 +49,23 @@ class ADXCrossing(Strategy):
             candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
             candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp)
             current = candles[-1]
-            prev = candles[-2]
-            prev2 = candles[-3]
-            flat_bottom = prev.is_bullish() and prev2.is_bearish()
-            flat_top = prev.is_bearish() and prev2.is_bullish()
-            low_diff = abs(prev.low - prev2.low) / min(prev.low, prev2.low) <= 0.02
-            high_diff = abs(prev.high - prev2.high) / min(prev.high, prev2.high) <= 0.02
-            flat_bottom = flat_bottom and low_diff
-            flat_top = flat_top and high_diff
+            if current.adx > 25 and current.pxn:
+                self.tracker.update(trend="bullish")
+            elif current.adx > 25 and current.nxp:
+                self.tracker.update(trend="bearish")
+            else:
+                self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
+                return
+            second = candles[-2]
+            first = candles[-3]
+            fb = flat_bottom(first=first, second=second) or flat_bottom(first=second, second=current)
+            ft = flat_top(first=first, second=second) or flat_top(first=second, second=current)
 
-            if current.adx >= self.adx_cutoff and current.pxn and current.is_bullish() and flat_bottom:
+            if self.tracker.bullish and fb:
                 sl = current.low - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl)
 
-            elif current.adx >= self.adx_cutoff and current.nxp and current.is_bearish() and flat_top:
+            elif self.tracker.bearish and ft:
                 sl = current.high + (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl)
             else:
@@ -73,7 +77,7 @@ class ADXCrossing(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

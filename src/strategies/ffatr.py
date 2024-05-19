@@ -4,6 +4,7 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
+from ..utils.ram import RAM
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
 
@@ -28,13 +29,15 @@ class FFATR(Strategy):
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H4
     parameters = {"first_ema": 8, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
-                  'closer': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
-                  "adx": 14, "atr_multiplier": 3, "atr_factor": 1.5, "atr_length": 14, "etf": TimeFrame.M30}
+                  'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1, "ecc": 720,
+                  "adx": 14, "atr_multiplier": 2.5, "atr_factor": 1, "atr_length": 14, "etf": TimeFrame.M30, "excc": 720}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True)
+        ram = RAM(min_amount=10, max_amount=100, risk_to_reward=3, risk=0.1)
+        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=True, ram=ram, hedge_order=True,
+                                         track_loss=True, hedger_params={"hedge_point": 0.5})
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -98,7 +101,7 @@ class FFATR(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

@@ -66,7 +66,7 @@ class TelegramBot:
 
         return self.extract_order(reply, order)
 
-    async def order_confirmation(self, *, order: dict, order_format: str = '', tries=3) -> bool:
+    async def get_order_confirmation(self, *, order: dict, order_format: str = '', tries=3) -> bool:
         try:
             order_format = order_format or self.order_format
             order_msg = order_format.format(timeout=self.confirmation_timeout, **order)

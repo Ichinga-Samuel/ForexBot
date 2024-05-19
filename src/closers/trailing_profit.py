@@ -1,112 +1,95 @@
 from logging import getLogger
 
-from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, Config, OrderSendResult
+from aiomql import Order, TradeAction, OrderType, TradePosition, Symbol, Positions, OrderSendResult
 
-from ..utils.sym_utils import calc_profit
-
+from ..utils.order_utils import calc_profit
+from .track_order import OpenOrder
 logger = getLogger(__name__)
 
 
-async def trail_tp(*, position: TradePosition):
+async def trail_tp(*, position: TradePosition, order: OpenOrder):
     try:
-        config = Config()
-        order = config.state['winning'][position.ticket]
-        start_trailing = order['start_trailing']
-
-        if start_trailing:
+        params = order.track_profit_params
+        start_trailing = params['start_trailing']
+        if start_trailing and position.profit >= params['trail_start']:
             symbol = Symbol(name=position.symbol)
             await symbol.init()
-            await modify_stops(position=position, order=order)
-
+            await modify_stops(position=position, params=params)
     except Exception as err:
         logger.error(f"{err} in modify_stop for {position.symbol}:{position.ticket}")
 
 
-async def modify_stops(*, position: TradePosition, order: dict, extra: float = 0.0, tries: int = 4):
+async def modify_stops(*, position: TradePosition, params: dict, extra: float = 0.0, tries: int = 4):
     try:
-        config = Config()
-        positions = await Positions().positions_get(ticket=position.ticket)
-        position = positions[0]
+        pos = Positions()
+        position = await pos.position_get(ticket=position.ticket)
         sym = Symbol(name=position.symbol)
         await sym.init()
 
-        fixed_closer = config.state['fixed_closer'][position.ticket]
-        try:
-            if order['use_trails']:
-                trails = order['trails']
-                keys = trails.keys()
-                if len(keys):
-                    keys = sorted(keys)
-                    take_profit = keys[0]
-                    adjust = trails[take_profit]
-                    if position.profit >= take_profit:
-                        fixed_closer['close'] = True
-                        fixed_closer['cut_off'] = adjust
-                        trails.pop(take_profit)
-                        if len(trails.keys()) == 0:
-                            order['use_trails'] = False
-        except Exception as err:
-            logger.error(f"Error in use_trails due to {err} for {position.symbol}:{position.ticket}")
-            order['use_trails'] = False
-
-        last_profit = order['last_profit']
-        trail_start = order['trail_start']
-        if position.profit < trail_start:
+        previous_profit = params['previous_profit']
+        if position.profit <= previous_profit:
             return
 
-        if position.profit <= last_profit:
-            return
-
-        current_profit = order['current_profit']
+        expected_profit = params['expected_profit']
         full_points = int(abs(position.price_open - position.tp) / sym.point)
-        trail = order['trail']
-        trail = trail / current_profit
+        trail = params['trail']
+        trail = trail / expected_profit
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        extend_by = order['extend_by']
-        extend = extend_by / current_profit
-        sl_points = int(trail * captured_points)
+        extend_by = params['extend_by']
+        extend = extend_by / expected_profit
+        sl_points = trail * captured_points
         stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
         sl_points = max(sl_points, stops_level)
         sl_value = round(sl_points * sym.point, sym.digits)
         tp_points = full_points * extend
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
+        change_sl = False
+        extend_start = params['extend_start']
+        tick = await sym.info_tick()
 
-        extend_start = order['extend_start']
         if position.type == OrderType.BUY:
-            sl = position.price_current - sl_value
-            assert sl > max(position.sl, position.price_open), f"current_sl={position.sl} >than new sl={sl} in long"
-            if position.profit >= (extend_start * current_profit):
+            sl = tick.ask - sl_value
+            if sl > max(position.sl, position.price_open):
+                change_sl = True
+            else:
+                sl = position.sl
+
+            if position.profit >= (extend_start * expected_profit):
                 tp = position.tp + tp_value
                 change_tp = True
             else:
                 tp = position.tp
         else:
             sl = position.price_current + sl_value
-            assert sl < min(position.sl, position.price_open), f"current_sl={position.sl} <than new {sl=} in short"
-            if position.profit >= (extend_start * current_profit):
+            if sl < min(position.sl, position.price_open):
+                change_sl = True
+            else:
+                sl = position.sl
+
+            if position.profit >= (extend_start * expected_profit):
                 tp = position.tp - tp_value
                 change_tp = True
             else:
                 tp = position.tp
 
+        if change_sl is False and change_tp is False:
+            return
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            order['last_profit'] = position.profit
-            order['trailing'] = True
-            logger.warning(f"Changed Stop Levels for {position.symbol}:{position.ticket} from"
-                           f" {position.sl}:{position.tp} to {sl=}{tp=}")
+            params['previous_profit'] = position.profit
+            params['trailing'] = True
+            logger.info(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
-                order['current_profit'] = new_profit
+                params['expected_profit'] = new_profit
+                logger.info(f"Extended take profit target for {position.symbol}:{position.ticket} to {new_profit}")
 
         elif res.retcode == 10016 and tries > 0:
-            await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)
+            await modify_stops(position=position, params=params, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
-    except AssertionError as err:
-        logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}: AssertionError")
     except Exception as err:
         logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}")
 

@@ -4,7 +4,9 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
+from ..utils.ram import RAM
 from ..traders.sp_trader import SPTrader
+from ..closers.adx_closer import adx_closer
 
 logger = getLogger(__name__)
 
@@ -26,14 +28,16 @@ class ADXATR(Strategy):
     adx_cutoff: int
     atr_factor: float
     atr_length: int
-    parameters = {"first_ema": 2, "second_ema": 3, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50,
-                  "atr_multiplier": 2.5, "adx_cutoff": 25, "atr_factor": 1.5, "atr_length": 14, "ecc": 720,
-                  "etf": TimeFrame.H1}
+    parameters = {"first_ema": 2, "second_ema": 5, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50,
+                  "atr_multiplier": 2, "adx_cutoff": 25, "atr_factor": 1, "atr_length": 14, "ecc": 720,
+                  "etf": TimeFrame.H1, "excc": 720, "exit_function": adx_closer, "exit_timeframe": TimeFrame.H1
+                  }
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, track_trades=False)
+        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=3, risk=0.1)
+        self.trader = trader or SPTrader(symbol=self.symbol, use_exit_signal=True, ram=ram)
         self.tracker: Tracker = Tracker(snooze=self.interval.time)
 
     async def check_trend(self):
@@ -64,8 +68,8 @@ class ADXATR(Strategy):
 
             current = candles[-1]
             prev = candles[-2]
-            higher_high = (current.high > prev.high) or (current.low > prev.low)
-            lower_low = (current.low < prev.low) or (current.high < prev.high)
+            higher_high = current.high > prev.high
+            lower_low = current.low < prev.low
 
             if (current.is_bullish() and current.pan and current.adx >= 25
                 and all([current.cas, current.caf, current.fas]) and higher_high):
@@ -85,7 +89,7 @@ class ADXATR(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:
