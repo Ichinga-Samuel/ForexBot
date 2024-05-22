@@ -56,12 +56,15 @@ class TrackOrder:
             if self.order.use_exit_signal and self.order.exit_function is not None:
                 await self.order.exit_function(position=self.position)
 
+            print('Using profit tracker')
             if self.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:
                 await self.order.profit_tracker(position=self.position, order=self.order)
 
+            print('Using loss tracker')
             if self.position.profit < 0 and self.order.track_loss and self.order.loss_tracker is not None:
                 await self.order.loss_tracker(position=self.position, order=self.order)
 
+            print('Using profit checker')
             if self.order.check_profit and self.order.profit_checker is not None:
                 await self.order.profit_checker(position=self.position, order=self.order)
         except (KeyError, RuntimeError) as _:

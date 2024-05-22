@@ -75,6 +75,7 @@ async def modify_stops(*, position: TradePosition, params: dict, extra: float = 
                 tp = position.tp
 
         if change_sl is False and change_tp is False:
+            logger.warning(f"No changes made to stops for {position.symbol}:{position.ticket}")
             return
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:

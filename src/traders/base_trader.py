@@ -98,6 +98,7 @@ class BaseTrader(Trader):
                               hedge_tracker=self.hedge_tracker, strategy_parameters=self.parameters.copy())
 
             if self.use_exit_signal and (exit_function := self.parameters.get('exit_function')) is not None:
+                print(f"Using exit function for {self.parameters.get('name', '')}")
                 order.exit_function = exit_function
 
             if self.hedge_order:

@@ -18,6 +18,8 @@ async def atr_trailer(*, position: TradePosition, order: OpenOrder):
         start_trailing = params['start_trailing']
         if start_trailing and position.profit > trail_start * expected_profit and position.profit > previous_profit:
             await modify_stops(position=position, order=order)
+        else:
+            logger.warning(f"Trailing not started for {position.symbol}:{position.ticket} {position.profit=}{expected_profit=}")
     except Exception as err:
         logger.error(f"{err} in atr_trailer for {position.symbol}:{position.ticket}")
 
@@ -80,6 +82,7 @@ async def modify_stops(*, position: TradePosition, order: OpenOrder, extra: floa
                 tp = position.tp
 
         if change_tp is False and change_sl is False:
+            logger.warning(f"Stops not changed for {position.symbol}:{position.ticket}")
             return
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:

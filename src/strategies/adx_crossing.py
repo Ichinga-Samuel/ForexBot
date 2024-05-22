@@ -25,12 +25,12 @@ class ADXCrossing(Strategy):
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30, "ecc": 864,
-                  "atr_multiplier": 1.5, "adx_cutoff": 25, "atr_factor": 0.5, "atr_length": 14, "excc": 864}
+                  "atr_multiplier": 0.75, "adx_cutoff": 25, "atr_factor": 0.1, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=3, risk=0.1)
+        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=1, risk=0.1)
         self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
@@ -69,7 +69,10 @@ class ADXCrossing(Strategy):
                 tp = current.close - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
-                self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
+                sl = min(second.low, first.low)
+                tp = current.close + (current.atr * self.atr_multiplier)
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
+                # self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.interval.time, order_type=None)

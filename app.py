@@ -3,4 +3,4 @@ from aiomql import Bot
 
 
 if __name__ == '__main__':
-    Bot.run_bots(funcs={derived_2: {}, crypto: {}, derived: {}, deriv_scalper: {}})
+    Bot.run_bots(funcs={crypto: {}, deriv_scalper: {}})

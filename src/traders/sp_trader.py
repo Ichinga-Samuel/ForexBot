@@ -37,5 +37,7 @@ class SPTrader(BaseTrader):
             if not await self.check_order():
                 return
             await self.send_order()
+        except RuntimeError as _:
+            pass
         except Exception as err:
             logger.error(f"{err} in {self.__class__.__name__}.place_trade for {self.symbol}")

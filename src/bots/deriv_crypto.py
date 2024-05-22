@@ -15,10 +15,10 @@ def build_bot():
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
                         filename='logs/deriv_crypto.log', datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
-    syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD', 'BNBUSD', 'XRPUSD']
-    # "EURUSD", "GBPUSD", "AUDUSD", "NZDUSD", "USDJPY", "USDCHF", "USDCAD"
+    syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD', 'BNBUSD', 'XRPUSD',
+            "EURUSD", "GBPUSD", "AUDUSD", "NZDUSD", "USDJPY", "USDCHF", "USDCAD"]
     ff_syms = [ForexSymbol(name=sym) for sym in syms]
-    ff_sts = [ST(symbol=sym) for sym in ff_syms for ST in [FFATR, ADXCrossing, ADXATR]]
+    ff_sts = [ST(symbol=sym) for sym in ff_syms for ST in [FFATR, ADXCrossing]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

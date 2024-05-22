@@ -44,5 +44,7 @@ async def adx_closer(*, position: TradePosition, order: OpenOrder):
             else:
                 adjust = cp_params['adjust']
                 cp_params |= {'check_point': max(position.profit - adjust, adjust), 'close': True}
+        else:
+            logger.warning(f"ADX closer not triggered for {position.symbol}:{position.ticket}")
     except Exception as exe:
         logger.error(f'An error occurred in function adx_closer {exe}')
