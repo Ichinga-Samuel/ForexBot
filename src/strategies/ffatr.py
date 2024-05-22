@@ -37,7 +37,8 @@ class FFATR(Strategy):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         ram = RAM(min_amount=10, max_amount=100, risk_to_reward=2, risk=0.1)
         self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, hedge_order=True,
-                                         track_loss=True, hedger_params={"hedge_point": 0.75}, use_exit_signal=True)
+                                         track_loss_params={"trail_start": 0.75}, track_loss=True,
+                                         hedger_params={"hedge_point": 0.75}, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -100,10 +101,7 @@ class FFATR(Strategy):
                 tp = current.close - (self.atr_multiplier * current.atr * self.trader.ram.risk_to_reward)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
-                sl = current.high + (self.atr_multiplier * current.atr)
-                tp = current.close - (self.atr_multiplier * current.atr * self.trader.ram.risk_to_reward)
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
-                # self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
+                self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.interval.time, order_type=None)

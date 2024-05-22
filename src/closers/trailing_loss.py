@@ -10,16 +10,14 @@ logger = getLogger(__name__)
 
 async def trail_sl(*, position: TradePosition, order: OpenOrder):
     try:
-        print('Using Trailing Stop Loss')
         params = order.track_loss_params
         trail_start = params['trail_start']
         previous_profit = params['previous_profit']
-        loss = params['expected_loss']
+        loss = abs(params['expected_loss'])
         trail_loss = round(trail_start * loss, 2) * -1
         trailing = params['trailing']
         if trailing and position.profit < previous_profit and position.profit <= trail_loss:
             await modify_sl(position=position, params=params)
-        logger.warning(f"Trailing stop loss not started for {position.symbol}:{position.ticket} {position.profit=}{loss=}")
     except Exception as exe:
         logger.error(f'Trailing stop loss for {position.symbol}:{position.ticket} failed due to {exe}')
 

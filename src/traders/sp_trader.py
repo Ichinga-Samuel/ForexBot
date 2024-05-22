@@ -13,7 +13,7 @@ class SPTrader(BaseTrader):
         cp = kwargs.pop('check_profit_params', {})
         tp = kwargs.pop('track_profit_params', {})
         check_profit_params = {'use_check_points': False} | cp
-        track_profit_params = {'trail_start': 0.3, 'trail': 2, 'trailing': True, 'extend_start': 0.8} | tp
+        track_profit_params = {'trail_start': 0.5, 'trail': 2, 'trailing': True, 'extend_start': 0.8} | tp
         super().__init__(symbol=symbol, ram=ram, hedge_order=hedge_order, profit_tracker=profit_tracker,
                          check_profit_params=check_profit_params, track_profit_params=track_profit_params,
                          **kwargs)

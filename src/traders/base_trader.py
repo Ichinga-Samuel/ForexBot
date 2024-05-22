@@ -102,15 +102,19 @@ class BaseTrader(Trader):
                 order.exit_function = exit_function
 
             if self.hedge_order:
+                print(f"Using hedger for {self.parameters.get('name', '')}")
                 order.hedger_params = self.hedger_params.copy()
 
             if self.track_profit:
+                print(f"Using profit tracker for {self.parameters.get('name', '')}")
                 order.track_profit_params = self.track_profit_params.copy()
 
             if self.track_loss:
+                print(f"Using loss tracker for {self.parameters.get('name', '')}")
                 order.track_loss_params = self.track_loss_params.copy()
 
             if self.check_profit:
+                print(f"Using profit checker for {self.parameters.get('name', '')}")
                 order.check_profit_params = self.check_profit_params.copy()
 
             self.config.state['order_tracker'][result.order] = order

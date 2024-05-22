@@ -69,10 +69,7 @@ class ADXCrossing(Strategy):
                 tp = current.close - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
-                sl = min(second.low, first.low)
-                tp = current.close + (current.atr * self.atr_multiplier)
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
-                # self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
+                self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.interval.time, order_type=None)

@@ -54,7 +54,7 @@ class TrackOrder:
                 await self.order.hedge_tracker(position=self.position, order=self.order)
 
             if self.order.use_exit_signal and self.order.exit_function is not None:
-                await self.order.exit_function(position=self.position)
+                await self.order.exit_function(position=self.position, order=self.order)
 
             print('Using profit tracker')
             if self.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:

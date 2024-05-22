@@ -23,7 +23,6 @@ async def monitor(*, tf: int = 31):
                 open_trades = [TrackOrder(position=position) for position in positions if position.ticket in tracked]
                 closers = [trade.track() for trade in open_trades]
                 tasks.extend(closers)
-
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)
         except Exception as exe:
