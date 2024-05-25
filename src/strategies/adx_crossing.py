@@ -4,7 +4,6 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..utils.ram import RAM
 from ..utils.top_bottom import double_top, double_bottom
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
@@ -25,13 +24,12 @@ class ADXCrossing(Strategy):
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 14, "exit_timeframe": TimeFrame.M30,
-                  "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 25, "atr_factor": 0.25, "atr_length": 14, "excc": 864}
+                  "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 20, "atr_factor": 0.25, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=2, risk=0.1)
-        self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, use_exit_signal=True)
+        self.trader = trader or SPTrader(symbol=self.symbol, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
     async def check_trend(self):
@@ -45,12 +43,12 @@ class ADXCrossing(Strategy):
             candles.ta.atr(append=True, length=self.atr_length)
             candles.rename(inplace=True, **{f"ADX_{self.adx}": "adx", f"DMP_{self.adx}": "dmp",
                                             f"DMN_{self.adx}": "dmn", f"ATRr_{self.atr_length}": "atr"})
-            candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
-            candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp)
+            candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
+            candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)
             current = candles[-1]
-            if current.adx > 25 and current.pxn:
+            if current.adx > self.adx_cutoff and current.pxn:
                 self.tracker.update(trend="bullish")
-            elif current.adx > 25 and current.nxp:
+            elif current.adx > self.adx_cutoff and current.nxp:
                 self.tracker.update(trend="bearish")
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

@@ -4,7 +4,6 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..utils.ram import RAM
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
 
@@ -36,10 +35,7 @@ class FFATR(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=2, risk=0.1)
-        self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, hedge_order=True,
-                                         track_loss_params={"trail_start": 0.75}, track_loss=True,
-                                         hedger_params={"hedge_point": 0.75}, use_exit_signal=True)
+        self.trader = trader or SPTrader(symbol=self.symbol, hedge_order=True, track_loss=True, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -54,13 +50,12 @@ class FFATR(Strategy):
             c_candles.ta.adx(append=True)
             c_candles.rename(inplace=True, **{f"EMA_{self.trend_ema}": "ema", "ADX_14": "adx", "DMP_14": "dmp",
                                               "DMN_14": "dmn"})
-            c_candles['cae'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema)
-            c_candles['cbe'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema)
+            c_candles['cae'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema, asint=False)
+            c_candles['cbe'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema, asint=False)
 
             c_current = c_candles[-1]
             if c_current.cae and c_current.adx >= 25 and c_current.dmp > c_current.dmn:
                 self.tracker.update(trend="bullish")
-
             elif c_current.cbe and c_current.adx >= 25 and c_current.dmn > c_current.dmp:
                 self.tracker.update(trend="bearish")
             else:
@@ -74,28 +69,26 @@ class FFATR(Strategy):
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
                                             f"ATRr_{self.atr_length}": "atr"})
-            candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
-            candles['nxp'] = candles.ta_lib.cross(candles.first, candles.second)
-            candles['caf'] = candles.ta_lib.above(candles.close, candles.first)
-            candles['fas'] = candles.ta_lib.above(candles.first, candles.second)
-            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first)
-            candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
+            candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
+            candles['nxp'] = candles.ta_lib.cross(candles.first, candles.second, asint=False)
+            candles['caf'] = candles.ta_lib.above(candles.close, candles.first, asint=False)
+            candles['fas'] = candles.ta_lib.above(candles.first, candles.second, asint=False)
+            candles['cbf'] = candles.ta_lib.below(candles.close, candles.first, asint=False)
+            candles['fbs'] = candles.ta_lib.below(candles.first, candles.second, asint=False)
+
             current = candles[-1]
+            prev = candles[-2]
             above = current.caf and current.fas and current.is_bullish()
             below = current.cbf and current.fbs and current.is_bearish()
-
-            m_candles = await self.symbol.copy_rates_from_pos(timeframe=TimeFrame.M30, count=4)
-            c, p = m_candles[-1], m_candles[-2]
-            higher_high = c.high > p.high or c.low > p.low
-            lower_low = c.low < p.low or c.high < p.high
-
+            higher_high = current.high > prev.high or current.low > prev.low
+            lower_low = current.low < prev.low or current.high < prev.high
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
 
             if self.tracker.bullish and up_trend:
                 for candle in reversed(candles):
                     if candle.pxn:
-                        sl = candle.close
+                        sl = candle.low
                         break
                 else:
                     sl = current.low - (self.atr_multiplier * current.atr)
@@ -106,11 +99,11 @@ class FFATR(Strategy):
             elif self.tracker.bearish and down_trend:
                 for candle in reversed(candles):
                     if candle.nxp:
-                        sl = candle.close
+                        sl = candle.high
                         break
                 else:
                     sl = current.high + (self.atr_multiplier * current.atr)
-                tp = current.close - (current.close - sl) * self.trader.ram.risk_to_reward
+                tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)

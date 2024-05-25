@@ -40,6 +40,7 @@ class BaseTrader(Trader):
                  check_profit_params: dict = None, track_orders: bool = True, hedger_params: dict = None,
                  profit_tracker=None, loss_tracker=None, profit_checker=None, hedger=None, hedge_tracker=None,
                  **kwargs):
+
         ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.use_telegram = use_telegram
         self.use_exit_signal = use_exit_signal
@@ -128,11 +129,12 @@ class BaseTrader(Trader):
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.track_order")
 
-    async def check_ram(self):
+    async def check_ram(self) -> bool:
+        if self.use_ram is False:
+            return True
         positions = await self.ram.get_open_positions(symbol=self.symbol.name)
         self.open_trades = [position.ticket for position in positions if position.ticket in self.open_trades]
-        if len(self.open_trades) >= self.ram.symbol_limit:
-            raise RuntimeError(f"Exceeds limit of open position for {self.symbol} in {self.__class__.__name__}")
+        return len(self.open_trades) >= self.ram.symbol_limit
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type

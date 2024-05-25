@@ -22,8 +22,11 @@ class PTrader(BaseTrader):
 
     async def place_trade(self, *, order_type: OrderType, parameters: dict = None):
         try:
-            if self.use_ram:
-                await self.check_ram()
+            ok = await self.check_ram()
+            if ok is False:
+                logger.info(f'Could not place trade due to RAM for {self.symbol}')
+                return
+
             self.parameters |= parameters.copy() or {}
             await self.create_order(order_type=order_type)
             if not await self.check_order():

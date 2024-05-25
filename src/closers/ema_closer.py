@@ -17,14 +17,14 @@ async def ema_closer(*, order: OpenOrder):
         await sym.init()
         exit_timeframe = parameters['exit_timeframe']
         exit_ema = parameters['exit_ema']
-        candles = await sym.copy_rates_from_pos(count=1000, timeframe=exit_timeframe)
+        candles = await sym.copy_rates_from_pos(count=720, timeframe=exit_timeframe)
         candles.ta.ema(length=exit_ema, append=True)
         candles.rename(**{f"EMA_{exit_ema}": "ema"})
 
         if position.type == OrderType.BUY:
-            candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False)
+            candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=False, asint=False)
         elif position.type == OrderType.SELL:
-            candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=True)
+            candles['cxe'] = candles.ta_lib.cross(candles.close, candles.ema, above=True, asint=False)
         else:
             return
         current = candles[-1]

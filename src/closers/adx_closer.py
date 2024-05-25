@@ -21,8 +21,8 @@ async def adx_closer(*, order: OpenOrder):
         adx = parameters['adx']
         candles.ta.adx(append=True, length=adx)
         candles.rename(**{f"ADX_{adx}": "adx", f"DMP_{adx}": "dmp", f"DMN_{adx}": "dmn"})
-        candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn)
-        candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp)
+        candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
+        candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)
         current = candles[-1]
 
         if position.type == OrderType.BUY and current.nxp:

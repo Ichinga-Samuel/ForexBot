@@ -2,7 +2,7 @@ from logging import getLogger
 
 from aiomql import OrderType, OrderSendResult
 
-from .base_trader import BaseTrader
+from src.traders.base_trader import BaseTrader
 
 logger = getLogger(__name__)
 

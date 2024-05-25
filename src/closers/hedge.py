@@ -34,7 +34,7 @@ async def hedge_position(*, order: OpenOrder):
         loss = calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume, order_type=req.type)
         hedge.expected_loss = loss
     except Exception as exe:
-        logger.error(f'An error occurred in function hedge {exe}')
+        logger.error(f'An error occurred in function hedge_position {exe.traceback}')
 
 
 async def make_hedge(*, position: TradePosition, hedge_params: dict) -> OrderSendResult:

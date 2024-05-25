@@ -43,8 +43,7 @@ class OpenOrder:
         return asdict(self)
 
     def update(self, **kwargs):
-        fields = self.__dict__
-        [setattr(self, key, value) for key, value in kwargs.items() if key in fields]
+        [setattr(self, key, value) for key, value in kwargs.items() if key in self.__dict__]
 
 
 class TrackOrder:

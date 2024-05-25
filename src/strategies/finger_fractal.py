@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..closers.adx_closer import adx_closer
-from ..traders.b_trader import BTrader
+from legacy.b_trader import BTrader
 
 logger = getLogger(__name__)
 

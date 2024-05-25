@@ -2,26 +2,28 @@ from aiomql import Candle
 
 
 def flat_top(*, first: Candle, second: Candle, tolerance=0.005) -> bool:
-    return (first.is_bullish() and second.is_bearish()
-            and (abs(first.close - second.open) / min(first.close, second.open) <= tolerance))
+    bb = first.is_bullish() and second.is_bearish()
+    cp = 1 - min(first.close, second.open) / max(first.close, second.open) <= tolerance
+    return bb and cp
 
 
 def flat_bottom(*, first: Candle, second: Candle, tolerance=0.005) -> bool:
-    return (first.is_bearish() and second.is_bullish()
-            and (abs(first.close - second.open) / min(first.close, second.open) <= tolerance))
+    bb = first.is_bearish() and second.is_bullish()
+    cp = 1 - min(first.close, second.open) / max(first.close, second.open) <= tolerance
+    return bb and cp
 
 
-def double_top(*, first: Candle, second: Candle, tolerance=0.001) -> bool:
+def double_top(*, first: Candle, second: Candle, tolerance=0.005) -> bool:
     bb = first.is_bullish() and second.is_bearish()
-    cp = abs(first.close - second.open) / min(first.close, second.open) <= tolerance
-    ch = abs(first.close - first.high) / min(first.close, first.high) <= tolerance
-    oh = abs(second.open - second.high) / min(second.open, second.high) <= tolerance
+    cp = 1 - min(first.close, second.open) / max(first.close, second.open) <= tolerance
+    ch = 1 - min(first.close, first.high) / max(first.close, first.high) <= tolerance * 2
+    oh = 1 - min(second.open, second.high) / max(second.open, second.high) <= tolerance * 2
     return bb and cp and ch and oh
 
 
-def double_bottom(*, first: Candle, second: Candle, tolerance=0.001) -> bool:
+def double_bottom(*, first: Candle, second: Candle, tolerance=0.005) -> bool:
     bb = first.is_bearish() and second.is_bullish()
-    cp = abs(first.close - second.open) / min(first.close, second.open) <= tolerance
-    cl = abs(first.close - first.low) / min(first.close, first.low) <= tolerance
-    ol = abs(second.open - second.low) / min(second.open, second.low) <= tolerance
+    cp = 1 - min(first.close, second.open) / max(first.close, second.open) <= tolerance
+    cl = 1 - min(first.close, first.low) / max(first.close, first.low) <= tolerance * 2
+    ol = 1 - min(second.open, second.low) / max(second.open, second.low) <= tolerance * 2
     return bb and cp and cl and ol
