@@ -7,37 +7,33 @@ from .track_order import OpenOrder
 logger = getLogger(__name__)
 
 
-async def trail_tp(*, position: TradePosition, order: OpenOrder):
+async def trail_tp(*, order: OpenOrder):
     try:
-        print('Using Trailing Take Profit')
+        position = order.position
         params = order.track_profit_params
         start_trailing = params['start_trailing']
-        if start_trailing and position.profit >= params['trail_start']:
+        trail_start = params['trail_start'] * order.expected_profit
+        if start_trailing and position.profit >= max(trail_start, params['previous_profit']):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
-            await modify_stops(position=position, params=params)
+            await modify_stops(order=order)
     except Exception as err:
-        logger.error(f"{err} in modify_stop for {position.symbol}:{position.ticket}")
+        logger.error(f"{err} in modify_stop for {order.position.symbol}:{order.ticket}")
 
 
-async def modify_stops(*, position: TradePosition, params: dict, extra: float = 0.0, tries: int = 4):
+async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
     try:
         pos = Positions()
-        position = await pos.position_get(ticket=position.ticket)
+        position = await pos.position_get(ticket=order.ticket)
+        params = order.track_profit_params
         sym = Symbol(name=position.symbol)
         await sym.init()
-
-        previous_profit = params['previous_profit']
-        if position.profit <= previous_profit:
-            return
-
-        expected_profit = params['expected_profit']
+        expected_profit = order.expected_profit
         full_points = int(abs(position.price_open - position.tp) / sym.point)
         trail = params['trail']
-        trail = trail / expected_profit
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)
-        extend_by = params['extend_by']
-        extend = extend_by / expected_profit
+        extend_start = params['extend_start']
+        extend = 1 - extend_start
         sl_points = trail * captured_points
         stops_level = int(sym.trade_stops_level + sym.spread * (1 + extra))
         sl_points = max(sl_points, stops_level)
@@ -46,7 +42,6 @@ async def modify_stops(*, position: TradePosition, params: dict, extra: float = 
         tp_value = round(tp_points * sym.point, sym.digits)
         change_tp = False
         change_sl = False
-        extend_start = params['extend_start']
         tick = await sym.info_tick()
 
         if position.type == OrderType.BUY:
@@ -75,25 +70,25 @@ async def modify_stops(*, position: TradePosition, params: dict, extra: float = 
                 tp = position.tp
 
         if change_sl is False and change_tp is False:
-            logger.warning(f"No changes made to stops for {position.symbol}:{position.ticket}")
             return
+
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
             params['previous_profit'] = position.profit
             params['trailing'] = True
-            logger.error(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
+            logger.info(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
-                params['expected_profit'] = new_profit
-                logger.error(f"Extended take profit target for {position.symbol}:{position.ticket} to {new_profit}")
+                order.expected_profit = new_profit
+                logger.info(f"Extended take profit target for {position.symbol}:{position.ticket} to {tp}")
 
         elif res.retcode == 10016 and tries > 0:
-            await modify_stops(position=position, params=params, extra=(extra + 0.01), tries=tries - 1)
+            await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
     except Exception as err:
-        logger.error(f"Trailing profits failed due to {err} for {position.symbol}:{position.ticket}")
+        logger.error(f"Trailing profits failed due to {err} for {order.position.symbol}:{order.position.ticket}")
 
 
 async def send_order(position: TradePosition, sl: float, tp: float) -> OrderSendResult:

@@ -2,17 +2,18 @@ from typing import Callable, NewType, TypeVar
 from dataclasses import dataclass, asdict
 from logging import getLogger
 
-from aiomql import TradePosition
+from aiomql import TradePosition, Config
 
 logger = getLogger(__name__)
 
 OpenOrder = TypeVar('OpenOrder')
 
-OrderTracker = NewType('OrderTracker', Callable[[TradePosition, OpenOrder], None])
+OrderTracker = NewType('OrderTracker', Callable[[OpenOrder], None])
 
 
 @dataclass
 class OpenOrder:
+    symbol: str
     ticket: int
     use_exit_signal: bool
     hedge_order: bool
@@ -32,40 +33,44 @@ class OpenOrder:
     strategy_parameters: dict = None
     hedged: bool = False
     hedged_order: OpenOrder = None
+    expected_profit: float = 0.0
+    expected_loss: float = 0.0
+    position: TradePosition = None
+    config: Config = Config()
 
     @property
     def data(self) -> dict:
         return asdict(self)
 
+    def update(self, **kwargs):
+        fields = self.__dict__
+        [setattr(self, key, value) for key, value in kwargs.items() if key in fields]
+
 
 class TrackOrder:
     order: OpenOrder
 
-    def __init__(self, *, position: TradePosition):
-        self.position = position
-        self.order = self.position.config.state['order_tracker'][self.position.ticket]
+    def __init__(self, *, order: OpenOrder):
+        self.order = order
 
     async def track(self):
         try:
-            if self.position.profit < 0 and self.order.hedge_order and self.order.hedger is not None:
-                await self.order.hedger(position=self.position, order=self.order)
+            if self.order.position.profit < 0 and self.order.hedge_order and self.order.hedger is not None:
+                await self.order.hedger(order=self.order)
 
             if self.order.hedged and self.order.hedged_order is not None:
-                await self.order.hedge_tracker(position=self.position, order=self.order)
+                await self.order.hedge_tracker(order=self.order)
 
             if self.order.use_exit_signal and self.order.exit_function is not None:
-                await self.order.exit_function(position=self.position, order=self.order)
+                await self.order.exit_function(order=self.order)
 
-            print('Using profit tracker')
-            if self.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:
-                await self.order.profit_tracker(position=self.position, order=self.order)
+            if self.order.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:
+                await self.order.profit_tracker(order=self.order)
 
-            print('Using loss tracker')
-            if self.position.profit < 0 and self.order.track_loss and self.order.loss_tracker is not None:
-                await self.order.loss_tracker(position=self.position, order=self.order)
+            if self.order.position.profit < 0 and self.order.track_loss and self.order.loss_tracker is not None:
+                await self.order.loss_tracker(order=self.order)
 
-            print('Using profit checker')
             if self.order.check_profit and self.order.profit_checker is not None:
-                await self.order.profit_checker(position=self.position, order=self.order)
-        except (KeyError, RuntimeError) as _:
-            pass
+                await self.order.profit_checker(order=self.order)
+        except Exception as exe:
+            logger.error(f"Error tracking order: {exe}")

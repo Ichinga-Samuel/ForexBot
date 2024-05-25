@@ -8,25 +8,23 @@ from .track_order import OpenOrder
 logger = getLogger(__name__)
 
 
-async def atr_trailer(*, position: TradePosition, order: OpenOrder):
+async def atr_trailer(*, order: OpenOrder):
     try:
-        print('Using Atr Trailer')
+        position = order.position
         params = order.track_profit_params
         previous_profit = params['previous_profit']
-        expected_profit = params['expected_profit']
+        expected_profit = order.expected_profit
         trail_start = params['trail_start']
         start_trailing = params['start_trailing']
-        if start_trailing and position.profit > trail_start * expected_profit and position.profit > previous_profit:
-            await modify_stops(position=position, order=order)
-        else:
-            logger.warning(f"Trailing not started for {position.symbol}:{position.ticket} {position.profit=}{expected_profit=}")
+        if start_trailing and position.profit > max(trail_start * expected_profit, previous_profit):
+            await modify_stops(order=order)
     except Exception as err:
-        logger.error(f"{err} in atr_trailer for {position.symbol}:{position.ticket}")
+        logger.error(f"{err} in atr_trailer for {order.position.symbol}:{order.ticket}")
 
 
-async def modify_stops(*, position: TradePosition, order: OpenOrder, extra: float = 0.0, tries: int = 4):
+async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
     try:
-        position = await Positions().position_get(ticket=position.ticket)
+        position = await Positions().position_get(ticket=order.position.ticket)
         params = order.strategy_parameters
         tp_params = order.track_profit_params
         symbol = Symbol(name=position.symbol)
@@ -40,34 +38,31 @@ async def modify_stops(*, position: TradePosition, order: OpenOrder, extra: floa
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
         current = candles[-1]
         tick = await symbol.info_tick()
-        expected_profit = tp_params['expected_profit']
-        extend_profit = tp_params['extend_profit']
-        change_tp = False
-        change_sl = False
+        expected_profit = order.expected_profit
+        extend_start = tp_params['extend_start']
+
         min_points = symbol.trade_stops_level + symbol.spread * (1 + extra)
         min_value = round(min_points * symbol.point, symbol.digits)
+        atr_value = current.atr * atr_factor
+        if atr_value < min_value:
+            atr_value = min_value
+            logger.warning(f"Minimum stop levels used for {position.symbol} {current.atr=}{atr_factor=} in atr_trailer")
 
+        change_tp = False
+        change_sl = False
         if position.type == OrderType.BUY:
-            atr_value = current.atr * atr_factor
-            if atr_value < min_value:
-                atr_value = min_value
-                logger.warning(f"Minimum stop levels used for {position.symbol} in atr_trailer")
             sl = tick.ask - atr_value
             if sl > max(position.sl, position.price_open):
                 sl = round(sl, symbol.digits)
                 change_sl = True
             else:
                 sl = position.sl
-            if position.profit / expected_profit > extend_profit:
-                tp = round(position.tp + current.atr, symbol.digits)
+            if position.profit / expected_profit >= extend_start:
+                tp = round(position.tp + current.atr * atr_factor, symbol.digits)
                 change_tp = True
             else:
                 tp = position.tp
         else:
-            atr_value = current.atr * atr_factor
-            if atr_value < min_value:
-                atr_value = min_value
-                logger.warning(f"Minimum stop levels used for {position.symbol} in atr_trailer")
             sl = tick.bid + atr_value
             if sl < min(position.sl, position.price_open):
                 sl = round(sl, symbol.digits)
@@ -75,31 +70,32 @@ async def modify_stops(*, position: TradePosition, order: OpenOrder, extra: floa
             else:
                 sl = position.sl
 
-            if position.profit / expected_profit > extend_profit:
-                tp = round(position.tp - current.atr, symbol.digits)
+            if position.profit / expected_profit >= extend_start:
+                tp = round(position.tp - current.atr * atr_factor, symbol.digits)
                 change_tp = True
             else:
                 tp = position.tp
 
         if change_tp is False and change_sl is False:
-            logger.warning(f"Stops not changed for {position.symbol}:{position.ticket}")
             return
+
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            params['previous_profit'] = position.profit
+            tp_params['previous_profit'] = position.profit
             logger.error(f"Changed sl for {position.symbol}:{position.ticket} to {sl} and tp to {tp}")
+
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
-                order['expected_profit'] = new_profit
-                logger.error(f"Changed expected profit to {new_profit} for {position.symbol}:{position.ticket}")
+                order.expected_profit = new_profit
+                logger.info(f"Changed expected profit to {new_profit} for {position.symbol}:{position.ticket}")
 
         elif res.retcode == 10016 and tries > 0:
-            await modify_stops(position=position, order=order, extra=(extra + 0.01), tries=tries - 1)
+            await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
     except Exception as err:
-        logger.error(f"atr_trailer failed due to {err} for {position.symbol}:{position.ticket}")
+        logger.error(f"atr_trailer failed due to {err} for {order.position.symbol}:{order.position.ticket}")
 
 
 async def send_order(position: TradePosition, sl: float, tp: float) -> OrderSendResult:

@@ -3,10 +3,10 @@ import asyncio
 
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
-from ..utils.tracker import Tracker
-from ..utils.ram import RAM
-from ..closers.adx_closer import adx_closer
-from ..traders.sp_trader import SPTrader
+from src.utils.tracker import Tracker
+from src.utils.ram import RAM
+from src.closers.adx_closer import adx_closer
+from src.traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 

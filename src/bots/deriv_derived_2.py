@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import ADXCrossing, ADXATR, FFATR
+from ..strategies import ADXCrossing, FFATR
 from ..closers import monitor
 
 

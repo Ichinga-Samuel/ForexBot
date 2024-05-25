@@ -4,19 +4,17 @@ from aiomql import OrderType
 
 from .base_trader import BaseTrader
 from ..closers.atr_trailer import atr_trailer
+from ..closers.check_profits import ratio_check_profit
 
 logger = getLogger(__name__)
 
 
 class SPTrader(BaseTrader):
-    def __init__(self, *, symbol, ram, hedge_order=False, profit_tracker=atr_trailer, **kwargs):
-        cp = kwargs.pop('check_profit_params', {})
-        tp = kwargs.pop('track_profit_params', {})
-        check_profit_params = {'use_check_points': False} | cp
-        track_profit_params = {'trail_start': 0.5, 'trail': 2, 'trailing': True, 'extend_start': 0.8} | tp
+    def __init__(self, *, symbol, ram, hedge_order=False, profit_tracker=atr_trailer,
+                 profit_checker=ratio_check_profit, **kwargs):
+        check_profit_params = {'use_check_points': False} | kwargs.pop('check_profit_params', {})
         super().__init__(symbol=symbol, ram=ram, hedge_order=hedge_order, profit_tracker=profit_tracker,
-                         check_profit_params=check_profit_params, track_profit_params=track_profit_params,
-                         **kwargs)
+                         check_profit_params=check_profit_params, profit_checker=profit_checker, **kwargs)
 
     async def create_order(self, *, order_type: OrderType, sl: float, tp: float):
         amount = await self.ram.get_amount()

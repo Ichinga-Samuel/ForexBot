@@ -5,7 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..utils.ram import RAM
-from ..utils.flat_top_bottom import flat_bottom, flat_top
+from ..utils.top_bottom import double_top, double_bottom
 from ..closers.adx_closer import adx_closer
 from ..traders.sp_trader import SPTrader
 
@@ -24,24 +24,23 @@ class ADXCrossing(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
-    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30, "ecc": 864,
-                  "atr_multiplier": 0.75, "adx_cutoff": 25, "atr_factor": 0.1, "atr_length": 14, "excc": 864}
+    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 3, "exit_timeframe": TimeFrame.M30,
+                  "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 25, "atr_factor": 0.25, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=1, risk=0.1)
+        ram = RAM(min_amount=5, max_amount=100, risk_to_reward=2, risk=0.1)
         self.trader = trader or SPTrader(symbol=self.symbol, ram=ram, use_exit_signal=True)
         self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
     async def check_trend(self):
         try:
             candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.ecc)
-            if not ((current := candles[-1].time) >= self.tracker.entry_time):
+            if (current := candles[-1].time) < self.tracker.entry_time:
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, entry_time=current, order_type=None)
-
             candles.ta.adx(length=self.adx, append=True)
             candles.ta.atr(append=True, length=self.atr_length)
             candles.rename(inplace=True, **{f"ADX_{self.adx}": "adx", f"DMP_{self.adx}": "dmp",
@@ -59,12 +58,12 @@ class ADXCrossing(Strategy):
             second = candles[-2]
             first = candles[-3]
 
-            if self.tracker.bullish and flat_bottom(first=first, second=second):
+            if self.tracker.bullish and double_bottom(first=first, second=second) and current.is_bullish():
                 sl = min(second.low, first.low)
                 tp = current.close + (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
-            elif self.tracker.bearish and flat_top(first=first, second=second):
+            elif self.tracker.bearish and double_top(first=first, second=second) and current.is_bearish():
                 sl = max(second.high, first.high)
                 tp = current.close - (current.atr * self.atr_multiplier)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)

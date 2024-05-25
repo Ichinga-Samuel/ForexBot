@@ -3,7 +3,7 @@ from functools import cache
 
 from aiomql import OrderType, Trader, ForexSymbol, OrderSendResult
 from ..utils.ram import RAM
-from ..utils.order_utils import calc_loss
+from ..utils.order_utils import calc_profit
 from ..closers.track_order import OpenOrder
 from ..closers.trailing_profit import trail_tp
 from ..closers.trailing_loss import trail_sl
@@ -15,18 +15,20 @@ logger = getLogger(__name__)
 
 
 class BaseTrader(Trader):
-    track_profit_params = {'trail_start': 15, 'trail': 4, 'trailing': False,
-                           'extend_start': 0.8, 'start_trailing': True, 'extend_by': 4, 'adjust': 1.5,
+    track_profit_params = {'trail_start': 0.6, 'trail': 0.15, 'trailing': True,
+                           'extend_start': 0.8, 'start_trailing': True,
                            'previous_profit': 0}
 
     track_loss_params = {'trail_start': 0.5, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
 
     check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': True,
-                           "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1}, 'adjust': 1.5}
+                           "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1},
+                           'hedge_adjust': 0.8, 'exit_adjust': 0.9}
 
-    hedger_params = {'hedge_point': 0.58, 'hedge_cutoff': 0, 'hedge_vol': 1, 'adjust': 1.5}
+    hedger_params = {'hedge_point': 0.58, 'hedge_close': 0, 'hedge_vol': 1}
     open_trades: list[int]
+    open_order: OpenOrder
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}
                    \rHint: reply with 'ok' to confirm or 'cancel' to cancel in {timeout} seconds from now.
                    \rNo reply will be considered as 'cancel'."""
@@ -58,6 +60,12 @@ class BaseTrader(Trader):
         self.hedger = hedger or hedge_position
         self.hedge_tracker = hedge_tracker or track_hedge
         super().__init__(symbol=symbol, ram=ram)
+        self.open_order = OpenOrder(symbol=symbol.name, ticket=0, use_exit_signal=self.use_exit_signal,
+                                    hedge_order=self.hedge_order, track_loss=self.track_loss,
+                                    track_profit=self.track_profit, check_profit=self.check_profit,
+                                    profit_checker=self.profit_checker, hedger=self.hedger,
+                                    profit_tracker=self.profit_tracker,
+                                    loss_tracker=self.loss_tracker, hedge_tracker=self.hedge_tracker)
 
     @property
     @cache
@@ -91,33 +99,29 @@ class BaseTrader(Trader):
         try:
             if self.track_orders is False:
                 return
-            order = OpenOrder(ticket=result.order, use_exit_signal=self.use_exit_signal, hedge_order=self.hedge_order,
-                              track_loss=self.track_loss, track_profit=self.track_profit,
-                              check_profit=self.check_profit, profit_checker=self.profit_checker, hedger=self.hedger,
-                              profit_tracker=self.profit_tracker, loss_tracker=self.loss_tracker,
-                              hedge_tracker=self.hedge_tracker, strategy_parameters=self.parameters.copy())
+            profit = calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.tp,
+                                 volume=self.order.volume, order_type=self.order.type)
+            loss = calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.sl,
+                               volume=self.order.volume, order_type=self.order.type)
+            self.open_order.update(ticket=result.order, expected_loss=loss, expected_profit=profit,
+                                   strategy_parameters=self.parameters.copy())
 
             if self.use_exit_signal and (exit_function := self.parameters.get('exit_function')) is not None:
-                print(f"Using exit function for {self.parameters.get('name', '')}")
-                order.exit_function = exit_function
+                self.open_order.exit_function = exit_function
 
             if self.hedge_order:
-                print(f"Using hedger for {self.parameters.get('name', '')}")
-                order.hedger_params = self.hedger_params.copy()
+                self.open_order.hedger_params = self.hedger_params.copy()
 
             if self.track_profit:
-                print(f"Using profit tracker for {self.parameters.get('name', '')}")
-                order.track_profit_params = self.track_profit_params.copy()
+                self.open_order.track_profit_params = self.track_profit_params.copy()
 
             if self.track_loss:
-                print(f"Using loss tracker for {self.parameters.get('name', '')}")
-                order.track_loss_params = self.track_loss_params.copy()
+                self.open_order.track_loss_params = self.track_loss_params.copy()
 
             if self.check_profit:
-                print(f"Using profit checker for {self.parameters.get('name', '')}")
-                order.check_profit_params = self.check_profit_params.copy()
+                self.open_order.check_profit_params = self.check_profit_params.copy()
 
-            self.config.state['order_tracker'][result.order] = order
+            self.config.state['tracked_orders'][result.order] = self.open_order
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.track_order")
 
@@ -150,15 +154,9 @@ class BaseTrader(Trader):
             raise RuntimeError("Order not confirmed")
         res = await super().send_order()
         if res.retcode == 10009:
-            profit = await self.order.calc_profit()
-            loss = calc_loss(sym=self.symbol, open_price=self.order.price, close_price=self.order.sl,
-                             volume=self.order.volume, order_type=self.order.type)
-            self.hedger_params['loss'] = abs(loss)
-            self.track_loss_params['expected_loss'] = abs(loss)
-            self.track_profit_params['expected_profit'] = profit
-            self.track_order(result=res)
             await self.notify(msg=f"Placed Trade for {self.symbol}")
             self.open_trades.append(res.order)
+            self.track_order(result=res)
         return res
 
     async def place_trade(self, *args, **kwargs):

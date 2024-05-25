@@ -3,9 +3,9 @@ import asyncio
 
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
-from ..utils.tracker import Tracker
-from ..closers.adx_closer import adx_closer
-from ..traders.point_trader import PointTrader
+from src.utils.tracker import Tracker
+from src.closers.adx_closer import adx_closer
+from src.traders.point_trader import PointTrader
 
 logger = getLogger(__name__)
 
