@@ -11,7 +11,7 @@ def build_bot():
     config = Config(config_dir='configs', filename='deriv_derived.json', reload=True,
                     records_dir='records/deriv_derived/')
     config.load_config()
-    config.state['order_tracker'] = {}
+    config.state['tracked_orders'] = {}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv_derived.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()

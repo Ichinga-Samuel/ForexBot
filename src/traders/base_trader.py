@@ -103,6 +103,7 @@ class BaseTrader(Trader):
                                  volume=self.order.volume, order_type=self.order.type)
             loss = calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.sl,
                                volume=self.order.volume, order_type=self.order.type)
+
             self.open_order.update(ticket=result.order, expected_loss=loss, expected_profit=profit,
                                    strategy_parameters=self.parameters.copy())
 
@@ -120,8 +121,10 @@ class BaseTrader(Trader):
 
             if self.check_profit:
                 self.open_order.check_profit_params = self.check_profit_params.copy()
-
-            self.config.state['tracked_orders'][result.order] = self.open_order
+            try:
+                self.config.state['tracked_orders'][result.order] = self.open_order
+            except Exception as err:
+                logger.error(f"{err}. What the hell is going on?")
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.track_order")
 

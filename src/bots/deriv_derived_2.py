@@ -1,9 +1,10 @@
 """A Simple bot that uses the inbuilt FingerTrap strategy"""
+
 import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import ADXCrossing, FFATR
+from ..strategies import FFATR
 from ..closers import monitor
 
 
@@ -11,7 +12,7 @@ def build_bot():
     config = Config(config_dir='configs', filename='deriv_derived_2.json', reload=True,
                     records_dir='records/deriv_derived_2/')
     config.load_config()
-    config.state['order_tracker'] = {}
+    config.state['tracked_orders'] = {}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv_derived_2.log',
                         datefmt='%Y-%m-%d %H:%M:%S')
     bot = Bot()
