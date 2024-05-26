@@ -54,8 +54,8 @@ class FingerTrap(Strategy):
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.fast, asint=False)
 
             current = candles[-1]
-            prev = candles[-1]
-            uptrend = current.caf and current.current.fas and current.adx > 25 and current.dmp > current.dmn
+            prev = candles[-2]
+            uptrend = current.caf and current.fas and current.adx > 25 and current.dmp > current.dmn
             downtrend = current.fbs and current.cbf and current.adx > 25 and current.dmn > current.dmp
             higher_high = current.high > prev.high or current.low > prev.low
             lower_low = current.low < prev.low or current.high < prev.low

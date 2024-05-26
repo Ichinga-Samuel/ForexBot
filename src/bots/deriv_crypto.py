@@ -3,7 +3,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import ADXCrossing, FFATR, FingerADX
+from ..strategies import ADXCrossing, FFATR, FingerADX, FingerTrap
 from ..closers import monitor
 
 
@@ -18,7 +18,7 @@ def build_bot():
     crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
     fx_syms = ['EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDJPY']
     crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-    sts = [ST(symbol=sym) for sym in crypto_syms for ST in [FFATR, ADXCrossing, FingerADX]]
+    sts = [ST(symbol=sym) for sym in crypto_syms for ST in [FFATR, ADXCrossing, FingerADX, FingerTrap]]
     bot.add_strategies(sts)
     bot.add_coroutine(monitor)
     bot.execute()
