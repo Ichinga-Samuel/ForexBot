@@ -134,7 +134,7 @@ class BaseTrader(Trader):
             return True
         positions = await self.ram.get_open_positions(symbol=self.symbol.name)
         self.open_trades = [position.ticket for position in positions if position.ticket in self.open_trades]
-        return len(self.open_trades) >= self.ram.symbol_limit
+        return len(self.open_trades) <= self.ram.symbol_limit
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type

@@ -67,9 +67,9 @@ class FingerTrap(Strategy):
             elif current.is_bearish() and downtrend and lower_low:
                 candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
                 self.trend_candles = candles
-                self.tracker.update(trend="bearish") 
+                self.tracker.update(trend="bearish")
             else:
-                self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)  
+                self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.trend_interval.time, order_type=None)
@@ -125,7 +125,7 @@ class FingerTrap(Strategy):
                 await sess.check()
                 try:
                     await self.watch_market()
-                    if not self.tracker.new:
+                    if self.tracker.new is False:
                         await asyncio.sleep(2)
                         continue
                     if self.tracker.order_type is None:

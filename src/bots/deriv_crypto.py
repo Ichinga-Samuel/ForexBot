@@ -1,7 +1,8 @@
 """A Simple bot that uses the inbuilt FingerTrap strategy"""
 import logging
+from datetime import time
 
-from aiomql import Bot, ForexSymbol, Config
+from aiomql import Bot, ForexSymbol, Config, Session, Sessions
 
 from ..strategies import ADXCrossing, FFATR, FingerADX, FingerTrap
 from ..closers import monitor
@@ -18,7 +19,11 @@ def build_bot():
     crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
     fx_syms = ['EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDJPY']
     crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-    sts = [ST(symbol=sym) for sym in crypto_syms for ST in [FFATR, ADXCrossing, FingerADX, FingerTrap]]
+    london_new_york = Session(start=time(hour=10), end=time(hour=17), name='London/New York')
+    csts = [ST(symbol=sym) for sym in crypto_syms for ST in [FFATR, ADXCrossing, FingerADX, FingerTrap]]
+    fsts = [ST(symbol=ForexSymbol(name=sym), sessions=Sessions(london_new_york))
+            for sym in fx_syms for ST in [FFATR, ADXCrossing, FingerADX, FingerTrap]]
+    sts = csts + fsts
     bot.add_strategies(sts)
     bot.add_coroutine(monitor)
     bot.execute()

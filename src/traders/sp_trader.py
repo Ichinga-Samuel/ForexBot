@@ -38,13 +38,12 @@ class SPTrader(BaseTrader):
         try:
             self.parameters |= parameters or {}
 
-            ok = await self.check_ram()
-            if ok is False:
+            if await self.check_ram() is False:
                 logger.info(f'Could not place trade due to RAM for {self.symbol}')
                 return
 
             await self.create_order(order_type=order_type, sl=sl, tp=tp)
-            if not await self.check_order():
+            if await self.check_order() is False:
                 return
             await self.send_order()
         except RuntimeError as _:
