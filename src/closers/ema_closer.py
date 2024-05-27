@@ -35,7 +35,7 @@ async def ema_closer(*, order: OpenOrder):
             if position.profit <= 0:
                 res = await pos.close_by(position)
                 if res.retcode == 10009:
-                    order.config.state['order_tracker'].pop(order.ticket, None)
+                    order.config.state['tracked_orders'].pop(order.ticket, None)
                     logger.info(f"Exited trade {position.symbol}:{position.ticket} with ema_closer")
                     if order.hedged:
                         rev_order = order.hedged_order
@@ -44,7 +44,7 @@ async def ema_closer(*, order: OpenOrder):
                             if rev_pos.profit <= 0:
                                 res = await pos.close_by(rev_pos)
                                 if res.retcode == 10009:
-                                    order.config.state['order_tracker'].pop(rev_order.ticket, None)
+                                    order.config.state['tracked_orders'].pop(rev_order.ticket, None)
                                     logger.info(f"Closed hedge {rev_pos.symbol}:{position.ticket}")
                                 else:
                                     logger.error(f"Unable to close hedge {rev_pos.symbol}:{position.ticket}")
