@@ -1,4 +1,4 @@
-from logging import getLogger
+https://github.com/Ichinga-Samuel/ForexBot/blob/master/src/closers/adx_closer.pyfrom logging import getLogger
 
 from aiomql import Positions, Symbol, TradePosition, OrderType
 
@@ -41,7 +41,7 @@ async def adx_closer(*, order: OpenOrder):
                 res = await pos.close_by(position)
                 if res.retcode == 10009:
                     logger.info(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
-                    order.config.state['order_tracker'].pop(order.ticket, None)
+                    order.config.state['tracked_orders'].pop(order.ticket, None)
                 else:
                     logger.error(f"Unable to close trade with adx_closer {res.comment}")
 
@@ -55,7 +55,7 @@ async def adx_closer(*, order: OpenOrder):
                         res = await pos.close_by(rev_pos)
                         if res.retcode == 10009:
                             logger.info(f"Closed hedge {rev_pos.symbol}:{rev_pos.ticket}")
-                            order.config.state['order_tracker'].pop(rev_order.ticket, None)
+                            order.config.state['tracked_orders'].pop(rev_order.ticket, None)
                         else:
                             logger.error(f"Unable to close hedge {rev_pos.symbol}:{rev_pos.ticket}")
                     else:
