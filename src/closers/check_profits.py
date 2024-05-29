@@ -17,7 +17,7 @@ async def fixed_check_profit(*, order: OpenOrder):
         if check_profit_params['close'] and position.profit < current_check_point:
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.info(f"Closed trade {position.ticket} with fixed_closer")
+                logger.error(f"Closed trade {position.ticket} at checkpoint")
                 order.config.state['tracked_orders'].pop(position.ticket, None)
             else:
                 logger.error(f"Unable to close order in check_profit due to {res.comment}")
@@ -31,7 +31,7 @@ async def fixed_check_profit(*, order: OpenOrder):
                 check_profit_params |= {'close': True, 'check_point': check_point}
                 check_points.pop(key, None)
     except Exception as exe:
-        logger.error(f'An error occurred in function fixed_check_profit {exe}')
+        logger.error(f'An error occurred in function fixed_check_profit {exe}@{exe.__traceback__.tb_lineno}')
 
 
 async def ratio_check_profit(*, order: OpenOrder):
@@ -44,7 +44,7 @@ async def ratio_check_profit(*, order: OpenOrder):
         if check_profit_params['close'] and position.profit < current_check_point:
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.info(f"Closed trade {position.ticket} with fixed_closer")
+                logger.warning(f"Closed trade {position.ticket} at checkpoint")
                 order.config.state['tracked_orders'].pop(position.ticket, None)
             else:
                 logger.error(f"Unable to close order in check_profit due to {res.comment}")
@@ -59,4 +59,4 @@ async def ratio_check_profit(*, order: OpenOrder):
                 check_profit_params |= {'close': True, 'check_point': check_point}
                 check_points.pop(check_point, None)
     except Exception as exe:
-        logger.error(f'An error occurred in function fixed_check_profit {exe}')
+        logger.error(f'An error occurred in function ratio_check_profit {exe}@{exe.__traceback__.tb_lineno}')

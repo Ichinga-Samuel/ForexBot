@@ -15,8 +15,8 @@ class SPTrader(BaseTrader):
                  profit_checker=ratio_check_profit, **kwargs):
         cp = {'use_check_points': False,
               "check_points": {0.3: 0.1, 0.5: 0.3, 0.4: 0.2, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6, 0.9: 0.7, 0.95: 0.8}}
-        hedger_params = {"hedge_point": 0.75} | kwargs.pop('hedger_params', {})
-        track_loss_params = {"trail_start": 0.75} | kwargs.pop('track_loss_params', {})
+        hedger_params = {"hedge_point": 0.30} | kwargs.pop('hedger_params', {})
+        track_loss_params = {"trail_start": 0.35} | kwargs.pop('track_loss_params', {}) #m
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
         ram = RAM(min_amount=5, max_amount=100, risk_to_reward=2, risk=0.1)
         ram = kwargs.pop('ram', ram)

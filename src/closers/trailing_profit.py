@@ -17,8 +17,8 @@ async def trail_tp(*, order: OpenOrder):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(order=order)
-    except Exception as err:
-        logger.error(f"{err} in modify_stop for {order.position.symbol}:{order.ticket}")
+    except Exception as exe:
+        logger.error(f"{exe}@{exe.__traceback__.tb_lineno} in modify_stop for {order.position.symbol}:{order.ticket}")
 
 
 async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
@@ -87,8 +87,9 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
-    except Exception as err:
-        logger.error(f"Trailing profits failed due to {err} for {order.position.symbol}:{order.position.ticket}")
+    except Exception as exe:
+        logger.error(f"Trailing profits failed due to {exe}@{exe.__traceback__.tb_lineno}"
+                     f" for {order.position.symbol}:{order.position.ticket}")
 
 
 async def send_order(position: TradePosition, sl: float, tp: float) -> OrderSendResult:

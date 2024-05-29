@@ -23,8 +23,8 @@ class FingerTrap(Strategy):
     tracker: Tracker
     trend_candles: Candles
 
-    parameters = {"fast_ema": 8, "slow_ema": 20, "etf": TimeFrame.M5, 'exit_function': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 8,
+    parameters = {"fast_ema": 10, "slow_ema": 20, "etf": TimeFrame.M5, 'exit_function': ema_closer,
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 10,
                   "excc": 720, "exit_timeframe": TimeFrame.H1}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
@@ -59,17 +59,19 @@ class FingerTrap(Strategy):
             downtrend = current.fbs and current.cbf and current.adx > 25 and current.dmn > current.dmp
             higher_high = current.high > prev.high or current.low > prev.low
             lower_low = current.low < prev.low or current.high < prev.low
-
-            if current.is_bullish() and uptrend and higher_high:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
-                self.trend_candles = candles
-                self.tracker.update(trend="bullish")
-            elif current.is_bearish() and downtrend and lower_low:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
-                self.trend_candles = candles
-                self.tracker.update(trend="bearish")
-            else:
-                self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)
+            candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
+            self.trend_candles = candles
+            self.tracker.update(trend="bullish")
+            # if current.is_bullish() and uptrend and higher_high:
+            #     candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
+            #     self.trend_candles = candles
+            #     self.tracker.update(trend="bullish")
+            # elif current.is_bearish() and downtrend and lower_low:
+            #     candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
+            #     self.trend_candles = candles
+            #     self.tracker.update(trend="bearish")
+            # else:
+            #     self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.trend_interval.time, order_type=None)
@@ -88,7 +90,7 @@ class FingerTrap(Strategy):
             candles['exc'] = candles.ta_lib.cross(candles.close, candles.ema, above=False, asint=False)
 
             current = candles[-1]
-            if self.tracker.bullish and current.cxe:
+            if True or (self.tracker.bullish and current.cxe):
                 for candle in reversed(self.trend_candles):
                     if candle.cxf:
                         sl = candle.low
@@ -96,6 +98,10 @@ class FingerTrap(Strategy):
                 else:
                     sl = candles[-2].low
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
+                slp = self.symbol.trade_stops_level + (self.symbol.spread * 2) #m
+                slv = slp * self.symbol.point #m
+                sl = current.close - slv
+                tp = current.close + slv
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
             elif self.tracker.bearish and current.exc:
                 for candle in reversed(self.trend_candles):
@@ -120,7 +126,7 @@ class FingerTrap(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

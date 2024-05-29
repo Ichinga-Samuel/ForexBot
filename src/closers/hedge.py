@@ -21,11 +21,11 @@ async def hedge_position(*, order: OpenOrder):
         res = await make_hedge(position=position, hedge_params=hedge_params)
         order.hedge_order = False
         order.hedged = True
-        order.hedger_params |= {'hedge_point': position.profit}
-        hedge = OpenOrder(**(order.data | {'ticket': res.order, 'check_profit': False, 'track_profit': False,
-                                           'track_loss': False, 'use_exit_signal': False}))
-
+        data = order.data | {'ticket': res.order, 'check_profit': False, 'track_profit': False,
+                             'track_loss': False, 'use_exit_signal': False}
+        hedge = OpenOrder(**data)
         order.hedged_order = hedge
+        order.hedger_params['hedge_point'] = position.profit
         hedge.track_profit_params |= {'start_trailing': False, 'previous_profit': 0}
         hedge.config.state['tracked_orders'][hedge.ticket] = hedge
         req = res.request
@@ -34,31 +34,34 @@ async def hedge_position(*, order: OpenOrder):
         loss = calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume, order_type=req.type)
         hedge.expected_loss = loss
     except Exception as exe:
-        logger.error(f'An error occurred in function hedge_position {exe.traceback}')
+        logger.error(f'An error occurred in function hedge_position {exe}@{exe.__traceback__.tb_lineno} '
+                     f'{order.ticket}{order.symbol}')
 
 
 async def make_hedge(*, position: TradePosition, hedge_params: dict) -> OrderSendResult:
-    osl = abs(position.sl - position.price_open)
-    otp = abs(position.tp - position.price_open)
+    try:
+        osl = abs(position.sl - position.price_open)
+        otp = abs(position.tp - position.price_open)
 
-    tick = await Symbol(name=position.symbol).info_tick()
-    price = tick.bid if position.type == OrderType.BUY else tick.ask
+        tick = await Symbol(name=position.symbol).info_tick()
+        price = tick.bid if position.type == OrderType.BUY else tick.ask
 
-    if position.type == OrderType.BUY:
-        sl = price + osl
-        tp = price - otp
-    else:
-        sl = price - osl
-        tp = price + otp
+        if position.type == OrderType.BUY:
+            sl = price + osl
+            tp = price - otp
+        else:
+            sl = price - osl
+            tp = price + otp
 
-    order = Order(symbol=position.symbol, price=price, sl=sl, tp=tp, type=position.type.opposite,
-                  volume=position.volume * hedge_params['hedge_vol'], comment=f"Rev{position.ticket}")
-    res = await order.send()
-    if res.retcode == 10009:
-        logger.info(f"Hedged {position.ticket} for {position.symbol} at {position.profit} with {res.order}")
-        return res
-    else:
-        raise OrderError(f"Could not hedge {position.ticket} for {position.symbol} with {res.comment}")
+        order = Order(symbol=position.symbol, price=price, sl=sl, tp=tp, type=position.type.opposite,
+                      volume=position.volume * hedge_params['hedge_vol'], comment=f"Rev{position.ticket}")
+        res = await order.send()
+        if res.retcode == 10009:
+            return res
+        else:
+            raise OrderError(f"Could not hedge {position.ticket} for {position.symbol} with {res.comment}")
+    except Exception as exe:
+        logger.error(f'An error occurred in function make_hedge {exe}@{exe.__traceback__.tb_lineno}')
 
 
 async def track_hedge(*, order: OpenOrder):
@@ -79,8 +82,8 @@ async def track_hedge(*, order: OpenOrder):
             hedge_close = order.hedger_params['hedge_close']
             if main_pos.profit >= hedge_close:
                 if isinstance(hedge_pos, TradePosition):
-                    await pos.close_by(hedge_pos)
-                    logger.info(f"Closed {hedge_pos.ticket}:{order.ticket}@{hedge_pos.profit}:{main_pos.profit}")
+                    # await pos.close_by(hedge_pos) #m
+                    logger.warning(f"Closed {hedge_pos.ticket}:{order.ticket}@{hedge_pos.profit}:{main_pos.profit}")
                     orders.pop(hedge_ticket, None)
                     order.check_profit = True
                     order.check_profit_params |= {'close': True, 'check_point': -1}
@@ -96,7 +99,7 @@ async def track_hedge(*, order: OpenOrder):
                     hedge_order.check_profit = True
                 else:
                     await pos.close_by(hedge_pos)
-                    logger.info(f"Closed {hedge_pos.ticket}:{order.ticket}@{hedge_pos.profit}")
+                    logger.error(f"Closed {hedge_pos.ticket}:{order.ticket}@{hedge_pos.profit} with hedge")
                     orders.pop(hedge_ticket, None)
     except Exception as exe:
-        logger.error(f'An error occurred in function check_hedge {exe}')
+        logger.error(f'An error occurred in function check_hedge {exe}@{exe.__traceback__.tb_lineno}')

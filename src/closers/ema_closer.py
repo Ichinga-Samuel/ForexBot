@@ -28,7 +28,7 @@ async def ema_closer(*, order: OpenOrder):
         else:
             return
         current = candles[-1]
-        if current.cxe:
+        if True or current.cxe: #m
             position = await pos.position_get(ticket=position.ticket)
             if not position:
                 return
@@ -36,7 +36,7 @@ async def ema_closer(*, order: OpenOrder):
                 res = await pos.close_by(position)
                 if res.retcode == 10009:
                     order.config.state['tracked_orders'].pop(order.ticket, None)
-                    logger.info(f"Exited trade {position.symbol}:{position.ticket} with ema_closer")
+                    logger.error(f"Exited trade {position.symbol}:{position.ticket} with ema_closer")
                     if order.hedged:
                         rev_order = order.hedged_order
                         rev_pos = await pos.position_get(ticket=rev_order.ticket)
@@ -45,7 +45,7 @@ async def ema_closer(*, order: OpenOrder):
                                 res = await pos.close_by(rev_pos)
                                 if res.retcode == 10009:
                                     order.config.state['tracked_orders'].pop(rev_order.ticket, None)
-                                    logger.info(f"Closed hedge {rev_pos.symbol}:{position.ticket}")
+                                    logger.error(f"Closed hedge {rev_pos.symbol}:{position.ticket}")
                                 else:
                                     logger.error(f"Unable to close hedge {rev_pos.symbol}:{position.ticket}")
                             else:
@@ -63,4 +63,4 @@ async def ema_closer(*, order: OpenOrder):
                 check_point = position.profit * adjust
                 order.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_point': True}
     except Exception as exe:
-        logger.error(f'An error occurred in function ema_closer {exe}')
+        logger.error(f'An error occurred in function ema_closer {exe}@{exe.__traceback__.tb_lineno}')

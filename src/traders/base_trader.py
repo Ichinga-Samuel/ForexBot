@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 
 
 class BaseTrader(Trader):
-    track_profit_params = {'trail_start': 0.6, 'trail': 0.15, 'trailing': True,
+    track_profit_params = {'trail_start': 0.3, 'trail': 0.15, 'trailing': True,
                            'extend_start': 0.8, 'start_trailing': True,
                            'previous_profit': 0}
 

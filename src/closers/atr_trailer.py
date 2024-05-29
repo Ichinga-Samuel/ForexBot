@@ -18,8 +18,8 @@ async def atr_trailer(*, order: OpenOrder):
         start_trailing = params['start_trailing']
         if start_trailing and position.profit > max(trail_start * expected_profit, previous_profit):
             await modify_stops(order=order)
-    except Exception as err:
-        logger.error(f"{err} in atr_trailer for {order.position.symbol}:{order.ticket}")
+    except Exception as exe:
+        logger.error(f"{exe}@{exe.__traceback__.tb_lineno} in atr_trailer for {order.position.symbol}:{order.ticket}")
 
 
 async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
@@ -31,8 +31,8 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         await symbol.init()
         etf = params['etf']
         ecc = params['ecc']
-        atr = params['atr_length']
-        atr_factor = params['atr_factor']
+        atr = params.get('atr_length', 14)
+        atr_factor = params.get('atr_factor', 0.75)
         candles = await symbol.copy_rates_from_pos(timeframe=etf, count=ecc)
         candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
@@ -88,14 +88,15 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
-                logger.info(f"Changed expected profit to {new_profit} for {position.symbol}:{position.ticket}")
+                logger.error(f"Changed expected profit to {new_profit} for {position.symbol}:{position.ticket}")
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
-    except Exception as err:
-        logger.error(f"atr_trailer failed due to {err} for {order.position.symbol}:{order.position.ticket}")
+    except Exception as exe:
+        logger.error(f"atr_trailer failed due to {exe}@{exe.__traceback__.tb_lineno}"
+                     f" for {order.position.symbol}:{order.position.ticket}")
 
 
 async def send_order(position: TradePosition, sl: float, tp: float) -> OrderSendResult:

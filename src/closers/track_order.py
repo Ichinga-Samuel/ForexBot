@@ -1,5 +1,6 @@
 from typing import Callable, NewType, TypeVar
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
+from copy import deepcopy
 from logging import getLogger
 
 from aiomql import TradePosition, Config
@@ -40,7 +41,8 @@ class OpenOrder:
 
     @property
     def data(self) -> dict:
-        return asdict(self)
+        exclude = {'hedged_order', 'position', 'config'}
+        return {k: deepcopy(v) for k, v in self.__dict__.items() if k not in exclude}
 
     def update(self, **kwargs):
         [setattr(self, key, value) for key, value in kwargs.items() if key in self.__dict__]
@@ -60,8 +62,8 @@ class TrackOrder:
             if self.order.hedged and self.order.hedged_order is not None:
                 await self.order.hedge_tracker(order=self.order)
 
-            if self.order.use_exit_signal and self.order.exit_function is not None:
-                await self.order.exit_function(order=self.order)
+            # if self.order.use_exit_signal and self.order.exit_function is not None:
+            #     await self.order.exit_function(order=self.order)
 
             if self.order.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:
                 await self.order.profit_tracker(order=self.order)
@@ -72,4 +74,4 @@ class TrackOrder:
             if self.order.check_profit and self.order.profit_checker is not None:
                 await self.order.profit_checker(order=self.order)
         except Exception as exe:
-            logger.error(f"Error tracking order: {exe}")
+            logger.error(f"Error tracking order: {exe}: {exe.__traceback__.tb_lineno}")
