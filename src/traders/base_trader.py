@@ -5,9 +5,9 @@ from aiomql import OrderType, Trader, ForexSymbol, OrderSendResult
 from ..utils.ram import RAM
 from ..utils.order_utils import calc_profit
 from ..closers.track_order import OpenOrder
-from ..closers.trailing_profit import trail_tp
+from ..closers.atr_trailer import atr_trailer
 from ..closers.trailing_loss import trail_sl
-from ..closers.check_profits import fixed_check_profit
+from ..closers.check_profits import ratio_check_profit
 from ..closers.hedge import hedge_position, track_hedge
 from ..telebots import TelegramBot
 
@@ -15,18 +15,19 @@ logger = getLogger(__name__)
 
 
 class BaseTrader(Trader):
-    track_profit_params = {'trail_start': 0.3, 'trail': 0.15, 'trailing': True,
+    track_profit_params = {'trail_start': 0.5, 'trail': 0.15, 'trailing': True,
                            'extend_start': 0.8, 'start_trailing': True,
                            'previous_profit': 0}
 
-    track_loss_params = {'trail_start': 0.5, 'sl_limit': 15, 'trail': 2, 'trailing': True,
+    track_loss_params = {'trail_start': 0.8, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
 
-    check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': True,
-                           "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1},
+    check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': False,
+                           "check_points": {0.3: 0.1, 0.5: 0.3, 0.4: 0.2, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6,
+                                            0.9: 0.7, 0.95: 0.8},
                            'hedge_adjust': 0.8, 'exit_adjust': 0.9}
 
-    hedger_params = {'hedge_point': 0.58, 'hedge_close': 0, 'hedge_vol': 1}
+    hedger_params = {'hedge_point': 0.75, 'hedge_close': 0, 'hedge_vol': 1}
     open_trades: list[int]
     open_order: OpenOrder
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}
@@ -35,8 +36,8 @@ class BaseTrader(Trader):
 
     def __init__(self, *, symbol: ForexSymbol, ram: RAM = None,
                  use_telegram: bool = False, use_ram: bool = True, track_profit_params: dict = None,
-                 track_loss_params: dict = None, hedge_order: bool = True, track_profit: bool = True,
-                 use_exit_signal: bool = False, track_loss: bool = False, check_profit: bool = True,
+                 track_loss_params: dict = None, hedge_order: bool = False, track_profit: bool = True,
+                 use_exit_signal: bool = True, track_loss: bool = False, check_profit: bool = True,
                  check_profit_params: dict = None, track_orders: bool = True, hedger_params: dict = None,
                  profit_tracker=None, loss_tracker=None, profit_checker=None, hedger=None, hedge_tracker=None,
                  **kwargs):
@@ -55,9 +56,9 @@ class BaseTrader(Trader):
         self.hedge_order = hedge_order
         self.use_ram = use_ram
         self.track_orders = track_orders
-        self.profit_tracker = profit_tracker or trail_tp
+        self.profit_tracker = profit_tracker or atr_trailer
         self.loss_tracker = loss_tracker or trail_sl
-        self.profit_checker = profit_checker or fixed_check_profit
+        self.profit_checker = profit_checker or ratio_check_profit
         self.hedger = hedger or hedge_position
         self.hedge_tracker = hedge_tracker or track_hedge
         super().__init__(symbol=symbol, ram=ram)
@@ -134,7 +135,7 @@ class BaseTrader(Trader):
             return True
         positions = await self.ram.get_open_positions(symbol=self.symbol.name)
         self.open_trades = [position.ticket for position in positions if position.ticket in self.open_trades]
-        return len(self.open_trades) <= self.ram.symbol_limit
+        return len(self.open_trades) < self.ram.symbol_limit
 
     async def create_order_points(self, order_type: OrderType, points: float = 0, amount: float = 0, **volume_kwargs):
         self.order.type = order_type

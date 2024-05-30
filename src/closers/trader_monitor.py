@@ -22,7 +22,6 @@ async def monitor(*, tf: int = 31):
             if track:
                 tracked_orders = config.state['tracked_orders']
                 open_orders = {}
-                print(len(config.state['tracked_orders'].keys()), len(open_orders.keys()), 'before')
                 for position in positions:
                     if (ticket := position.ticket) in tracked_orders:
                         open_order = tracked_orders[ticket]
@@ -30,7 +29,7 @@ async def monitor(*, tf: int = 31):
                         tasks.append(TrackOrder(order=open_order).track())
                         open_orders[ticket] = open_order
                 config.state['tracked_orders'] = open_orders
-                print(len(config.state['tracked_orders'].keys()), len(open_orders.keys()))
+
             await asyncio.gather(*tasks, return_exceptions=True)
             await sleep(tf)
         except Exception as exe:

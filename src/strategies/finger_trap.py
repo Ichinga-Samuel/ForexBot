@@ -30,7 +30,7 @@ class FingerTrap(Strategy):
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, hedge_order=True, use_exit_signal=True, track_loss=True)
+        self.trader = trader or SPTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -59,19 +59,17 @@ class FingerTrap(Strategy):
             downtrend = current.fbs and current.cbf and current.adx > 25 and current.dmn > current.dmp
             higher_high = current.high > prev.high or current.low > prev.low
             lower_low = current.low < prev.low or current.high < prev.low
-            candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
-            self.trend_candles = candles
-            self.tracker.update(trend="bullish")
-            # if current.is_bullish() and uptrend and higher_high:
-            #     candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
-            #     self.trend_candles = candles
-            #     self.tracker.update(trend="bullish")
-            # elif current.is_bearish() and downtrend and lower_low:
-            #     candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
-            #     self.trend_candles = candles
-            #     self.tracker.update(trend="bearish")
-            # else:
-            #     self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)
+
+            if current.is_bullish() and uptrend and higher_high:
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
+                self.trend_candles = candles
+                self.tracker.update(trend="bullish")
+            elif current.is_bearish() and downtrend and lower_low:
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
+                self.trend_candles = candles
+                self.tracker.update(trend="bearish")
+            else:
+                self.tracker.update(trend="ranging", snooze=self.trend_interval.time, order_type=None)
         except Exception as err:
             logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.trend_interval.time, order_type=None)
@@ -90,7 +88,7 @@ class FingerTrap(Strategy):
             candles['exc'] = candles.ta_lib.cross(candles.close, candles.ema, above=False, asint=False)
 
             current = candles[-1]
-            if True or (self.tracker.bullish and current.cxe):
+            if self.tracker.bullish and current.cxe:
                 for candle in reversed(self.trend_candles):
                     if candle.cxf:
                         sl = candle.low
@@ -98,10 +96,6 @@ class FingerTrap(Strategy):
                 else:
                     sl = candles[-2].low
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
-                slp = self.symbol.trade_stops_level + (self.symbol.spread * 2) #m
-                slv = slp * self.symbol.point #m
-                sl = current.close - slv
-                tp = current.close + slv
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
             elif self.tracker.bearish and current.exc:
                 for candle in reversed(self.trend_candles):

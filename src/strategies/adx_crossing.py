@@ -23,13 +23,13 @@ class ADXCrossing(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
-    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 14, "exit_timeframe": TimeFrame.M30,
+    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M15, "adx": 14, "exit_timeframe": TimeFrame.M15,
                   "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 20, "atr_factor": 0.25, "atr_length": 14, "excc": 864}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, use_exit_signal=True)
+        self.trader = trader or SPTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.etf.time)
 
     async def check_trend(self):

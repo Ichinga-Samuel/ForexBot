@@ -34,6 +34,7 @@ class OpenOrder:
     strategy_parameters: dict = None
     hedged: bool = False
     hedged_order: OpenOrder = None
+    hedge: OpenOrder = None
     expected_profit: float = 0.0
     expected_loss: float = 0.0
     position: TradePosition = None
@@ -60,7 +61,7 @@ class TrackOrder:
                 await self.order.hedger(order=self.order)
 
             if self.order.hedged and self.order.hedged_order is not None:
-                await self.order.hedge_tracker(order=self.order)
+                await self.order.hedge_tracker(hedge=self.order)
 
             # if self.order.use_exit_signal and self.order.exit_function is not None:
             #     await self.order.exit_function(order=self.order)

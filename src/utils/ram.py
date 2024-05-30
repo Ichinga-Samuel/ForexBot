@@ -2,18 +2,19 @@ from aiomql import RAM as _RAM, Positions, TradePosition
 
 
 class RAM(_RAM):
-    min_amount: float = 14
-    max_amount: float = 14
+    min_amount: float = 5
+    max_amount: float = 100
     loss_limit: int = 5
     symbol_limit: int = 1
     open_limit: int = 10
+    fixed_amount: float = None
     balance_level: float = 50
     positions: list[TradePosition]
 
     async def get_amount(self) -> float:
         await self.account.refresh()
         amount = self.account.margin_free * self.risk
-        return max(self.min_amount, min(self.max_amount, amount))
+        return self.fixed_amount or max(self.min_amount, min(self.max_amount, amount))
 
     async def get_open_positions(self, symbol='') -> list[TradePosition]:
         pos = await Positions(symbol=symbol).positions_get()

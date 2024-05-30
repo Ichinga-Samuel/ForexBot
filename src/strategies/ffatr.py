@@ -35,7 +35,7 @@ class FFATR(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol, hedge_order=True, track_loss=True, use_exit_signal=True)
+        self.trader = trader or SPTrader(symbol=self.symbol)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -84,7 +84,6 @@ class FFATR(Strategy):
             lower_low = current.low < prev.low or current.high < prev.high
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
-
             if self.tracker.bullish and up_trend:
                 for candle in reversed(candles):
                     if candle.pxn:
@@ -92,11 +91,10 @@ class FFATR(Strategy):
                         break
                 else:
                     sl = current.low - (self.atr_multiplier * current.atr)
-
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
-            elif True or (self.tracker.bearish and down_trend):
+            elif self.tracker.bearish and down_trend:
                 for candle in reversed(candles):
                     if candle.nxp:
                         sl = candle.high
@@ -104,10 +102,6 @@ class FFATR(Strategy):
                 else:
                     sl = current.high + (self.atr_multiplier * current.atr)
                 tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
-                slp = self.symbol.trade_stops_level + (self.symbol.spread * 2)
-                slv = slp * self.symbol.point
-                sl = current.close + slv
-                tp = current.close - slv
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)
@@ -118,7 +112,7 @@ class FFATR(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            # await self.sleep(self.tracker.snooze)
+            await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

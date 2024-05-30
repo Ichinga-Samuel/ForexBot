@@ -22,9 +22,7 @@ async def fixed_check_profit(*, order: OpenOrder):
             else:
                 logger.error(f"Unable to close order in check_profit due to {res.comment}")
 
-        keys = check_points.keys()
-        if len(keys) and check_profit_params['use_check_points']:
-            keys = sorted(keys)
+        if check_profit_params['use_check_points'] and len(keys := sorted(check_points.keys())):
             key = keys[0]
             check_point = check_points[key]
             if position.profit >= key and current_check_point < check_point:
@@ -44,19 +42,17 @@ async def ratio_check_profit(*, order: OpenOrder):
         if check_profit_params['close'] and position.profit < current_check_point:
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.warning(f"Closed trade {position.ticket} at checkpoint")
+                logger.info(f"Closed trade {position.ticket} at checkpoint")
                 order.config.state['tracked_orders'].pop(position.ticket, None)
             else:
                 logger.error(f"Unable to close order in check_profit due to {res.comment}")
 
-        keys = check_points.keys()
-        if len(keys) and check_profit_params['use_check_points']:
+        if check_profit_params['use_check_points'] and len(keys := sorted(check_points.keys())):
             expected_profit = order.expected_profit
-            keys = sorted(keys)
             key = keys[0]
             check_point = check_points[key] * expected_profit
             if position.profit >= key * expected_profit and current_check_point < check_point:
                 check_profit_params |= {'close': True, 'check_point': check_point}
-                check_points.pop(check_point, None)
+                check_points.pop(key, None)
     except Exception as exe:
         logger.error(f'An error occurred in function ratio_check_profit {exe}@{exe.__traceback__.tb_lineno}')
