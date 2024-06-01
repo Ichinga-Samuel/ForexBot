@@ -18,7 +18,7 @@ class PTrader(BaseTrader):
     def __init__(self, *, symbol, hedge_order=False, profit_tracker=trail_tp,
                  profit_checker=fixed_check_profit, use_exit_signal=False, **kwargs):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
-        cp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1}}
+        cp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 8, 8: 6, 4: 1}}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
         ram = RAM(risk_to_reward=3, fixed_amount=3)
         ram = kwargs.pop('ram', ram)
