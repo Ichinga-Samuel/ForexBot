@@ -22,10 +22,10 @@ class FingerTrap(Strategy):
     trader: Trader
     tracker: Tracker
     trend_candles: Candles
-
+    trend: int = 24
     parameters = {"fast_ema": 10, "slow_ema": 20, "etf": TimeFrame.M5, 'exit_function': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 10,
-                  "excc": 720, "exit_timeframe": TimeFrame.H1}
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 8,
+                  "excc": 720, "exit_timeframe": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
@@ -96,7 +96,8 @@ class FingerTrap(Strategy):
                 else:
                     sl = candles[-2].low
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
+                price = current.close
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp, price=price)
             elif self.tracker.bearish and current.exc:
                 for candle in reversed(self.trend_candles):
                     if candle.cxf:
@@ -105,7 +106,8 @@ class FingerTrap(Strategy):
                 else:
                     sl = candles[-2].low
                 tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, tp=tp, sl=sl)
+                price = current.close
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, tp=tp, sl=sl, price=price)
             else:
                 self.tracker.update(snooze=self.entry_interval.time, order_type=None)
         except Exception as err:
@@ -120,7 +122,7 @@ class FingerTrap(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            # await self.sleep(self.tracker.snooze)
+            await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

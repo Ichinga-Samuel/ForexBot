@@ -63,8 +63,8 @@ class TrackOrder:
             if self.order.hedged and self.order.hedged_order is not None:
                 await self.order.hedge_tracker(hedge=self.order)
 
-            # if self.order.use_exit_signal and self.order.exit_function is not None:
-            #     await self.order.exit_function(order=self.order)
+            if self.order.use_exit_signal and self.order.exit_function is not None:
+                await self.order.exit_function(order=self.order)
 
             if self.order.position.profit > 0 and self.order.track_profit and self.order.profit_tracker is not None:
                 await self.order.profit_tracker(order=self.order)

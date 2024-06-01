@@ -29,8 +29,9 @@ class FFATR(Strategy):
     timeout: TimeFrame = TimeFrame.H4
     parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 720, "adx": 14, "atr_multiplier": 2, "atr_factor": 0.25, "atr_length": 14,
-                  "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2, "etf": TimeFrame.H1}
+                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.5, "atr_length": 14,
+                  "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
+                  "etf": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
@@ -92,7 +93,8 @@ class FFATR(Strategy):
                 else:
                     sl = current.low - (self.atr_multiplier * current.atr)
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
+                price = current.close
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp, price=price)
 
             elif self.tracker.bearish and down_trend:
                 for candle in reversed(candles):
@@ -102,7 +104,8 @@ class FFATR(Strategy):
                 else:
                     sl = current.high + (self.atr_multiplier * current.atr)
                 tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
+                price = current.close
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp, price=price)
             else:
                 self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)
         except Exception as exe:

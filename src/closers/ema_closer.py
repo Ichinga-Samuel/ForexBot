@@ -12,7 +12,6 @@ async def ema_closer(*, order: OpenOrder):
         pos = Positions()
         position = order.position
         parameters = order.strategy_parameters
-
         sym = Symbol(name=position.symbol)
         await sym.init()
         exit_timeframe = parameters['exit_timeframe']
@@ -31,8 +30,8 @@ async def ema_closer(*, order: OpenOrder):
             return
 
         position = await pos.position_get(ticket=position.ticket)
-        assert position is not None, 'Position not found'
-
+        if position is None:
+            return
         if position.profit <= 0:
             res = await pos.close_by(position)
             if res.retcode == 10009:
@@ -44,5 +43,6 @@ async def ema_closer(*, order: OpenOrder):
             adjust = order.check_profit_params['exit_adjust']
             check_point = position.profit * adjust
             order.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_point': True}
+            order.use_exit_signal = False
     except Exception as exe:
         logger.error(f'An error occurred in function ema_closer {exe}@{exe.__traceback__.tb_lineno}')

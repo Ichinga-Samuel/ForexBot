@@ -15,12 +15,12 @@ class PTrader(BaseTrader):
                      'Volatility 25 (1s) Index': 1, 'Volatility 75 Index': 2, 'Volatility 10 (1s) Index': 1.2,
                      'Volatility 75 (1s) Index': 1, 'Volatility 50 Index': 1, 'Volatility 50 (1s) Index': 1}
 
-    def __init__(self, *, symbol, hedge_order=True, profit_tracker=trail_tp,
+    def __init__(self, *, symbol, hedge_order=False, profit_tracker=trail_tp,
                  profit_checker=fixed_check_profit, use_exit_signal=False, **kwargs):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
         cp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 7, 7: 4, 4: 1}}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
-        ram = RAM(risk_to_reward=3)
+        ram = RAM(risk_to_reward=3, fixed_amount=3)
         ram = kwargs.pop('ram', ram)
         super().__init__(symbol=symbol, hedge_order=hedge_order, profit_tracker=profit_tracker, ram=ram,
                          check_profit_params=check_profit_params, profit_checker=profit_checker,

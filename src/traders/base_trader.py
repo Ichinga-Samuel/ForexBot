@@ -101,10 +101,11 @@ class BaseTrader(Trader):
         try:
             if self.track_orders is False:
                 return
-            profit = calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.tp,
-                                 volume=self.order.volume, order_type=self.order.type)
-            loss = calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.sl,
-                               volume=self.order.volume, order_type=self.order.type)
+            profit = result.profit or calc_profit(sym=self.symbol, open_price=self.order.price,
+                                                  close_price=self.order.tp,
+                                                  volume=self.order.volume, order_type=self.order.type)
+            loss = result.loss or calc_profit(sym=self.symbol, open_price=self.order.price, close_price=self.order.sl,
+                                              volume=self.order.volume, order_type=self.order.type)
 
             self.open_order.update(ticket=result.order, expected_loss=loss, expected_profit=profit,
                                    strategy_parameters=self.parameters.copy())
@@ -123,10 +124,8 @@ class BaseTrader(Trader):
 
             if self.check_profit:
                 self.open_order.check_profit_params = self.check_profit_params.copy()
-            try:
-                self.config.state['tracked_orders'][result.order] = self.open_order
-            except Exception as err:
-                logger.error(f"{err}. What the hell is going on?")
+
+            self.config.state['tracked_orders'][result.order] = self.open_order
         except Exception as err:
             logger.error(f"{err}: for {self.order.symbol} in {self.__class__.__name__}.track_order")
 
@@ -163,6 +162,8 @@ class BaseTrader(Trader):
             await self.notify(msg=f"Placed Trade for {self.symbol}")
             self.open_trades.append(res.order)
             self.track_order(result=res)
+            name = self.parameters.get('name', self.__class__.__name__)
+            await self.record_trade(res, name=f"{name}_{self.config.login}", exclude={'exit_function'})
         return res
 
     async def place_trade(self, *args, **kwargs):

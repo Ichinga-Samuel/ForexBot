@@ -29,8 +29,8 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         tp_params = order.track_profit_params
         symbol = Symbol(name=position.symbol)
         await symbol.init()
-        etf = params['etf']
-        ecc = params['ecc']
+        etf = params['tptf']
+        ecc = params['tpcc']
         atr = params.get('atr_length', 14)
         atr_factor = params.get('atr_factor', 0.5)
         candles = await symbol.copy_rates_from_pos(timeframe=etf, count=ecc)

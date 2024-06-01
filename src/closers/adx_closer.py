@@ -14,7 +14,6 @@ async def adx_closer(*, order: OpenOrder):
         sym = Symbol(name=position.symbol)
         await sym.init()
         parameters = order.strategy_parameters
-        cp_params = order.check_profit_params
         exit_timeframe = parameters['exit_timeframe']
         cc = parameters['excc']
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=exit_timeframe)
@@ -33,7 +32,8 @@ async def adx_closer(*, order: OpenOrder):
             return
 
         position = await pos.position_get(ticket=order.ticket)
-        assert position is not None, 'Position not found'
+        if position is None:
+            return
 
         if position.profit < 0:
             res = await pos.close_by(position)
@@ -43,8 +43,12 @@ async def adx_closer(*, order: OpenOrder):
             else:
                 logger.error(f"Unable to close trade with adx_closer {res.comment}")
         else:
+            cp_params = order.check_profit_params
             adjust = cp_params['exit_adjust']
             check_point = position.profit * adjust
             cp_params |= {'check_point': check_point, 'close': True, 'use_check_points': True}
+            order.check_profit_params = cp_params
+            order.use_exit_signal = False
+            logger.info(f"Check point set for {position.symbol}:{position.ticket}@{check_point} using adx_closer")
     except Exception as exe:
         logger.error(f"An error occurred in function adx_closer {exe}")

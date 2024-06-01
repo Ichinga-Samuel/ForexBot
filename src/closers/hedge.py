@@ -32,9 +32,11 @@ async def hedge_position(*, order: OpenOrder):
         hedge.track_profit_params |= {'start_trailing': False, 'previous_profit': 0}
         hedge.config.state['tracked_orders'][hedge.ticket] = hedge
         req = res.request
-        profit = calc_profit(sym=sym, open_price=req.price, close_price=req.tp, volume=req.volume, order_type=req.type)
+        profit = res.profit or calc_profit(sym=sym, open_price=req.price, close_price=req.tp, volume=req.volume,
+                                           order_type=req.type)
         hedge.expected_profit = profit
-        loss = calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume, order_type=req.type)
+        loss = res.loss or calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume,
+                                       order_type=req.type)
         hedge.expected_loss = loss
     except Exception as exe:
         logger.error(f'An error occurred in function hedge_position {exe}@{exe.__traceback__.tb_lineno} '

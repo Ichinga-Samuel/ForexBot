@@ -13,7 +13,7 @@ class RAM(_RAM):
 
     async def get_amount(self) -> float:
         await self.account.refresh()
-        amount = self.account.margin_free * self.risk
+        amount = self.account.equity * self.risk
         return self.fixed_amount or max(self.min_amount, min(self.max_amount, amount))
 
     async def get_open_positions(self, symbol='') -> list[TradePosition]:
