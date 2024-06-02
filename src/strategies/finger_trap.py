@@ -24,7 +24,7 @@ class FingerTrap(Strategy):
     trend_candles: Candles
     trend: int = 24
     parameters = {"fast_ema": 10, "slow_ema": 21, "etf": TimeFrame.M5, 'exit_function': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 13,
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 15,
                   "excc": 720, "exit_timeframe": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
