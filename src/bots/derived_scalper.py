@@ -21,9 +21,9 @@ def build_bot():
         syms = ['Volatility 10 Index', 'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',
                 'Volatility 75 Index', 'Volatility 10 (1s) Index',
                 'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
-
-        ff_sts = [ST(symbol=ForexSymbol(name=sym), trader=SPTrader(hedge_on_exit=True))
-                  for sym in syms for ST in [ADXCrossing, FingerTrap, FFATR]]
+        v_syms = [ForexSymbol(name=sym) for sym in syms]
+        ff_sts = [ST(symbol=sym, trader=SPTrader(symbol=sym, hedge_on_exit=True))
+                  for sym in v_syms for ST in [ADXCrossing, FingerTrap, FFATR]]
         bot.add_strategies(ff_sts)
         bot.add_coroutine(monitor)
         bot.execute()

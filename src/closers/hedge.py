@@ -24,7 +24,7 @@ async def hedge_position(*, order: OpenOrder):
         order.hedge_order = False
         order.hedged = True
         data = order.data | {'ticket': res.order, 'check_profit': False, 'track_profit': False,
-                             'track_loss': False, 'use_exit_signal': True}
+                             'track_loss': False, 'use_exit_signal': True, 'hedge_on_exit': False}
         hedge = OpenOrder(**data)
         hedge.hedged_order = order
         order.hedge = hedge
