@@ -2,6 +2,7 @@ from logging import getLogger
 
 from aiomql import Positions, Symbol, OrderType
 
+from .hedge import hedge_position
 from .track_order import OpenOrder
 
 logger = getLogger(__name__)
@@ -18,7 +19,7 @@ async def adx_closer(*, order: OpenOrder):
         cc = parameters['excc']
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=exit_timeframe)
         adx = parameters['adx']
-        candles.ta.adx(append=True, length=adx)
+        candles.ta.adx(append=True, length=adx, mamode='ema')
         candles.rename(**{f"ADX_{adx}": "adx", f"DMP_{adx}": "dmp", f"DMN_{adx}": "dmn"})
         candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
         candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)
@@ -40,12 +41,16 @@ async def adx_closer(*, order: OpenOrder):
             if res.retcode == 10009:
                 logger.info(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
                 order.config.state['tracked_orders'].pop(order.ticket, None)
+                if order.hedge_on_exit and order.hedged is False:
+                    await hedge_position(order=order)
             else:
                 logger.error(f"Unable to close trade with adx_closer {res.comment}")
         else:
             cp_params = order.check_profit_params
             adjust = cp_params['exit_adjust']
             check_point = position.profit * adjust
+            trail_start = position.profit / order.expected_profit
+            order.track_profit_params |= {'trail_start': trail_start}
             cp_params |= {'check_point': check_point, 'close': True, 'use_check_points': True}
             order.check_profit_params = cp_params
             order.use_exit_signal = False

@@ -13,7 +13,8 @@ async def trail_tp(*, order: OpenOrder):
         params = order.track_profit_params
         start_trailing = params['start_trailing']
         trail_start = params['trail_start'] * order.expected_profit
-        if start_trailing and position.profit >= max(trail_start, params['previous_profit']):
+        previous_profit = params['previous_profit']
+        if start_trailing and (position.profit >= max(trail_start, previous_profit)):
             symbol = Symbol(name=position.symbol)
             await symbol.init()
             await modify_stops(order=order)
@@ -75,7 +76,6 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
             params['previous_profit'] = position.profit
-            params['trailing'] = True
             logger.info(f"Modified sl for {position.symbol}:{position.ticket} to {sl}")
             if change_tp:
                 new_profit = calc_profit(sym=sym, open_price=position.price_open, close_price=position.tp,

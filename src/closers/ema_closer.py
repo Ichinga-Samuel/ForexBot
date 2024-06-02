@@ -2,6 +2,7 @@ from logging import getLogger
 
 from aiomql import Positions, Symbol, OrderType
 
+from .hedge import hedge_position
 from .track_order import OpenOrder
 
 logger = getLogger(__name__)
@@ -28,7 +29,6 @@ async def ema_closer(*, order: OpenOrder):
             ...
         else:
             return
-
         position = await pos.position_get(ticket=position.ticket)
         if position is None:
             return
@@ -37,6 +37,8 @@ async def ema_closer(*, order: OpenOrder):
             if res.retcode == 10009:
                 order.config.state['tracked_orders'].pop(order.ticket, None)
                 logger.info(f"Exited trade {position.symbol}:{position.ticket} with ema_closer")
+                if order.hedge_on_exit and order.hedged is False:
+                    await hedge_position(order=order)
             else:
                 logger.error(f"Unable to close trade in ema_closer {res.comment}")
         else:

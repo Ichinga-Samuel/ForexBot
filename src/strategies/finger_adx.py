@@ -44,7 +44,7 @@ class FingerADX(Strategy):
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.ema(length=self.third_ema, append=True)
             candles.ta.sma(close='close', length=self.price_sma, append=True)
-            candles.ta.adx(append=True)
+            candles.ta.adx(append=True, mamode='ema')
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             f"ADX_14": "adx", f"SMA_{self.price_sma}": "sma",
                                             f"EMA_{self.third_ema}": "third", "DMP_14": "dmp", "DMN_14": "dmn"})

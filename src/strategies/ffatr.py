@@ -48,7 +48,7 @@ class FFATR(Strategy):
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
             c_candles.ta.ema(length=self.trend_ema, append=True)
-            c_candles.ta.adx(append=True)
+            c_candles.ta.adx(append=True, mamode='ema')
             c_candles.rename(inplace=True, **{f"EMA_{self.trend_ema}": "ema", "ADX_14": "adx", "DMP_14": "dmp",
                                               "DMN_14": "dmn"})
             c_candles['cae'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema, asint=False)
@@ -66,7 +66,7 @@ class FFATR(Strategy):
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.atr(append=True)
-            candles.ta.adx(append=True)
+            candles.ta.adx(append=True, mamode='ema')
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
                                             f"ATRr_{self.atr_length}": "atr"})

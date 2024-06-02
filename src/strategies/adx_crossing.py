@@ -23,7 +23,7 @@ class ADXCrossing(Strategy):
     tracker: Tracker
     interval: TimeFrame = TimeFrame.M5
     timeout: TimeFrame = TimeFrame.H2
-    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 14, "exit_timeframe": TimeFrame.M15,
+    parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 7, "exit_timeframe": TimeFrame.M30,
                   "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 23, "atr_factor": 0.25, "atr_length": 14,
                   "excc": 864, "tptf": TimeFrame.M30, "tpcc": 720}
 
@@ -40,7 +40,7 @@ class ADXCrossing(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, entry_time=current, order_type=None)
-            candles.ta.adx(length=self.adx, append=True)
+            candles.ta.adx(length=self.adx, append=True, mamode='ema')
             candles.ta.atr(append=True, length=self.atr_length)
             candles.rename(inplace=True, **{f"ADX_{self.adx}": "adx", f"DMP_{self.adx}": "dmp",
                                             f"DMN_{self.adx}": "dmn", f"ATRr_{self.atr_length}": "atr"})
@@ -59,12 +59,12 @@ class ADXCrossing(Strategy):
 
             if self.tracker.bullish and double_bottom(first=first, second=second) and current.is_bullish():
                 sl = min(second.low, first.low)
-                tp = current.close + (current.close - sl) * self.ram.risk_to_reward
+                tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
             elif self.tracker.bearish and double_top(first=first, second=second) and current.is_bearish():
                 sl = max(second.high, first.high)
-                tp = current.close + (sl - current.close) * self.ram.risk_to_reward
+                tp = current.close + (sl - current.close) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)

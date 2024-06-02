@@ -34,6 +34,7 @@ class OpenOrder:
     strategy_parameters: dict = None
     hedged: bool = False
     hedged_order: OpenOrder = None
+    hedge_on_exit: bool = False
     hedge: OpenOrder = None
     expected_profit: float = 0.0
     expected_loss: float = 0.0

@@ -14,9 +14,9 @@ async def atr_trailer(*, order: OpenOrder):
         params = order.track_profit_params
         previous_profit = params['previous_profit']
         expected_profit = order.expected_profit
-        trail_start = params['trail_start']
+        trail_start = params['trail_start'] * expected_profit
         start_trailing = params['start_trailing']
-        if start_trailing and position.profit > max(trail_start * expected_profit, previous_profit):
+        if start_trailing and (position.profit >= max(trail_start, previous_profit)):
             await modify_stops(order=order)
     except Exception as exe:
         logger.error(f"{exe}@{exe.__traceback__.tb_lineno} in atr_trailer for {order.position.symbol}:{order.ticket}")
@@ -83,7 +83,6 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         if res.retcode == 10009:
             tp_params['previous_profit'] = position.profit
             logger.info(f"Changed stop_levels for {position.symbol}:{position.ticket} {sl=} {tp=}")
-
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
                                          volume=position.volume, order_type=position.type)

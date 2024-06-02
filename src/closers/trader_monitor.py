@@ -17,7 +17,6 @@ async def monitor(*, tf: int = 31):
         try:
             tasks = []
             positions = await pos.positions_get()
-
             track = getattr(config, 'track_orders', True)
             if track:
                 tracked_orders = config.state['tracked_orders']

@@ -23,8 +23,8 @@ class FingerTrap(Strategy):
     tracker: Tracker
     trend_candles: Candles
     trend: int = 24
-    parameters = {"fast_ema": 10, "slow_ema": 20, "etf": TimeFrame.M5, 'exit_function': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 21,
+    parameters = {"fast_ema": 10, "slow_ema": 21, "etf": TimeFrame.M5, 'exit_function': ema_closer,
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 13,
                   "excc": 720, "exit_timeframe": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
@@ -43,7 +43,7 @@ class FingerTrap(Strategy):
             self.tracker.update(new=True, trend_time=current, order_type=None)
             candles.ta.ema(length=self.slow_ema, append=True)
             candles.ta.ema(length=self.fast_ema, append=True)
-            candles.ta.adx(append=True)
+            candles.ta.adx(append=True, mamode='ema')
             candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})  
 

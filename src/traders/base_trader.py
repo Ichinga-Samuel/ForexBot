@@ -8,26 +8,25 @@ from ..closers.track_order import OpenOrder
 from ..closers.atr_trailer import atr_trailer
 from ..closers.trailing_loss import trail_sl
 from ..closers.check_profits import ratio_check_profit
-from ..closers.hedge import hedge_position, track_hedge
+from ..closers.hedge import hedge_position, track_hedge_2
 from ..telebots import TelegramBot
 
 logger = getLogger(__name__)
 
 
 class BaseTrader(Trader):
-    track_profit_params = {'trail_start': 0.45, 'trail': 0.15, 'trailing': True,
-                           'extend_start': 0.8, 'start_trailing': True,
+    track_profit_params = {'trail_start': 0.5, 'trail': 0.15, 'extend_start': 0.8, 'start_trailing': True,
                            'previous_profit': 0}
 
     track_loss_params = {'trail_start': 0.8, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
 
     check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': False,
-                           "check_points": {0.3: 0.1, 0.5: 0.3, 0.4: 0.2, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6,
+                           "check_points": {0.5: 0.3, 0.4: 0.3, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6,
                                             0.9: 0.7, 0.95: 0.8},
                            'hedge_adjust': 0.8, 'exit_adjust': 0.9}
 
-    hedger_params = {'hedge_point': 0.75, 'hedge_close': 0, 'hedge_vol': 1}
+    hedger_params = {'hedge_point': 0.5, 'hedge_close': 0.25, 'hedge_vol': 1}
     open_trades: list[int]
     open_order: OpenOrder
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}
@@ -40,7 +39,7 @@ class BaseTrader(Trader):
                  use_exit_signal: bool = True, track_loss: bool = False, check_profit: bool = True,
                  check_profit_params: dict = None, track_orders: bool = True, hedger_params: dict = None,
                  profit_tracker=None, loss_tracker=None, profit_checker=None, hedger=None, hedge_tracker=None,
-                 **kwargs):
+                 hedge_on_exit: bool = False, **kwargs):
 
         ram = ram or RAM(risk_to_reward=3, risk=0.01)
         self.use_telegram = use_telegram
@@ -60,14 +59,15 @@ class BaseTrader(Trader):
         self.loss_tracker = loss_tracker or trail_sl
         self.profit_checker = profit_checker or ratio_check_profit
         self.hedger = hedger or hedge_position
-        self.hedge_tracker = hedge_tracker or track_hedge
+        self.hedge_tracker = hedge_tracker or track_hedge_2
+        self.hedge_on_exit = hedge_on_exit
         super().__init__(symbol=symbol, ram=ram)
         self.open_order = OpenOrder(symbol=symbol.name, ticket=0, use_exit_signal=self.use_exit_signal,
                                     hedge_order=self.hedge_order, track_loss=self.track_loss,
                                     track_profit=self.track_profit, check_profit=self.check_profit,
                                     profit_checker=self.profit_checker, hedger=self.hedger,
-                                    profit_tracker=self.profit_tracker,
-                                    loss_tracker=self.loss_tracker, hedge_tracker=self.hedge_tracker)
+                                    profit_tracker=self.profit_tracker, loss_tracker=self.loss_tracker,
+                                    hedge_tracker=self.hedge_tracker, hedge_on_exit=self.hedge_on_exit,)
 
     @property
     @cache

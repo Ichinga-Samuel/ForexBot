@@ -24,20 +24,18 @@ async def hedge_position(*, order: OpenOrder):
         order.hedge_order = False
         order.hedged = True
         data = order.data | {'ticket': res.order, 'check_profit': False, 'track_profit': False,
-                             'track_loss': False, 'use_exit_signal': False}
+                             'track_loss': False, 'use_exit_signal': True}
         hedge = OpenOrder(**data)
         hedge.hedged_order = order
         order.hedge = hedge
-        order.hedger_params['hedge_point'] = position.profit
+        order.hedger_params |= {'hedge_point': position.profit, 'hedge_close_price': res.price}
         hedge.track_profit_params |= {'start_trailing': False, 'previous_profit': 0}
         hedge.config.state['tracked_orders'][hedge.ticket] = hedge
         req = res.request
-        profit = res.profit or calc_profit(sym=sym, open_price=req.price, close_price=req.tp, volume=req.volume,
-                                           order_type=req.type)
-        hedge.expected_profit = profit
-        loss = res.loss or calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume,
-                                       order_type=req.type)
-        hedge.expected_loss = loss
+        hedge.expected_profit = calc_profit(sym=sym, open_price=req.price, close_price=req.tp, volume=req.volume,
+                                            order_type=req.type)
+        hedge.expected_loss = calc_profit(sym=sym, open_price=req.price, close_price=req.sl, volume=req.volume,
+                                          order_type=req.type)
     except Exception as exe:
         logger.error(f'An error occurred in function hedge_position {exe}@{exe.__traceback__.tb_lineno} '
                      f'{order.ticket}{order.symbol}')
@@ -97,8 +95,50 @@ async def track_hedge(*, hedge: OpenOrder):
                 adjust = hedge.check_profit_params['hedge_adjust']
                 check_point = hedge_pos.profit * adjust
                 hedge.track_profit = True
-                hedge.track_profit_params |= {'start_trailing': True}
-                hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': True}
+                trail_start = round(hedge_pos.profit/hedge.expected_profit, 2)
+                hedge.track_profit_params |= {'start_trailing': True, 'trail_start': trail_start}
+                hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': False}
+                hedge.check_profit = True
+            else:
+                await pos.close_by(hedge_pos)
+                logger.info(f"Closed {hedge_pos.ticket}:{hedged_order.ticket}@{hedge_pos.profit} hedge in loss")
+                orders.pop(hedge_ticket, None)
+    except Exception as exe:
+        logger.error(f'An error occurred in function check_hedge {exe}@{exe.__traceback__.tb_lineno}')
+
+
+async def track_hedge_2(*, hedge: OpenOrder):
+    try:
+        orders = hedge.config.state['tracked_orders']
+        hedged_order = hedge.hedged_order
+        pos = Positions()
+        hedged_ticket, hedge_ticket = hedged_order.ticket, hedge.ticket
+        hedged_pos, hedge_pos = await asyncio.gather(pos.position_get(ticket=hedged_ticket),
+                                                     pos.position_get(ticket=hedge_ticket), return_exceptions=True)
+        if hedged_pos is None and hedge_pos is None:
+            orders.pop(hedged_ticket, None)
+            orders.pop(hedge_ticket, None)
+            return
+
+        if isinstance(hedged_pos, TradePosition):
+            hedge_close = hedged_order.hedger_params['hedge_close']
+            hedge_close = hedge_close * hedged_order.expected_loss
+            if hedged_pos.profit >= hedge_close:
+                if isinstance(hedge_pos, TradePosition):
+                    await pos.close_by(hedge_pos)
+                    logger.info(f"Closed {hedge_pos.ticket}:{hedged_pos.ticket}@"
+                                f"{hedge_pos.profit}:{hedged_pos.profit} hedged order in profit")
+                orders.pop(hedge_ticket, None)
+                hedged_order.check_profit = True
+
+        elif isinstance(hedge_pos, TradePosition):
+            if hedge_pos.profit > 0:
+                adjust = hedge.check_profit_params['hedge_adjust']
+                check_point = hedge_pos.profit * adjust
+                hedge.track_profit = True
+                trail_start = round(hedge_pos.profit/hedge.expected_profit, 2)
+                hedge.track_profit_params |= {'start_trailing': True, 'trail_start': trail_start}
+                hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': False}
                 hedge.check_profit = True
             else:
                 await pos.close_by(hedge_pos)
