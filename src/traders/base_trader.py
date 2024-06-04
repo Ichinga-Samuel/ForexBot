@@ -18,7 +18,7 @@ class BaseTrader(Trader):
     track_profit_params = {'trail_start': 0.5, 'trail': 0.15, 'extend_start': 0.8, 'start_trailing': True,
                            'previous_profit': 0}
 
-    track_loss_params = {'trail_start': 0.8, 'sl_limit': 15, 'trail': 2, 'trailing': True,
+    track_loss_params = {'trail_start': 0.90, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
 
     check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': False,
@@ -26,7 +26,7 @@ class BaseTrader(Trader):
                                             0.9: 0.7, 0.95: 0.8},
                            'hedge_adjust': 0.8, 'exit_adjust': 0.9}
 
-    hedger_params = {'hedge_point': 0.75, 'hedge_close': 0.25, 'hedge_vol': 1}
+    hedger_params = {'hedge_point': 0.5, 'hedge_close': 0, 'hedge_vol': 1, 'hedged_close': 0.25}
     open_trades: list[int]
     open_order: OpenOrder
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}

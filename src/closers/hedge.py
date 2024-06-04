@@ -130,6 +130,8 @@ async def track_hedge_2(*, hedge: OpenOrder):
                                 f"{hedge_pos.profit}:{hedged_pos.profit} hedged order in profit")
                 orders.pop(hedge_ticket, None)
                 hedged_order.check_profit = True
+                check_point = hedged_order.expected_loss * hedged_order.hedger_params['hedged_close']
+                hedged_order.check_profit_params |= {'close': True, 'check_point': check_point}
 
         elif isinstance(hedge_pos, TradePosition):
             if hedge_pos.profit > 0:

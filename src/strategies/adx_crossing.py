@@ -25,7 +25,7 @@ class ADXCrossing(Strategy):
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"exit_function": adx_closer, "etf": TimeFrame.M30, "adx": 14, "exit_timeframe": TimeFrame.M30,
                   "ecc": 864, "atr_multiplier": 1, "adx_cutoff": 23, "atr_factor": 0.25, "atr_length": 14,
-                  "excc": 864, "tptf": TimeFrame.M30, "tpcc": 720}
+                  "excc": 864, "tptf": TimeFrame.M30, "tpcc": 720, "exit_adx": 7}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'ADXCrossing'):

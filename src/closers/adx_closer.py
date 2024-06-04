@@ -18,7 +18,7 @@ async def adx_closer(*, order: OpenOrder):
         exit_timeframe = parameters['exit_timeframe']
         cc = parameters['excc']
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=exit_timeframe)
-        adx = parameters['adx']
+        adx = parameters['exit_adx']
         candles.ta.adx(append=True, length=adx, mamode='ema')
         candles.rename(**{f"ADX_{adx}": "adx", f"DMP_{adx}": "dmp", f"DMN_{adx}": "dmn"})
         candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
@@ -37,12 +37,12 @@ async def adx_closer(*, order: OpenOrder):
             return
 
         if position.profit < 0:
+            if order.hedge_on_exit and order.hedged is False:
+                await hedge_position(order=order)
             res = await pos.close_by(position)
             if res.retcode == 10009:
                 logger.info(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
                 order.config.state['tracked_orders'].pop(order.ticket, None)
-                if order.hedge_on_exit and order.hedged is False:
-                    await hedge_position(order=order)
             else:
                 logger.error(f"Unable to close trade with adx_closer {res.comment}")
         else:
