@@ -26,7 +26,7 @@ class BaseTrader(Trader):
                                             0.9: 0.7, 0.95: 0.8},
                            'hedge_adjust': 0.8, 'exit_adjust': 0.9}
 
-    hedger_params = {'hedge_point': 0.5, 'hedge_close': 0, 'hedge_vol': 1, 'hedged_close': 0.25}
+    hedger_params = {'hedge_point': 0.5, 'hedge_close': 0, 'hedge_vol': 1, 'hedged_close': 0.1}
     open_trades: list[int]
     open_order: OpenOrder
     order_format = """symbol: {symbol}\ntype: {type}\nvolume: {volume}\nsl: {sl}\ntp: {tp}
