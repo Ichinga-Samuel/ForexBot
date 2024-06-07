@@ -15,7 +15,7 @@ def build_bot():
         config.load_config()
         config.state['tracked_orders'] = {}
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
-                            filename='logs/derived_scalper.log', datefmt='%Y-%m-%d %H:%M:%S')
+                            filename='logs/derived_scalper.log', datefmt='%Y-%m-%d %H:%M')
         bot = Bot()
 
         syms = ['Volatility 10 Index', 'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',

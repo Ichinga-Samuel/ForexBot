@@ -4,7 +4,7 @@ import logging
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FFATR, FingerTrap
+from ..strategies import FFATR
 from ..closers import monitor
 
 
@@ -13,8 +13,14 @@ def build_bot():
                     records_dir='records/deriv_derived_2/')
     config.load_config()
     config.state['tracked_orders'] = {}
+    dev_console = logging.StreamHandler()
+    dev_console.setLevel(logging.INFO)
+    dev_fmt = logging.Formatter('%(levelname)s - %(message)s')
+    dev_console.setFormatter(dev_fmt)
+
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', filename='logs/deriv_derived_2.log',
-                        datefmt='%Y-%m-%d %H:%M:%S')
+                        datefmt='%Y-%m-%d %H:%M')
+    # logging.getLogger('').addHandler(dev_console)
     bot = Bot()
 
     syms = ['Volatility 10 Index', 'Volatility 100 (1s) Index', 'Volatility 25 Index', 'Volatility 25 (1s) Index',

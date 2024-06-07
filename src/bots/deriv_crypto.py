@@ -14,7 +14,7 @@ def build_bot():
     config.load_config()
     config.state['tracked_orders'] = {}
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s',
-                        filename='logs/deriv_crypto.log', datefmt='%Y-%m-%d %H:%M:%S')
+                        filename='logs/deriv_crypto.log', datefmt='%Y-%m-%d %H:%M')
     bot = Bot()
     crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
     fx_syms = ['EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDJPY']
