@@ -29,7 +29,7 @@ class FFATR(Strategy):
     timeout: TimeFrame = TimeFrame.H4
     parameters = {"first_ema": 10, "second_ema": 20, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.3, "atr_length": 14,
+                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.35, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
                   "etf": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 7}
 
