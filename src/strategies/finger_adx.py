@@ -4,14 +4,14 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
-from ..utils.top_bottom import flat_top, flat_bottom
-from ..traders.p_trader import PTrader
+from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
 
 
 class FingerADX(Strategy):
     ttf: TimeFrame
+    ltf: TimeFrame
     first_ema: int
     second_ema: int
     third_ema: int
@@ -24,12 +24,15 @@ class FingerADX(Strategy):
     interval: TimeFrame = TimeFrame.M15
     timeout: TimeFrame = TimeFrame.H2
     parameters = {"first_ema": 2, "second_ema": 3, "third_ema": 5, "ttf": TimeFrame.H1, "tcc": 720, "price_sma": 50,
-                  "adx_cutoff": 22}
+                  "adx_cutoff": 22, "ltf": TimeFrame.M5}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerADX'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or PTrader(symbol=self.symbol)
+        cpp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 8, 8: 6, 4: 1}}
+        self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, check_profit_params=cpp,
+                                         hedge_order=False)
+
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -38,8 +41,10 @@ class FingerADX(Strategy):
             if (current := candles[-1].time) < self.tracker.trend_time:
                 self.tracker.update(new=False, order_type=None)
                 return
-
+            l_candles = await self.symbol.copy_rates_from_pos(timeframe=self.ltf, count=self.tcc)
             self.tracker.update(new=True, trend_time=current, order_type=None)
+            l_candles.ta.adx(append=True, mamode='ema')
+            l_candles.rename(inplace=True, **{"ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})
             candles.ta.ema(length=self.first_ema, append=True)
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.ema(length=self.third_ema, append=True)
@@ -55,7 +60,10 @@ class FingerADX(Strategy):
             candles['cbs'] = candles.ta_lib.below(candles.close, candles.sma)
             candles['fbs'] = candles.ta_lib.below(candles.first, candles.second)
             candles['sbt'] = candles.ta_lib.below(candles.second, candles.third)
+            l_candles['pxn'] = l_candles.ta_lib.cross(l_candles.dmp, l_candles.dmn)
+            l_candles['nxp'] = l_candles.ta_lib.cross(l_candles.dmn, l_candles.dmp)
 
+            l_current = l_candles[-1]
             current = candles[-1]
             prev = candles[-2]
             prev_2 = candles[-3]
@@ -64,14 +72,16 @@ class FingerADX(Strategy):
             lower_low = current.low < prev.low or current.high < prev.high and current.dmn > current.dmp
             uptrend = all([current.cas, current.fas, current.sat]) and current.adx >= self.adx_cutoff
             downtrend = all([current.cbs, current.fbs, current.sbt]) and current.adx >= self.adx_cutoff
-            double_top = flat_top(first=prev_2, second=prev)
-            double_bottom = flat_bottom(first=prev_2, second=prev)
 
-            if current.is_bullish() and uptrend and higher_high and double_bottom:
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY)
+            if current.is_bullish() and uptrend and higher_high and l_current.pxn:
+                sl = min(prev.low, prev_2.low)
+                tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
-            elif current.is_bearish() and downtrend and lower_low and double_top:
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL)
+            elif current.is_bearish() and downtrend and lower_low and l_current.nxp:
+                sl = max(prev.high, prev_2.high)
+                tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:
@@ -81,7 +91,7 @@ class FingerADX(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            await self.sleep(self.tracker.snooze)
+            # await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:
@@ -92,7 +102,8 @@ class FingerADX(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
-                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters)
+                    await self.trader.place_trade(order_type=self.tracker.order_type, parameters=self.parameters,
+                                                  sl=self.tracker.sl, tp=self.tracker.tp)
                     await self.sleep(self.tracker.snooze)
                 except Exception as err:
                     logger.error(f"{err} for {self.symbol} in {self.__class__.__name__}.trade")
