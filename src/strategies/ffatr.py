@@ -74,8 +74,9 @@ class FFATR(Strategy):
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
                                             f"ATRr_{self.atr_length}": "atr"})
+
             candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
-            candles['nxp'] = candles.ta_lib.cross(candles.first, candles.second, asint=False)
+            candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)
             candles['caf'] = candles.ta_lib.above(candles.close, candles.first, asint=False)
             candles['fas'] = candles.ta_lib.above(candles.first, candles.second, asint=False)
             candles['cbf'] = candles.ta_lib.below(candles.close, candles.first, asint=False)
@@ -90,6 +91,7 @@ class FFATR(Strategy):
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
             if self.tracker.bullish and up_trend:
+                e_candles['pxn'] = candles.ta_lib.cross(e_candles.dmp, e_candles.dmn, asint=False)
                 for candle in reversed(e_candles):
                     if candle.pxn:
                         sl = candle.low
@@ -101,6 +103,7 @@ class FFATR(Strategy):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp, price=price)
 
             elif self.tracker.bearish and down_trend:
+                e_candles['nxp'] = candles.ta_lib.cross(e_candles.dmn, e_candles.dmp, asint=False)
                 for candle in reversed(e_candles):
                     if candle.nxp:
                         sl = candle.high

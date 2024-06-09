@@ -16,7 +16,7 @@ async def trail_sl(*, order: OpenOrder):
         previous_profit = params['previous_profit']
         trail_loss = trail_start * order.expected_loss
         trailing = params['trailing']
-        if trailing and position.profit < min(previous_profit, trail_loss):
+        if trailing and position.profit <= min(previous_profit, trail_loss):
             await modify_sl(order=order)
     except Exception as exe:
         logger.error(f'Trailing stop loss for {order.position.symbol}:{order.position.ticket} '

@@ -43,7 +43,7 @@ class OpenOrder:
 
     @property
     def data(self) -> dict:
-        exclude = {'hedged_order', 'position', 'config'}
+        exclude = {'hedged_order', 'position', 'config', 'ticket'}
         return {k: deepcopy(v) for k, v in self.__dict__.items() if k not in exclude}
 
     def update(self, **kwargs):
