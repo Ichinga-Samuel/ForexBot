@@ -3,6 +3,7 @@ import logging
 
 from aiomql import Tracker, ForexSymbol, TimeFrame, OrderType, Sessions, Strategy, Candles, Trader
 
+from ..utils.ram import RAM
 from ..traders.sp_trader import SPTrader
 from ..closers.ema_closer import ema_closer
 logger = logging.getLogger(__name__)
@@ -24,15 +25,15 @@ class FingerTrap(Strategy):
     trend_candles: Candles
     trend: int = 24
     parameters = {"fast_ema": 8, "slow_ema": 34, "etf": TimeFrame.M5, 'exit_function': ema_closer,
-                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 5,
+                  "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 21,
                   "excc": 720, "exit_timeframe": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720,
-                 "atr_factor": 0.25}
+                  "atr_factor": 0.25}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         ram = RAM(risk_to_reward=1)             
-        self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, hedge_order=False,
+        self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, hedge_order=True, hedge_on_exit=True,
                                          track_profit_params={"trail_start": 0.5}, ram=ram)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
@@ -123,7 +124,7 @@ class FingerTrap(Strategy):
             await self.confirm_trend()
 
     async def trade(self):
-        print(f"Trading {self.symbol} with {self.name}")
+        logger.info("Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.tracker.snooze)
             while True:

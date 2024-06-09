@@ -13,6 +13,7 @@ logger = getLogger(__name__)
 class FFATR(Strategy):
     htf: TimeFrame
     ttf: TimeFrame
+    etf: TimeFrame
     atr_multiplier: int
     atr_factor: int
     atr_length: int
@@ -31,7 +32,7 @@ class FFATR(Strategy):
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
                   "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.3, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
-                  "etf": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14}
+                  "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
@@ -43,6 +44,7 @@ class FFATR(Strategy):
         try:
             candles = await self.symbol.copy_rates_from_pos(timeframe=self.ttf, count=self.tcc)
             c_candles = await self.symbol.copy_rates_from_pos(timeframe=self.htf, count=self.hcc)
+            e_candles = await self.symbol.copy_rates_from_pos(timeframe=self.etf, count=self.tcc)
             if (current := candles[-1].time) < self.tracker.trend_time:
                 self.tracker.update(new=False, order_type=None)
                 return
@@ -67,6 +69,8 @@ class FFATR(Strategy):
             candles.ta.ema(length=self.second_ema, append=True)
             candles.ta.atr(append=True)
             candles.ta.adx(append=True, mamode='ema')
+            e_candles.ta.adx(append=True, mamode='ema')
+            e_candles.rename(inplace=True, **{f"ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})
             candles.rename(inplace=True, **{f"EMA_{self.first_ema}": "first", f"EMA_{self.second_ema}": "second",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
                                             f"ATRr_{self.atr_length}": "atr"})
@@ -86,7 +90,7 @@ class FFATR(Strategy):
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
             if self.tracker.bullish and up_trend:
-                for candle in reversed(candles):
+                for candle in reversed(e_candles):
                     if candle.pxn:
                         sl = candle.low
                         break
@@ -97,7 +101,7 @@ class FFATR(Strategy):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp, price=price)
 
             elif self.tracker.bearish and down_trend:
-                for candle in reversed(candles):
+                for candle in reversed(e_candles):
                     if candle.nxp:
                         sl = candle.high
                         break
@@ -113,7 +117,7 @@ class FFATR(Strategy):
             self.tracker.update(snooze=self.lower_interval.time, order_type=None)
 
     async def trade(self):
-        print(f"Trading {self.symbol} with {self.name}")
+        logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.tracker.snooze)
             while True:
@@ -126,6 +130,7 @@ class FFATR(Strategy):
                     if self.tracker.order_type is None:
                         await self.sleep(self.tracker.snooze)
                         continue
+
                     await self.trader.place_trade(order_type=self.tracker.order_type, sl=self.tracker.sl,
                                                   tp=self.tracker.tp, parameters=self.parameters)
                     await self.sleep(self.tracker.snooze)

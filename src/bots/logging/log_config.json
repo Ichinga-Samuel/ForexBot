@@ -1,0 +1,57 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "console": {
+            "format": "%(levelname)-8s - %(message)s"
+        },
+        "file": {
+            "format": "%(asctime)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M"
+        }
+    },
+    "filters": {
+        "exact":{
+            "()": "src.bots.logging.filters.exact_filter",
+            "level": "INFO"
+        },
+        "less_than": {
+            "()": "src.bots.logging.filters.less_than_filter",
+            "level": "WARNING"
+        },
+        "greater_than": {
+            "()": "src.bots.logging.filters.greater_than_filter",
+            "level": "ERROR"
+        }
+    },
+
+    "handlers": {
+        "console":{
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "console",
+            "filters": ["exact"],
+            "stream": "ext://sys.stdout"
+        },
+        "debug":{
+            "class": "logging.FileHandler",
+            "formatter": "file",
+            "level": "INFO",
+            "filename": "logs/debug.log",
+            "mode": "a",
+            "filters": ["less_than"]
+        },      
+        "error":{
+            "class": "logging.FileHandler",
+            "formatter": "file",
+            "level": "ERROR",
+            "filename": "logs/error.log",
+            "mode": "a",
+            "filters": ["greater_than"]
+            }
+        },
+    "root": {
+        "level": "DEBUG",
+        "handlers": ["console", "debug", "error"]
+    }
+}

@@ -25,9 +25,9 @@ async def adx_closer(*, order: OpenOrder):
         candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)
         current = candles[-1]
 
-        if position.type == OrderType.BUY and current.nxp:
+        if position.type == OrderType.BUY and (current.nxp or current.adx < 25):
             ...
-        elif position.type == OrderType.SELL and current.pxn:
+        elif position.type == OrderType.SELL and (current.pxn or current.adx < 25):
             ...
         else:
             return

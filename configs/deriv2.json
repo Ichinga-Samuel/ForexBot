@@ -1,8 +1,8 @@
 {
-"login": 5463204,
+"login": 31288540,
 "password": "nwa0#anaEze",
 "server": "Deriv-Demo",
-"path": "./terminals/deriv/derived_scalper/terminal64.exe",
+"path": "./terminals/deriv/deriv2/terminal64.exe",
 "telegram_bot_token": "6645070821:AAGgdWAgnzO9jbS4_fRUFtByG4hMJM9woSM",
 "telegram_chat_id": "-1002091189701",
 "confirmation_timeout": 60

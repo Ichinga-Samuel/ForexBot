@@ -4,6 +4,7 @@ import asyncio
 from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
+from ..closers.trailing_profit import trail_tp
 from ..traders.sp_trader import SPTrader
 
 logger = getLogger(__name__)
@@ -31,7 +32,7 @@ class FingerADX(Strategy):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
         cpp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 8, 8: 6, 4: 1}}
         self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, check_profit_params=cpp,
-                                         hedge_order=False)
+                                         hedge_order=False, profit_tracker=trail_tp)
 
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
