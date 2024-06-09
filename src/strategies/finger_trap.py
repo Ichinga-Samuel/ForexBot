@@ -124,7 +124,7 @@ class FingerTrap(Strategy):
             await self.confirm_trend()
 
     async def trade(self):
-        logger.info("Trading {self.symbol} with {self.name}")
+        logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.tracker.snooze)
             while True:
