@@ -47,7 +47,7 @@ class FingerTrap(Strategy):
             self.tracker.update(new=True, trend_time=current, order_type=None)
             candles.ta.ema(length=self.slow_ema, append=True)
             candles.ta.ema(length=self.fast_ema, append=True)
-            candles.ta.adx(append=True, mamode='ema')
+            candles.ta.adx(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow",
                                             "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})  
 
