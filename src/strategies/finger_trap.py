@@ -6,6 +6,7 @@ from aiomql import Tracker, ForexSymbol, TimeFrame, OrderType, Sessions, Strateg
 from ..utils.ram import RAM
 from ..traders.sp_trader import SPTrader
 from ..closers.ema_closer import ema_closer
+from ..closers.chandelier_exit import chandelier_trailer
 logger = logging.getLogger(__name__)
 
 
@@ -27,14 +28,15 @@ class FingerTrap(Strategy):
     parameters = {"fast_ema": 8, "slow_ema": 34, "etf": TimeFrame.M5, 'exit_function': ema_closer,
                   "ttf": TimeFrame.H1, "entry_ema": 5, "tcc": 720, "ecc": 1440, "exit_ema": 21,
                   "excc": 720, "exit_timeframe": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720,
-                  "atr_factor": 0.25}
+                  "atr_factor": 0.75}
 
     def __init__(self, *, symbol: ForexSymbol, params: dict | None = None, trader: Trader = None,
                  sessions: Sessions = None, name: str = 'FingerTrap'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        ram = RAM(risk_to_reward=1)             
+        ram = RAM(risk_to_reward=1.5)
         self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, hedge_order=True, hedge_on_exit=True,
-                                         track_profit_params={"trail_start": 0.5}, ram=ram)
+                                         track_profit_params={"trail_start": 0.5}, ram=ram,
+                                         profit_tracker=chandelier_trailer)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):
@@ -65,11 +67,11 @@ class FingerTrap(Strategy):
             lower_low = current.low < prev.low or current.high < prev.low
 
             if current.is_bullish() and uptrend and higher_high:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.exit_ema, asint=False)
                 self.trend_candles = candles
                 self.tracker.update(trend="bullish")
             elif current.is_bearish() and downtrend and lower_low:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.exit_ema, asint=False, above=False)
                 self.trend_candles = candles
                 self.tracker.update(trend="bearish")
             else:

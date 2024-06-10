@@ -95,7 +95,7 @@ async def track_hedge(*, hedge: OpenOrder):
                 adjust = hedge.check_profit_params['hedge_adjust']
                 check_point = hedge_pos.profit * adjust
                 hedge.track_profit = True
-                trail_start = round(hedge_pos.profit/hedge.expected_profit, 2)
+                trail_start = round(hedge_pos.profit / hedge.expected_profit, 2)
                 hedge.track_profit_params |= {'start_trailing': True, 'trail_start': trail_start}
                 hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': False}
                 hedge.check_profit = True
@@ -125,22 +125,25 @@ async def track_hedge_2(*, hedge: OpenOrder):
             hedge_close = hedge_close * hedged_order.expected_loss
             if hedged_pos.profit >= hedge_close:
                 if isinstance(hedge_pos, TradePosition):
-                    await pos.close_by(hedge_pos)
-                    logger.info(f"Closed {hedge_pos.ticket}:{hedged_pos.ticket}@"
-                                f"{hedge_pos.profit}:{hedged_pos.profit} hedged order in profit")
-                orders.pop(hedge_ticket, None)
+                    res = await pos.close_by(hedge_pos)
+                    if res.retcode == 10009:
+                        logger.info(f"Closed {hedge_pos.ticket}of{hedged_pos.ticket}:{hedge_pos.symbol}@"
+                                    f"{hedge_pos.profit}:{hedged_pos.profit} hedged order profit above hedge close")
+                        orders.pop(hedge_ticket, None)
+            if hedged_pos.profit > 0:
                 hedged_order.check_profit = True
-                check_point = hedged_order.expected_loss * hedged_order.hedger_params['hedged_close']
-                hedged_order.check_profit_params |= {'close': True, 'check_point': check_point}
+                hedged_order.check_profit_params |= {'close': True, 'check_point': hedge_close,
+                                                     'use_check_points': True}
+                logger.info(f"set check_point at {hedge_close=} of hedged trade")
 
         elif isinstance(hedge_pos, TradePosition):
             if hedge_pos.profit > 0:
                 adjust = hedge.check_profit_params['hedge_adjust']
                 check_point = hedge_pos.profit * adjust
                 hedge.track_profit = True
-                trail_start = round(hedge_pos.profit/hedge.expected_profit, 2)
+                trail_start = round(hedge_pos.profit / hedge.expected_profit, 2)
                 hedge.track_profit_params |= {'start_trailing': True, 'trail_start': trail_start}
-                hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': False}
+                hedge.check_profit_params |= {'close': True, 'check_point': check_point, 'use_check_points': True}
                 hedge.check_profit = True
             else:
                 await pos.close_by(hedge_pos)

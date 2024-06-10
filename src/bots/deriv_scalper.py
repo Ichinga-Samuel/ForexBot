@@ -7,7 +7,7 @@ from aiomql import Bot, ForexSymbol, Config, TimeFrame
 
 from ..traders.sp_trader import SPTrader
 from ..strategies import FingerTrap, FFATR
-from ..closers import monitor
+from ..closers import monitor, atr_trailer
 
 
 def build_bot():
@@ -26,13 +26,8 @@ def build_bot():
                 'Volatility 75 Index', 'Volatility 10 (1s) Index',
                 'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
         v_syms = [ForexSymbol(name=sym) for sym in syms]
-        params = {"etf": TimeFrame.M5, "tptf": TimeFrame.M10, "exit_timeframe": TimeFrame.M10, "atr_multiplier": 1,
-                  "lower_interval": TimeFrame.M2, "higher_interval": TimeFrame.M5, "htf": TimeFrame.H1,
-                  "ttf": TimeFrame.M10}
-        ff_sts = [FFATR(symbol=sym, trader=SPTrader(symbol=sym, hedge_on_exit=True), params=params.copy())
-                  for sym in v_syms]
-
-        ft_sts = [FingerTrap(symbol=sym, trader=SPTrader(symbol=sym, hedge_on_exit=True)) for sym in v_syms]
+        ff_sts = [FFATR(symbol=sym, trader=SPTrader(symbol=sym, profit_tracker=atr_trailer)) for sym in v_syms]
+        ft_sts = [FingerTrap(symbol=sym, trader=SPTrader(symbol=sym, profit_tracker=atr_trailer)) for sym in v_syms]
         bot.add_strategies(ff_sts + ft_sts)
         bot.add_coroutine(monitor)
         bot.execute()

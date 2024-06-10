@@ -5,7 +5,9 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..closers.adx_closer import adx_closer
+from ..closers.chandelier_exit import chandelier_trailer
 from ..traders.sp_trader import SPTrader
+
 
 logger = getLogger(__name__)
 
@@ -30,14 +32,14 @@ class FFATR(Strategy):
     timeout: TimeFrame = TimeFrame.H4
     parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.2, "atr_length": 14,
+                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 0.75, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
                   "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        self.trader = trader or SPTrader(symbol=self.symbol)
+        self.trader = trader or SPTrader(symbol=self.symbol, profit_tracker=chandelier_trailer)
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
     async def check_trend(self):

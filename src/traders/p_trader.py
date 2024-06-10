@@ -20,37 +20,37 @@ class PTrader(BaseTrader):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
         cp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 8, 8: 6, 4: 1}}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
-        ram = RAM(risk_to_reward=3, fixed_amount=3)
+        ram = RAM(risk_to_reward=2, fixed_amount=5)
         ram = kwargs.pop('ram', ram)
         super().__init__(symbol=symbol, hedge_order=hedge_order, profit_tracker=profit_tracker, ram=ram,
                          check_profit_params=check_profit_params, profit_checker=profit_checker,
                          hedger_params=hedger_params, use_exit_signal=use_exit_signal, **kwargs)
 
-    async def create_order(self, *, order_type: OrderType):
+    async def create_order(self, *, order_type: OrderType, sl: float, tp: float):
         try:
             await self.symbol.info()
             tick = await self.symbol.info_tick()
-            amount = await self.ram.get_amount()
+            price = tick.ask if order_type == OrderType.BUY else tick.bid
             volume_mul = self.volumes.get(self.symbol.name, 1)
             volume = volume_mul * self.symbol.volume_min
-            points = self.symbol.compute_points(amount=amount, volume=volume)
-            comment = self.parameters.get('name', self.__class__.__name__)
-            self.order.set_attributes(volume=volume, type=order_type, comment=comment)
-            self.set_trade_stop_levels(points=points, tick=tick)
+            self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
+                                      comment=self.parameters.get('name', self.__class__.__name__))
         except Exception as err:
             logger.error(f"{err} in {self.__class__.__name__}.create_order")
 
-    async def place_trade(self, *, order_type: OrderType, parameters: dict = None):
+    async def place_trade(self, *, order_type: OrderType, sl: float, tp: float, parameters: dict = None):
         try:
-            ok = await self.check_ram()
-            if ok is False:
+            self.parameters |= parameters or {}
+
+            if await self.check_ram() is False:
                 logger.warning(f'Could not place trade due to RAM for {self.symbol}')
                 return
 
-            self.parameters |= parameters.copy() or {}
-            await self.create_order(order_type=order_type)
-            if not await self.check_order():
+            await self.create_order(order_type=order_type, sl=sl, tp=tp)
+            if await self.check_order() is False:
                 return
             await self.send_order()
+        except RuntimeError as _:
+            pass
         except Exception as err:
-            logger.error(f"{err} in {self.order.symbol} {self.__class__.__name__}.place_trade")
+            logger.error(f"{err} in {self.__class__.__name__}.place_trade for {self.symbol}")

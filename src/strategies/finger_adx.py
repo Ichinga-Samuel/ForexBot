@@ -5,8 +5,7 @@ from aiomql import Symbol, Strategy, TimeFrame, Sessions, OrderType, Trader
 
 from ..utils.tracker import Tracker
 from ..utils.top_bottom import double_top, double_bottom
-from ..closers.trailing_profit import trail_tp
-from ..traders.sp_trader import SPTrader
+from ..traders.p_trader import PTrader
 
 logger = getLogger(__name__)
 
@@ -32,9 +31,7 @@ class FingerADX(Strategy):
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FingerADX'):
         super().__init__(symbol=symbol, params=params, sessions=sessions, name=name)
-        cpp = {'use_check_points': True, "check_points": {12: 8, 16: 13, 22: 18, 10: 8, 8: 6, 4: 1}}
-        self.trader = trader or SPTrader(symbol=self.symbol, track_loss=False, check_profit_params=cpp,
-                                         hedge_order=False, profit_tracker=trail_tp)
+        self.trader = trader or PTrader(symbol=self.symbol)
 
         self.tracker: Tracker = Tracker(snooze=self.ttf.time)
 
@@ -81,12 +78,12 @@ class FingerADX(Strategy):
             downtrend = all([current.cbs, current.fbs, current.sbt]) and current.adx >= self.adx_cutoff and dt
 
             if current.is_bullish() and uptrend and higher_high:
-                sl = min(prev.low, prev_2.low)
+                sl = min(prev.low, prev_2.low) * 2
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
             elif current.is_bearish() and downtrend and lower_low:
-                sl = max(prev.high, prev_2.high)
+                sl = max(prev.high, prev_2.high) * 2
                 tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
@@ -98,7 +95,7 @@ class FingerADX(Strategy):
     async def trade(self):
         print(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
-            # await self.sleep(self.tracker.snooze)
+            await self.sleep(self.tracker.snooze)
             while True:
                 await sess.check()
                 try:

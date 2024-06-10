@@ -5,7 +5,7 @@ import json
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FFATR
+from ..strategies import FFATR, FingerTrap
 from ..closers import monitor
 
 
@@ -22,8 +22,9 @@ def build_bot():
         bot = Bot()
         crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
         crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-        csts = [FFATR(symbol=sym) for sym in crypto_syms]
-        bot.add_strategies(csts)
+        ffsts = [FFATR(symbol=sym) for sym in crypto_syms]
+        ftts = [FingerTrap(symbol=sym) for sym in crypto_syms]
+        bot.add_strategies(ffsts + ftts)
         bot.add_coroutine(monitor)
         bot.execute()
     except Exception as exe:

@@ -24,7 +24,7 @@ class BaseTrader(Trader):
     check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': False,
                            "check_points": {0.5: 0.3, 0.4: 0.3, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6,
                                             0.9: 0.7, 0.95: 0.8},
-                           'hedge_adjust': 0.90, 'exit_adjust': 0.95}
+                           'hedge_adjust': 0.90, 'exit_adjust': 0.9}
 
     hedger_params = {'hedge_point': 0.90, 'hedge_close': 0.4, 'hedge_vol': 1, 'hedged_close': 0.05}
     open_trades: list[int]
