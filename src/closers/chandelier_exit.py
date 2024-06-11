@@ -19,22 +19,24 @@ async def chandelier_trailer(*, order: OpenOrder):
         if start_trailing and (position.profit >= max(trail_start, previous_profit)):
             await chandelier(order=order)
     except Exception as exe:
-        logger.error(f"{exe}@{exe.__traceback__.tb_lineno} in chandelier_trailer for {order.position.symbol}:{order.ticket}")
+        logger.error(f"{exe}@{exe.__traceback__.tb_lineno} in chandelier_trailer for "
+                     f"{order.position.symbol}:{order.ticket}")
 
 
-async def chandelier(*, order: OpenOrder, extra: float = 0.0):
+async def chandelier(*, order: OpenOrder):
     try:
         position = await Positions().position_get(ticket=order.position.ticket)
-        # params = order.strategy_parameters
         tp_params = order.track_profit_params
+        st_params = order.strategy_parameters
         symbol = Symbol(name=position.symbol)
         await symbol.init()
         atr = 14
-        atr_factor = 1.5
+        atr_factor = st_params.get('atr_factor', 3)
+        ce_period = st_params.get('ce_period', 14)
         candles = await symbol.copy_rates_from_pos(timeframe=TimeFrame.D1, count=120)
         candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
-        p_candles = candles[-14:]
+        p_candles = candles[-ce_period:]
         current = p_candles[-1]
         expected_profit = order.expected_profit
         extend_start = tp_params['extend_start']
@@ -69,13 +71,13 @@ async def chandelier(*, order: OpenOrder, extra: float = 0.0):
             return
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            tp_params['previous_profit'] = position.profit
-            captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.sl,
+            order.track_profit_params['previous_profit'] = position.profit
+            captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                           volume=position.volume, order_type=position.type)
             logger.info(f"Changed stop_levels for"
                         f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
             if change_tp:
-                new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
+                new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
                 logger.info(f"Changed expected profit to {new_profit} for"

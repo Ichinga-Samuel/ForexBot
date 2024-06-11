@@ -6,6 +6,8 @@ import json
 from aiomql import Bot, ForexSymbol, Config
 
 from ..strategies import FFATR, FingerTrap
+from ..closers.atr_trailer import atr_trailer
+from ..traders.sp_trader import SPTrader
 from ..closers import monitor
 
 
@@ -23,7 +25,11 @@ def build_bot():
         crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
         crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
         ffsts = [FFATR(symbol=sym) for sym in crypto_syms]
-        ftts = [FingerTrap(symbol=sym) for sym in crypto_syms]
+        params = {"atr_factor": 0.75}
+        ftts = [FingerTrap(symbol=sym,
+                           trader=SPTrader(symbol=sym, profit_tracker=atr_trailer,
+                                           track_profit_params={'trail_start': 0.1}),
+                           params=params.copy()) for sym in crypto_syms]
         bot.add_strategies(ffsts + ftts)
         bot.add_coroutine(monitor)
         bot.execute()

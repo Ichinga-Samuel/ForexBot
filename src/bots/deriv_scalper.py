@@ -3,7 +3,7 @@ import logging
 import logging.config
 import json
 
-from aiomql import Bot, ForexSymbol, Config, TimeFrame
+from aiomql import Bot, ForexSymbol, Config
 
 from ..traders.sp_trader import SPTrader
 from ..strategies import FingerTrap, FFATR
@@ -26,8 +26,14 @@ def build_bot():
                 'Volatility 75 Index', 'Volatility 10 (1s) Index',
                 'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
         v_syms = [ForexSymbol(name=sym) for sym in syms]
-        ff_sts = [FFATR(symbol=sym, trader=SPTrader(symbol=sym, profit_tracker=atr_trailer)) for sym in v_syms]
-        ft_sts = [FingerTrap(symbol=sym, trader=SPTrader(symbol=sym, profit_tracker=atr_trailer)) for sym in v_syms]
+        params = {"atr_factor": 0.75}
+        ff_sts = [FFATR(symbol=sym,
+                        trader=SPTrader(symbol=sym, profit_tracker=atr_trailer,
+                                        track_profit_params={'trail_start': 0.1}),
+                        params=params.copy()) for sym in v_syms]
+        ft_sts = [FingerTrap(symbol=sym, trader=SPTrader(symbol=sym, profit_tracker=atr_trailer,
+                                                         track_profit_params={'trail_start': 0.1}),
+                             params=params.copy()) for sym in v_syms]
         bot.add_strategies(ff_sts + ft_sts)
         bot.add_coroutine(monitor)
         bot.execute()

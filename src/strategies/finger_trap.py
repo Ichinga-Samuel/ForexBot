@@ -49,9 +49,11 @@ class FingerTrap(Strategy):
             self.tracker.update(new=True, trend_time=current, order_type=None)
             candles.ta.ema(length=self.slow_ema, append=True)
             candles.ta.ema(length=self.fast_ema, append=True)
+            candles.ta.ema(length=self.exit_ema, append=True)
             candles.ta.adx(append=True)
             candles.rename(inplace=True, **{f"EMA_{self.fast_ema}": "fast", f"EMA_{self.slow_ema}": "slow",
-                                            "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn"})  
+                                            "ADX_14": "adx", "DMP_14": "dmp", "DMN_14": "dmn",
+                                            f"EMA_{self.exit_ema}": "exit_ema"})
 
             candles['caf'] = candles.ta_lib.above(candles.close, candles.fast, asint=False)
             candles['fas'] = candles.ta_lib.above(candles.fast, candles.slow, asint=False)
@@ -67,11 +69,11 @@ class FingerTrap(Strategy):
             lower_low = current.low < prev.low or current.high < prev.low
 
             if current.is_bullish() and uptrend and higher_high:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.exit_ema, asint=False)
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False)
                 self.trend_candles = candles
                 self.tracker.update(trend="bullish")
             elif current.is_bearish() and downtrend and lower_low:
-                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.exit_ema, asint=False, above=False)
+                candles['cxf'] = candles.ta_lib.cross(candles.close, candles.fast, asint=False, above=False)
                 self.trend_candles = candles
                 self.tracker.update(trend="bearish")
             else:

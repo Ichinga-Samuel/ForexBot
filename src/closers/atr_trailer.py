@@ -60,8 +60,6 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             if position.profit / expected_profit >= extend_start:
                 tp = round(position.tp + current.atr * atr_factor, symbol.digits)
                 change_tp = True
-                # check_point = order.check_profit_params['exit_adjust'] * position.profit
-                # order.check_profit_params |= {'check_point': check_point, 'close': True}
             else:
                 tp = position.tp
         else:
@@ -75,8 +73,6 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             if position.profit / expected_profit >= extend_start:
                 tp = round(position.tp - current.atr * atr_factor, symbol.digits)
                 change_tp = True
-                # check_point = order.check_profit_params['exit_adjust'] * position.profit
-                # order.check_profit_params |= {'check_point': check_point, 'close': True}
             else:
                 tp = position.tp
 
@@ -85,13 +81,13 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
 
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
-            tp_params['previous_profit'] = position.profit
-            captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.sl,
+            order.track_profit_params['previous_profit'] = position.profit
+            captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                           volume=position.volume, order_type=position.type)
             logger.info(f"Changed stop_levels for"
                         f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
             if change_tp:
-                new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=position.tp,
+                new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
                 logger.info(f"Changed expected profit to {new_profit} for"
