@@ -6,7 +6,7 @@ import logging.config
 
 from aiomql import Bot, ForexSymbol, Config
 
-from ..strategies import FFATR
+from ..strategies import FFATR, FFCE
 from ..closers import monitor
 
 
@@ -24,7 +24,7 @@ def build_bot():
             'Volatility 75 Index', 'Volatility 10 (1s) Index',
             'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
 
-    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FFATR]]
+    ff_sts = [ST(symbol=ForexSymbol(name=sym)) for sym in syms for ST in [FFATR, FFCE]]
     bot.add_strategies(ff_sts)
     bot.add_coroutine(monitor)
     bot.execute()

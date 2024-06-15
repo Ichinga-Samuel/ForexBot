@@ -93,7 +93,7 @@ class FingerADX(Strategy):
             self.tracker.update(snooze=self.interval.time, order_type=None)
 
     async def trade(self):
-        print(f"Trading {self.symbol} with {self.name}")
+        logger.info(f"Trading {self.symbol} with {self.name}")
         async with self.sessions as sess:
             await self.sleep(self.tracker.snooze)
             while True:

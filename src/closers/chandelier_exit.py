@@ -31,9 +31,9 @@ async def chandelier(*, order: OpenOrder):
         symbol = Symbol(name=position.symbol)
         await symbol.init()
         atr = 14
-        atr_factor = st_params.get('atr_factor', 3)
-        ce_period = st_params.get('ce_period', 14)
-        candles = await symbol.copy_rates_from_pos(timeframe=TimeFrame.D1, count=120)
+        atr_factor = st_params.get('atr_factor', 2)
+        ce_period = tp_params['ce_period']
+        candles = await symbol.copy_rates_from_pos(timeframe=TimeFrame.D1, count=60)
         candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
         p_candles = candles[-ce_period:]
@@ -41,9 +41,10 @@ async def chandelier(*, order: OpenOrder):
         expected_profit = order.expected_profit
         extend_start = tp_params['extend_start']
         change_sl = change_tp = False
+        trail_start = tp_params['trail_start']
         if position.type == OrderType.BUY:
-            sl = max(p_candles.high) - atr_factor * current.atr
-            if sl > max(position.sl, position.price_open):
+            sl = max(candles.high.iloc[-ce_period:]) - atr_factor * current.atr
+            if sl > position.sl and (trail_start == 0 or sl > position.price_open):
                 sl = round(sl, symbol.digits)
                 change_sl = True
             else:
@@ -54,8 +55,8 @@ async def chandelier(*, order: OpenOrder):
             else:
                 tp = position.tp
         else:
-            sl = min(p_candles.low) + atr_factor * current.atr
-            if sl < min(position.sl, position.price_open):
+            sl = min(candles.low.iloc[-ce_period:]) + atr_factor * current.atr
+            if sl < position.sl and (trail_start == 0 or sl < position.price_open):
                 sl = round(sl, symbol.digits)
                 change_sl = True
             else:
@@ -72,16 +73,14 @@ async def chandelier(*, order: OpenOrder):
         res = await send_order(position=position, sl=sl, tp=tp)
         if res.retcode == 10009:
             order.track_profit_params['previous_profit'] = position.profit
-            captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
-                                          volume=position.volume, order_type=position.type)
-            logger.info(f"Changed stop_levels for"
-                        f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+            taken_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
+                                       volume=position.volume, order_type=position.type)
+            logger.debug(f"Track sl:tp for {position.symbol}:{position.ticket}@{position.profit=}@{taken_profit=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
-                logger.info(f"Changed expected profit to {new_profit} for"
-                            f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+                logger.debug(f"Extend profit to {new_profit}4{position.symbol}:{position.ticket}")
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
     except Exception as exe:

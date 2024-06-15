@@ -49,7 +49,7 @@ async def modify_sl(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             loss = calc_profit(sym=sym, open_price=position.price_open, close_price=req.sl, volume=position.volume,
                                order_type=position.type)
             order.expected_loss = loss
-            logger.info(f"Trailing stop loss for {position.symbol}:{position.ticket} successful. New loss is {loss}")
+            logger.debug(f"Trailing stop loss for {position.symbol}:{position.ticket} successful. New loss is {loss}")
         elif res.retcode == 10016 and tries > 0:
             await modify_sl(order=order, extra=extra + 0.01, tries=tries - 1)
         else:

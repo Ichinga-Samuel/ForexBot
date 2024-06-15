@@ -47,7 +47,6 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         if atr_value < min_value:
             atr_value = min_value
             logger.warning(f"Minimum stop levels used for {position.symbol} {current.atr=}{atr_factor=} in atr_trailer")
-
         change_tp = False
         change_sl = False
         if position.type == OrderType.BUY:
@@ -84,14 +83,14 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             order.track_profit_params['previous_profit'] = position.profit
             captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                           volume=position.volume, order_type=position.type)
-            logger.info(f"Changed stop_levels for"
-                        f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+            logger.debug(f"Changed stop_levels for"
+                         f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
-                logger.info(f"Changed expected profit to {new_profit} for"
-                            f" {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+                logger.debug(f"Changed expected profit to {new_profit} for"
+                             f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)

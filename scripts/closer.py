@@ -11,7 +11,7 @@ async def place_multiple_random_orders():
         orders = []
         pos = Positions()
         await pos.close_all()
-        while account.equity > 100:
+        while account.equity > 150:
             await account.refresh()
             for sym in syms:
                 try:
