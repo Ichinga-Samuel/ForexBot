@@ -40,7 +40,7 @@
             "filename": "logs/debug.log",
             "mode": "a",
             "filters": ["less_than"]
-        },      
+        },
         "error":{
             "class": "logging.FileHandler",
             "formatter": "file",

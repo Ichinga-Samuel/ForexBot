@@ -97,7 +97,7 @@ class FFATR(Strategy):
                         sl = candle.low
                         break
                 else:
-                    logger.debug(f"No crossover entry found for {self.symbol} in {self.__class__.__name__}")
+                    logger.info(f"No crossover entry found for {self.symbol} in {self.__class__.__name__}")
                     sl = max(candles.high.iloc[-self.ce_period:]) - (self.atr_multiplier * current.atr)
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
@@ -109,7 +109,7 @@ class FFATR(Strategy):
                         sl = candle.high
                         break
                 else:
-                    logger.debug(f"No crossover entry found for {self.symbol} in {self.__class__.__name__}")
+                    logger.info(f"No crossover entry found for {self.symbol} in {self.__class__.__name__}")
                     sl = min(candles.low.iloc[-self.ce_period:]) - (self.atr_multiplier * current.atr)
                 tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)

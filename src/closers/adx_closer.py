@@ -41,7 +41,7 @@ async def adx_closer(*, order: OpenOrder):
                 await hedge_position(order=order)
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.debug(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
+                logger.info(f"Exited trade {position.symbol}{position.ticket} with adx_closer")
                 order.config.state['tracked_orders'].pop(order.ticket, None)
             else:
                 logger.error(f"Unable to close trade with adx_closer {res.comment}")
@@ -54,6 +54,6 @@ async def adx_closer(*, order: OpenOrder):
             cp_params |= {'check_point': check_point, 'close': True, 'use_check_points': True}
             order.check_profit_params = cp_params
             order.use_exit_signal = False
-            logger.debug(f"Check point set for {position.symbol}:{position.ticket}@{check_point} using adx_closer")
+            logger.info(f"Check point set for {position.symbol}:{position.ticket}@{check_point} using adx_closer")
     except Exception as exe:
         logger.error(f"An error occurred in function adx_closer {exe}")

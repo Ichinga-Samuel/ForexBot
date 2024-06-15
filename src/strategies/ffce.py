@@ -92,14 +92,13 @@ class FFCE(Strategy):
             lower_low = current.low < prev.low or current.high < prev.high or current.dmn > prev.dmn
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
-            ce_candles = ce_candles[-self.ce_period:]
             ce_current = ce_candles[-1]
             if self.tracker.bullish and up_trend:
-                sl = max(ce_candles.high) - self.atr_multiplier * ce_current.atr
+                sl = max(ce_candles.high.iloc[-self.ce_period:]) - self.atr_multiplier * ce_current.atr
                 tp = current.close + ((current.close - sl) * self.trader.ram.risk_to_reward)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
             if self.tracker.bearish and down_trend:
-                sl = min(ce_candles.low) + self.atr_multiplier * ce_current.atr
+                sl = min(ce_candles.low.iloc[-self.ce_period:]) + self.atr_multiplier * ce_current.atr
                 tp = current.close - ((sl - current.close) * self.trader.ram.risk_to_reward)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)

@@ -75,12 +75,12 @@ async def chandelier(*, order: OpenOrder):
             order.track_profit_params['previous_profit'] = position.profit
             taken_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                        volume=position.volume, order_type=position.type)
-            logger.debug(f"Track sl:tp for {position.symbol}:{position.ticket}@{position.profit=}@{taken_profit=}")
+            logger.info(f"Track sl:tp for {position.symbol}:{position.ticket}@{position.profit=}@{taken_profit=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
-                logger.debug(f"Extend profit to {new_profit}4{position.symbol}:{position.ticket}")
+                logger.info(f"Extend profit to {new_profit}4{position.symbol}:{position.ticket}")
         else:
             logger.error(f"Unable to place order due to {res.comment} for {position.symbol}:{position.ticket}")
     except Exception as exe:

@@ -17,7 +17,7 @@ async def fixed_check_profit(*, order: OpenOrder):
         if check_profit_params['close'] and position.profit < current_check_point:
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.debug(f"Closed trade {position.ticket}:{position.symbol}@{position.profit=} at checkpoint")
+                logger.info(f"Closed trade {position.ticket}:{position.symbol}@{position.profit=} at checkpoint")
                 order.config.state['tracked_orders'].pop(position.ticket, None)
                 return
             else:
@@ -30,7 +30,7 @@ async def fixed_check_profit(*, order: OpenOrder):
                 if check_point > current_check_point:
                     check_profit_params |= {'close': True, 'check_point': check_point}
                 check_points.pop(key, None)
-                logger.debug(
+                logger.info(
                     f"Check point set for {position.symbol}:{position.ticket}@{check_point} using fixed_check_profit")
     except Exception as exe:
         logger.error(f'An error occurred in function fixed_check_profit {exe}@{exe.__traceback__.tb_lineno}')
@@ -46,7 +46,7 @@ async def ratio_check_profit(*, order: OpenOrder):
         if check_profit_params['close'] and position.profit < current_check_point:
             res = await pos.close_by(position)
             if res.retcode == 10009:
-                logger.debug(f"Closed trade {position.symbol}:{position.ticket}@{position.profit} at checkpoint")
+                logger.info(f"Closed trade {position.symbol}:{position.ticket}@{position.profit} at checkpoint")
                 order.config.state['tracked_orders'].pop(position.ticket, None)
                 return
             else:
@@ -60,7 +60,7 @@ async def ratio_check_profit(*, order: OpenOrder):
                 if check_point > current_check_point:
                     check_profit_params |= {'close': True, 'check_point': check_point}
                 check_points.pop(key, None)
-                logger.debug(f"Check point set for {position.symbol}:{position.ticket}@{check_point}"
+                logger.info(f"Check point set for {position.symbol}:{position.ticket}@{check_point}"
                              f"using ratio_check_profit")
     except Exception as exe:
         logger.error(f'An error occurred in function ratio_check_profit {exe}@{exe.__traceback__.tb_lineno}')
