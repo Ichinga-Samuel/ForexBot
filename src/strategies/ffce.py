@@ -97,11 +97,12 @@ class FFCE(Strategy):
                 sl = max(ce_candles.high.iloc[-self.ce_period:]) - self.atr_multiplier * ce_current.atr
                 tp = current.close + ((current.close - sl) * self.trader.ram.risk_to_reward)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
-            if self.tracker.bearish and down_trend:
+            elif self.tracker.bearish and down_trend:
                 sl = min(ce_candles.low.iloc[-self.ce_period:]) + self.atr_multiplier * ce_current.atr
                 tp = current.close - ((sl - current.close) * self.trader.ram.risk_to_reward)
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
-            self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)
+            else:
+                self.tracker.update(trend="ranging", snooze=self.lower_interval.time, order_type=None)
         except Exception as exe:
             logger.error(f"{exe} for {self.symbol} in {self.__class__.__name__}.check_trend")
             self.tracker.update(snooze=self.lower_interval.time, order_type=None)
