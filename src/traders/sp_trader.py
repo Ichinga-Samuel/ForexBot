@@ -19,8 +19,8 @@ class SPTrader(BaseTrader):
         await self.symbol.info()
         tick = await self.symbol.info_tick()
         price = tick.ask if order_type == OrderType.BUY else tick.bid
-        volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=False,
-                                                         use_limits=True, adjust=False)
+        volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=True,
+                                                         use_limits=False, adjust=False)
         self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
                                   comment=self.parameters.get('name', self.__class__.__name__))
 

@@ -19,7 +19,7 @@ async def adx_closer(*, order: OpenOrder):
         cc = parameters['excc']
         candles = await sym.copy_rates_from_pos(count=cc, timeframe=exit_timeframe)
         adx = parameters['exit_adx']
-        candles.ta.adx(append=True, length=adx, mamode='ema')
+        candles.ta.adx(append=True, length=adx)
         candles.rename(**{f"ADX_{adx}": "adx", f"DMP_{adx}": "dmp", f"DMN_{adx}": "dmn"})
         candles['pxn'] = candles.ta_lib.cross(candles.dmp, candles.dmn, asint=False)
         candles['nxp'] = candles.ta_lib.cross(candles.dmn, candles.dmp, asint=False)

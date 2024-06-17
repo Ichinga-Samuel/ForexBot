@@ -75,7 +75,11 @@ async def chandelier(*, order: OpenOrder):
             order.track_profit_params['previous_profit'] = position.profit
             taken_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                        volume=position.volume, order_type=position.type)
-            logger.info(f"Track sl:tp for {position.symbol}:{position.ticket}@{position.profit=}@{taken_profit=}")
+            captured_profit = max(taken_profit, 0)
+            old_loss = order.expected_loss
+            order.expected_loss = min(0, taken_profit)
+            logger.info(f"Track sl:tp for {position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}"
+                        f"@{order.expected_loss=}@{old_loss=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)

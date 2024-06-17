@@ -15,14 +15,14 @@ class PTrader(BaseTrader):
                      'Volatility 25 (1s) Index': 1, 'Volatility 75 Index': 2, 'Volatility 10 (1s) Index': 1.2,
                      'Volatility 75 (1s) Index': 1, 'Volatility 50 Index': 1, 'Volatility 50 (1s) Index': 1}
 
-    def __init__(self, *, symbol, hedge_order=False, profit_tracker=trail_tp,
+    def __init__(self, *, symbol, hedge_order=False, track_profit=False,
                  profit_checker=fixed_check_profit, use_exit_signal=False, **kwargs):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
         cp = {'use_check_points': True, "check_points": {4: 1, 10: 10, -10: -10}, "close": True, "check_point": -10}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
-        ram = RAM(risk_to_reward=2, fixed_amount=5)
+        ram = RAM(risk_to_reward=1, fixed_amount=10)
         ram = kwargs.pop('ram', ram)
-        super().__init__(symbol=symbol, hedge_order=hedge_order, profit_tracker=profit_tracker, ram=ram,
+        super().__init__(symbol=symbol, hedge_order=hedge_order, ram=ram, track_profit=track_profit,
                          check_profit_params=check_profit_params, profit_checker=profit_checker,
                          hedger_params=hedger_params, use_exit_signal=use_exit_signal, **kwargs)
 
@@ -31,8 +31,9 @@ class PTrader(BaseTrader):
             await self.symbol.info()
             tick = await self.symbol.info_tick()
             price = tick.ask if order_type == OrderType.BUY else tick.bid
-            volume_mul = self.volumes.get(self.symbol.name, 1)
-            volume = volume_mul * self.symbol.volume_min
+            amount = await self.ram.get_amount()
+            volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=True,
+                                                             use_limits=False, adjust=False)
             self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
                                       comment=self.parameters.get('name', self.__class__.__name__))
         except Exception as err:
