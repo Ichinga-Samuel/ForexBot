@@ -30,11 +30,11 @@ class FFATR(Strategy):
     lower_interval: TimeFrame
     higher_interval: TimeFrame
     timeout: TimeFrame = TimeFrame.D1
-    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 14, "ttf": TimeFrame.H1, "tcc": 720,
+    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 21, "ttf": TimeFrame.H1, "tcc": 720,
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 360, "adx": 14, "atr_multiplier": 2, "atr_factor": 2, "atr_length": 14,
+                  "ecc": 360, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 2, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
-                  "etf": TimeFrame.H1, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14,
+                  "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14,
                   "ce_period": 24}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
@@ -91,7 +91,7 @@ class FFATR(Strategy):
             up_trend = current.adx >= 25 and current.dmp > current.dmn and higher_high and above
             down_trend = current.adx >= 25 and current.dmn > current.dmp and lower_low and below
             if self.tracker.bullish and up_trend:
-                e_candles['pxn'] = candles.ta_lib.cross(e_candles.dmp, e_candles.dmn, asint=False)
+                e_candles['pxn'] = e_candles.ta_lib.cross(e_candles.dmp, e_candles.dmn, asint=False)
                 for candle in reversed(e_candles):
                     if candle.pxn:
                         sl = candle.low
@@ -103,7 +103,7 @@ class FFATR(Strategy):
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
 
             elif self.tracker.bearish and down_trend:
-                e_candles['nxp'] = candles.ta_lib.cross(e_candles.dmn, e_candles.dmp, asint=False)
+                e_candles['nxp'] = e_candles.ta_lib.cross(e_candles.dmn, e_candles.dmp, asint=False)
                 for candle in reversed(e_candles):
                     if candle.nxp:
                         sl = candle.high
