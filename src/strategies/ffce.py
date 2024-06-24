@@ -32,9 +32,9 @@ class FFCE(Strategy):
     lower_interval: TimeFrame = TimeFrame.M15
     higher_interval: TimeFrame = TimeFrame.H2
     timeout: TimeFrame = TimeFrame.D1
-    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 21, "ttf": TimeFrame.H1, "tcc": 720,
+    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 14, "ttf": TimeFrame.H1, "tcc": 720,
                   'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 720, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 1.5, "atr_length": 14,
+                  "ecc": 720, "adx": 14, "atr_multiplier": 2, "atr_factor": 2, "atr_length": 14,
                   "excc": 720, "cecc": 60, "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14,
                   "ce_period": 14, "cetf": TimeFrame.D1}
 
