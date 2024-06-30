@@ -53,7 +53,7 @@ async def ratio_check_profit(*, order: OpenOrder):
                 logger.error(f"Unable to close order in check_profit due to {res.comment}")
 
         if check_profit_params['use_check_points'] and len(keys := sorted(check_points.keys())):
-            expected_profit = order.expected_profit
+            expected_profit = order.target_profit or order.expected_profit
             key = keys[0]
             check_point = check_points[key] * expected_profit
             if position.profit >= key * expected_profit:

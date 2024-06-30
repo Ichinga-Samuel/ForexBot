@@ -78,14 +78,14 @@ class FingerADX(Strategy):
             downtrend = all([current.cbs, current.fbs, current.sbt]) and current.adx >= self.adx_cutoff and dt
 
             if current.is_bullish() and uptrend and higher_high:
-                sl = current.close + ((max(prev.high, prev_2.high) - current.close) * 2)
-                tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
-                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
-
-            elif current.is_bearish() and downtrend and lower_low:
                 sl = current.close - ((current.close - min(prev.low, prev_2.low)) * 2)
                 tp = current.close + (current.close - sl) * self.trader.ram.risk_to_reward
                 self.tracker.update(snooze=self.timeout.time, order_type=OrderType.BUY, sl=sl, tp=tp)
+
+            elif current.is_bearish() and downtrend and lower_low:
+                sl = current.close + ((max(prev.high, prev_2.high) - current.close) * 2)
+                tp = current.close - (sl - current.close) * self.trader.ram.risk_to_reward
+                self.tracker.update(snooze=self.timeout.time, order_type=OrderType.SELL, sl=sl, tp=tp)
             else:
                 self.tracker.update(trend="ranging", snooze=self.interval.time, order_type=None)
         except Exception as exe:

@@ -13,7 +13,7 @@ async def chandelier_trailer(*, order: OpenOrder):
         position = order.position
         params = order.track_profit_params
         previous_profit = params['previous_profit']
-        expected_profit = order.expected_profit
+        expected_profit = order.target_profit or order.expected_profit
         trail_start = params['trail_start'] * expected_profit
         start_trailing = params['start_trailing']
         if start_trailing and (position.profit >= max(trail_start, previous_profit)):
@@ -38,7 +38,7 @@ async def chandelier(*, order: OpenOrder):
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
         p_candles = candles[-ce_period:]
         current = p_candles[-1]
-        expected_profit = order.expected_profit
+        expected_profit = order.target_profit or order.expected_profit
         extend_start = tp_params['extend_start']
         change_sl = change_tp = False
         trail_start = tp_params['trail_start']
@@ -49,8 +49,10 @@ async def chandelier(*, order: OpenOrder):
                 change_sl = True
             else:
                 sl = position.sl
-            if position.profit / expected_profit >= extend_start:
+            if position.profit / order.expected_profit >= extend_start:
                 tp = round(position.tp + current.atr, symbol.digits)
+                order.check_profit_params['close'] = True
+                order.check_profit_params['check_point'] = position.profit * 0.90
                 change_tp = True
             else:
                 tp = position.tp
@@ -62,8 +64,10 @@ async def chandelier(*, order: OpenOrder):
             else:
                 sl = position.sl
 
-            if position.profit / expected_profit >= extend_start:
+            if position.profit / order.expected_profit >= extend_start:
                 tp = round(position.tp - current.atr, symbol.digits)
+                order.check_profit_params['close'] = True
+                order.check_profit_params['check_point'] = position.profit * 0.90
                 change_tp = True
             else:
                 tp = position.tp

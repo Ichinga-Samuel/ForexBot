@@ -29,7 +29,7 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         params = order.track_profit_params
         sym = Symbol(name=position.symbol)
         await sym.init()
-        expected_profit = order.expected_profit
+        expected_profit = order.target_profit or order.expected_profit
         full_points = int(abs(position.price_open - position.tp) / sym.point)
         trail = params['trail']
         captured_points = int(abs(position.price_open - position.price_current) / sym.point)

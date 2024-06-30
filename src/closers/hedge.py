@@ -14,7 +14,7 @@ async def hedge_position(*, order: OpenOrder):
         position = await Positions().position_get(ticket=order.ticket)
         hedge_params = order.hedger_params
         hedge_point = hedge_params['hedge_point']
-        if position.profit > hedge_point * order.expected_loss:
+        if position.profit > hedge_point * (order.target_loss or order.expected_loss):
             return
         sym = Symbol(name=position.symbol)
         await sym.init()

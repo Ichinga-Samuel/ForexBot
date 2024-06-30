@@ -3,7 +3,7 @@ import logging
 import logging.config
 import json
 
-from aiomql import Bot, ForexSymbol, Config
+from aiomql import Bot, ForexSymbol, Config, TimeFrame
 
 from ..traders.sp_trader import SPTrader
 from ..strategies import FFATR
@@ -26,8 +26,9 @@ def build_bot():
                 'Volatility 75 Index', 'Volatility 10 (1s) Index',
                 'Volatility 75 (1s) Index', 'Volatility 50 Index', 'Volatility 50 (1s) Index']
         v_syms = [ForexSymbol(name=sym) for sym in syms]
-        ff_sts = [FFATR(symbol=sym, trader=SPTrader(symbol=sym, track_profit_params={'trail_start': 0.1},
-                                                    hedge_on_exit=True))
+
+        ff_sts = [FFATR(symbol=sym,
+                        trader=SPTrader(symbol=sym, track_profit_params={'trail_start': 0.25}), params={'etf': TimeFrame.M15})
                   for sym in v_syms]
         bot.add_strategies(ff_sts)
         bot.add_coroutine(monitor)

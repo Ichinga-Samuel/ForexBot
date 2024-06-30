@@ -13,7 +13,7 @@ async def atr_trailer(*, order: OpenOrder):
         position = order.position
         params = order.track_profit_params
         previous_profit = params['previous_profit']
-        expected_profit = order.expected_profit
+        expected_profit = order.target_profit or order.expected_profit
         trail_start = params['trail_start'] * expected_profit
         start_trailing = params['start_trailing']
         if start_trailing and (position.profit >= max(trail_start, previous_profit)):
@@ -32,13 +32,13 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         etf = params['tptf']
         ecc = params['tpcc']
         atr = params.get('atr_length', 14)
-        atr_factor = params.get('atr_factor', 0.75)
+        atr_factor = 0.5
         candles = await symbol.copy_rates_from_pos(timeframe=etf, count=ecc)
         candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
         current = candles[-1]
         tick = await symbol.info_tick()
-        expected_profit = order.expected_profit
+        expected_profit = order.target_profit or order.expected_profit
         extend_start = tp_params['extend_start']
 
         min_points = symbol.trade_stops_level + symbol.spread * (1 + extra)
@@ -56,8 +56,10 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
                 change_sl = True
             else:
                 sl = position.sl
-            if position.profit / expected_profit >= extend_start:
+            if position.profit / order.expected_profit >= extend_start:
                 tp = round(position.tp + current.atr * atr_factor, symbol.digits)
+                order.check_profit_params['close'] = True
+                order.check_profit_params['check_point'] = position.profit * 0.90
                 change_tp = True
             else:
                 tp = position.tp
@@ -69,8 +71,10 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             else:
                 sl = position.sl
 
-            if position.profit / expected_profit >= extend_start:
+            if position.profit / order.expected_profit >= extend_start:
                 tp = round(position.tp - current.atr * atr_factor, symbol.digits)
+                order.check_profit_params['close'] = True
+                order.check_profit_params['check_point'] = position.profit * 0.90
                 change_tp = True
             else:
                 tp = position.tp
@@ -84,13 +88,13 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                           volume=position.volume, order_type=position.type)
             logger.info(f"Changed stop_levels for"
-                         f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+                        f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
                 logger.info(f"Changed expected profit to {new_profit} for"
-                             f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
+                            f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
 
         elif res.retcode == 10016 and tries > 0:
             await modify_stops(order=order, extra=(extra + 0.01), tries=tries - 1)

@@ -3,7 +3,7 @@ import logging
 import logging.config
 import json
 
-from aiomql import Bot, ForexSymbol, Config
+from aiomql import Bot, ForexSymbol, Config, TimeFrame
 
 from ..strategies import FFATR, FFCE
 from ..closers import monitor
@@ -20,9 +20,9 @@ def build_bot():
         config.load_config()
         config.state['tracked_orders'] = {}
         bot = Bot()
-        crypto_syms = ['ETHUSD', 'BTCUSD', 'DOGUSD', 'SOLUSD', 'ADAUSD']
+        crypto_syms = ['ETHUSD', 'BTCUSD', 'SOLUSD']
         crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-        sts = [FFATR(symbol=sym) for sym in crypto_syms]
+        sts = [FFATR(symbol=sym, params={'etf': TimeFrame.M15}) for sym in crypto_syms]
         sts1 = [FFCE(symbol=sym) for sym in crypto_syms]
         bot.add_strategies(sts + sts1)
         bot.add_coroutine(monitor)

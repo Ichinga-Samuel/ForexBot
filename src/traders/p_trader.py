@@ -18,9 +18,9 @@ class PTrader(BaseTrader):
     def __init__(self, *, symbol, hedge_order=False, track_profit=False,
                  profit_checker=fixed_check_profit, use_exit_signal=False, **kwargs):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
-        cp = {'use_check_points': True, "check_points": {4: 1, 10: 10, -10: -10}, "close": True, "check_point": -10}
+        cp = {'use_check_points': True, "check_points": {-10: -10}, "close": True, "check_point": -10}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
-        ram = RAM(risk_to_reward=1, fixed_amount=10)
+        ram = RAM(risk_to_reward=3, fixed_amount=10)
         ram = kwargs.pop('ram', ram)
         super().__init__(symbol=symbol, hedge_order=hedge_order, ram=ram, track_profit=track_profit,
                          check_profit_params=check_profit_params, profit_checker=profit_checker,
@@ -33,7 +33,7 @@ class PTrader(BaseTrader):
             price = tick.ask if order_type == OrderType.BUY else tick.bid
             amount = await self.ram.get_amount()
             volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=True,
-                                                             use_limits=False, adjust=False)
+                                                             use_limits=True, adjust=False)
             self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
                                       comment=self.parameters.get('name', self.__class__.__name__))
         except Exception as err:

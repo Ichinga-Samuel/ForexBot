@@ -38,6 +38,8 @@ class OpenOrder:
     hedge: OpenOrder = None
     expected_profit: float = 0.0
     expected_loss: float = 0.0
+    target_profit: float = None
+    target_loss: float = None
     position: TradePosition = None
     config: Config = Config()
 

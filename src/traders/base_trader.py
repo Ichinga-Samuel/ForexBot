@@ -21,10 +21,9 @@ class BaseTrader(Trader):
     track_loss_params = {'trail_start': 0.95, 'sl_limit': 15, 'trail': 2, 'trailing': True,
                          'previous_profit': 0}
 
-    check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': False,
-                           "check_points": {0.5: 0.3, 0.4: 0.3, 0.6: 0.4, 0.7: 0.5, 0.8: 0.6,
-                                            0.9: 0.7, 0.95: 0.8},
-                           'hedge_adjust': 0.90, 'exit_adjust': 0.9}
+    check_profit_params = {'close': False, 'check_point': -1, 'use_check_points': True,
+                           "check_points": {1.5: 1, 2: 1.5, 2.5: 2},
+                           'hedge_adjust': 0.98, 'exit_adjust': 0.98}
 
     hedger_params = {'hedge_point': 0.90, 'hedge_close': 0.4, 'hedge_vol': 1, 'hedged_close': 0.05}
     open_trades: list[int]
@@ -41,7 +40,7 @@ class BaseTrader(Trader):
                  profit_tracker=None, loss_tracker=None, profit_checker=None, hedger=None, hedge_tracker=None,
                  hedge_on_exit: bool = False, **kwargs):
 
-        ram = ram or RAM(risk_to_reward=3, risk=0.01)
+        ram = ram or RAM(risk_to_reward=2, risk=0.01)
         self.use_telegram = use_telegram
         self.use_exit_signal = use_exit_signal
         self.track_profit_params = self.track_profit_params | (track_profit_params or {})
