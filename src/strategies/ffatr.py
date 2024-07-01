@@ -35,7 +35,7 @@ class FFATR(Strategy):
                   "ecc": 360, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 1.5, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
                   "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14,
-                  "ce_period": 24}
+                  "ce_period": 24, "timeout": TimeFrame.H12}
 
     def __init__(self, *, symbol: Symbol, params: dict | None = None, trader: Trader = None, sessions: Sessions = None,
                  name: str = 'FFATR'):

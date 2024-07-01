@@ -22,7 +22,7 @@ def build_bot():
         bot = Bot()
         crypto_syms = ['ETHUSD', 'BTCUSD', 'SOLUSD']
         crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-        sts = [FFATR(symbol=sym, params={'etf': TimeFrame.M15}) for sym in crypto_syms]
+        sts = [FFATR(symbol=sym, params={'etf': TimeFrame.M15, 'timeout': TimeFrame.H2}) for sym in crypto_syms]
         sts1 = [FFCE(symbol=sym) for sym in crypto_syms]
         bot.add_strategies(sts + sts1)
         bot.add_coroutine(monitor)

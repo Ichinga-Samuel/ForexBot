@@ -28,8 +28,8 @@ def build_bot():
         v_syms = [ForexSymbol(name=sym) for sym in syms]
 
         ff_sts = [FFATR(symbol=sym,
-                        trader=SPTrader(symbol=sym, track_profit_params={'trail_start': 0.25}), params={'etf': TimeFrame.M15})
-                  for sym in v_syms]
+                        trader=SPTrader(symbol=sym, track_profit_params={'trail_start': 0.25}),
+                        params={'etf': TimeFrame.M15, 'timeout': TimeFrame.H2}) for sym in v_syms]
         bot.add_strategies(ff_sts)
         bot.add_coroutine(monitor)
         bot.execute()
