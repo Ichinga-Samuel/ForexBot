@@ -30,9 +30,9 @@ class FFATR(Strategy):
     lower_interval: TimeFrame
     higher_interval: TimeFrame
     timeout: TimeFrame = TimeFrame.H12
-    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 21, "ttf": TimeFrame.H1, "tcc": 720,
-                  'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.H1,
-                  "ecc": 360, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 1.5, "atr_length": 14,
+    parameters = {"first_ema": 10, "second_ema": 21, "trend_ema": 50, "ttf": TimeFrame.H1, "tcc": 720,
+                  'exit_function': adx_closer, "htf": TimeFrame.H4, "hcc": 180, "exit_timeframe": TimeFrame.M30,
+                  "ecc": 360, "adx": 14, "atr_multiplier": 1.5, "atr_factor": 1, "atr_length": 14,
                   "excc": 720, "lower_interval": TimeFrame.M15, "higher_interval": TimeFrame.H2,
                   "etf": TimeFrame.M30, "tptf": TimeFrame.H1, "tpcc": 720, "exit_adx": 14,
                   "ce_period": 24, "timeout": TimeFrame.H12}
@@ -52,9 +52,9 @@ class FFATR(Strategy):
                 self.tracker.update(new=False, order_type=None)
                 return
             self.tracker.update(new=True, trend_time=current, order_type=None)
-            c_candles.ta.ema(length=self.trend_ema, append=True)
+            c_candles.ta.sma(length=self.trend_ema, append=True)
             c_candles.ta.adx(append=True)
-            c_candles.rename(inplace=True, **{f"EMA_{self.trend_ema}": "ema", "ADX_14": "adx", "DMP_14": "dmp",
+            c_candles.rename(inplace=True, **{f"SMA_{self.trend_ema}": "ema", "ADX_14": "adx", "DMP_14": "dmp",
                                               "DMN_14": "dmn"})
             c_candles['cae'] = c_candles.ta_lib.above(c_candles.close, c_candles.ema, asint=False)
             c_candles['cbe'] = c_candles.ta_lib.below(c_candles.close, c_candles.ema, asint=False)

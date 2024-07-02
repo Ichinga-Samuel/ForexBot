@@ -22,6 +22,7 @@ class SPTrader(BaseTrader):
         volume, sl = await self.symbol.compute_volume_sl(price=price, amount=amount, sl=sl, round_down=True,
                                                          use_limits=True, adjust=False)
         self.open_order.target_loss = amount * -1
+        self.open_order.base_profit = amount
         self.open_order.target_profit = amount * self.ram.risk_to_reward
         self.order.set_attributes(volume=volume, type=order_type, price=price, sl=sl, tp=tp,
                                   comment=self.parameters.get('name', self.__class__.__name__))

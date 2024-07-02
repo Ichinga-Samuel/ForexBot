@@ -32,7 +32,7 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
         etf = params['tptf']
         ecc = params['tpcc']
         atr = params.get('atr_length', 14)
-        atr_factor = 0.5
+        atr_factor = 0.75
         candles = await symbol.copy_rates_from_pos(timeframe=etf, count=ecc)
         candles.ta.atr(append=True, length=atr)
         candles.rename(inplace=True, **{f'ATRr_{atr}': 'atr'})
@@ -87,13 +87,13 @@ async def modify_stops(*, order: OpenOrder, extra: float = 0.0, tries: int = 4):
             order.track_profit_params['previous_profit'] = position.profit
             captured_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=sl,
                                           volume=position.volume, order_type=position.type)
-            logger.info(f"Changed stop_levels for"
+            logger.debug(f"Changed stop_levels for"
                         f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
             if change_tp:
                 new_profit = calc_profit(sym=symbol, open_price=position.price_open, close_price=tp,
                                          volume=position.volume, order_type=position.type)
                 order.expected_profit = new_profit
-                logger.info(f"Changed expected profit to {new_profit} for"
+                logger.debug(f"Changed expected profit to {new_profit} for"
                             f"{position.symbol}:{position.ticket}@{position.profit=}@{captured_profit=}")
 
         elif res.retcode == 10016 and tries > 0:

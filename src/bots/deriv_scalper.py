@@ -6,7 +6,7 @@ import json
 from aiomql import Bot, ForexSymbol, Config, TimeFrame
 
 from ..traders.sp_trader import SPTrader
-from ..strategies import FFATR
+from ..strategies import FFATR, Chaos
 from ..closers import monitor
 
 
@@ -29,8 +29,9 @@ def build_bot():
 
         ff_sts = [FFATR(symbol=sym,
                         trader=SPTrader(symbol=sym, track_profit_params={'trail_start': 0.25}),
-                        params={'etf': TimeFrame.M15, 'timeout': TimeFrame.H2}) for sym in v_syms]
-        bot.add_strategies(ff_sts)
+                        params={'etf': TimeFrame.M10, 'timeout': TimeFrame.H2, 'htf': TimeFrame.H1}) for sym in v_syms]
+        c_sts = [Chaos(symbol=sym) for sym in v_syms]
+        bot.add_strategies(ff_sts + c_sts)
         bot.add_coroutine(monitor)
         bot.execute()
     except Exception as exe:

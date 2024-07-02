@@ -40,6 +40,7 @@ class OpenOrder:
     expected_loss: float = 0.0
     target_profit: float = None
     target_loss: float = None
+    base_profit: float = None
     position: TradePosition = None
     config: Config = Config()
 

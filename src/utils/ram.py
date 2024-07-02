@@ -2,7 +2,7 @@ from aiomql import RAM as _RAM, Positions, TradePosition
 
 
 class RAM(_RAM):
-    min_amount: float = 5
+    min_amount: float = 10
     max_amount: float = 100
     loss_limit: int = 5
     symbol_limit: int = 1

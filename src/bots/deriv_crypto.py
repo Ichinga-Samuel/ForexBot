@@ -5,7 +5,7 @@ import json
 
 from aiomql import Bot, ForexSymbol, Config, TimeFrame
 
-from ..strategies import FFATR, FFCE
+from ..strategies import FFATR, FFCE, Chaos
 from ..closers import monitor
 
 
@@ -22,9 +22,10 @@ def build_bot():
         bot = Bot()
         crypto_syms = ['ETHUSD', 'BTCUSD', 'SOLUSD']
         crypto_syms = [ForexSymbol(name=sym) for sym in crypto_syms]
-        sts = [FFATR(symbol=sym, params={'etf': TimeFrame.M15, 'timeout': TimeFrame.H2}) for sym in crypto_syms]
+        sts = [FFATR(symbol=sym, params={'etf': TimeFrame.M10, 'timeout': TimeFrame.H2, 'htf': TimeFrame.H1}) for sym in crypto_syms]
         sts1 = [FFCE(symbol=sym) for sym in crypto_syms]
-        bot.add_strategies(sts + sts1)
+        cts = [Chaos(symbol=sym) for sym in crypto_syms]
+        bot.add_strategies(sts + sts1 + cts)
         bot.add_coroutine(monitor)
         bot.execute()
     except Exception as exe:

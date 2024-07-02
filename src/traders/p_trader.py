@@ -2,7 +2,6 @@ from logging import getLogger
 
 from aiomql import OrderType
 
-from ..closers.trailing_profit import trail_tp
 from ..closers.check_profits import fixed_check_profit
 from ..utils.ram import RAM
 from .base_trader import BaseTrader
@@ -20,7 +19,7 @@ class PTrader(BaseTrader):
         hedger_params = {"hedge_point": 0.58} | kwargs.pop('hedger_params', {})
         cp = {'use_check_points': True, "check_points": {-10: -10}, "close": True, "check_point": -10}
         check_profit_params = cp | kwargs.pop('check_profit_params', {})
-        ram = RAM(risk_to_reward=3, fixed_amount=10)
+        ram = RAM(risk_to_reward=2.5, fixed_amount=10)
         ram = kwargs.pop('ram', ram)
         super().__init__(symbol=symbol, hedge_order=hedge_order, ram=ram, track_profit=track_profit,
                          check_profit_params=check_profit_params, profit_checker=profit_checker,
